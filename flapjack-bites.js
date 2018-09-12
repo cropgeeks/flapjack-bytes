@@ -29,9 +29,7 @@ var mapCanvasHeight = 30;
 
 var stateTable = new Map();
 var lineNames = [];
-var markerNames = [];
 var lineData = [];
-var markerData = [];
 var colorStamps = [];
 
 var colors = {
@@ -89,66 +87,6 @@ function HeterozygousColorState(nucleotide, nucleotide2)
     this.buffer.width = boxSize;
     this.buffer.height = boxSize;
     drawHetSquare(this.buffer, this.colorLight, this.colorDark, this.colorLight2, this.colorDark2, this.genotype);
-}
-
-function loadData()
-{
-    loadMapData();
-    loadGenotypeData();
-}
-
-function loadMapData()
-{
-    var file = document.getElementById("map").files[0];
-    console.log("Load map data");
-
-    var reader = new FileReader();
-    reader.onloadend = function(progressEvent)
-    {
-        var markers = this.result.split(/\r?\n/);
-        for (var marker = 0; marker < markers.length; marker++)
-        {
-            processMapFileLine(markers[marker]);
-        }
-    };
-    reader.readAsText(file);
-}
-
-function processMapFileLine(line)
-{
-    if (line.startsWith("#") || (!line || 0 === line.length) || line.startsWith('\t'))
-    {
-        return;
-    }
-    
-    var tokens = line.split('\t');
-    if (tokens.length === 2)
-    {
-        return;
-    }
-    var markerName = tokens[0];
-
-    markerNames.push(markerName);
-    var marker = new Marker(markerName, tokens[1], tokens[2]);
-    markerData.push(marker);
-}
-
-function loadGenotypeData()
-{
-    var file = document.getElementById("input").files[0];
-
-    var reader = new FileReader();
-    reader.onloadend = function(progressEvent)
-    {
-        var lines = this.result.split(/\r?\n/);
-        for (var line = 0; line < lines.length; line++)
-        {
-            processFileLine(lines[line]);
-        }
-
-       init();
-    };
-    reader.readAsText(file);
 }
 
 function processFileLine(line)
@@ -264,34 +202,9 @@ function render()
     var alleleStart = Math.floor(translatedX / boxSize);
     var alleleEnd = Math.min(alleleStart + (canvas.width/boxSize) -1, totalAlleles);
 
-    // var firstMarkerPos = markerData[alleleStart].position;
-    // var lastMarkerPos = markerData[alleleEnd].position;
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // renderMap(firstMarkerPos, lastMarkerPos, alleleStart, alleleEnd);
     renderGermplasmNames(lineNames, lineStart, lineEnd);
     renderGermplasm(lineStart, lineEnd, alleleStart, alleleEnd);
-}
-
-function renderMap(firstMarkerPos, lastMarkerPos, alleleStart, alleleEnd)
-{
-    var dist = lastMarkerPos - firstMarkerPos;
-    ctx.strokeStyle = 'gray';
-    ctx.translate(lineNamesWidth, 0);
-
-    for (var i=alleleStart; i < alleleEnd; i++)
-    {
-        var pos = map(i, alleleStart, alleleEnd, 0, canvas.width);
-        pos += (boxSize /2);
-        var marker = markerData[i];
-        var markerPos = ((marker.position - firstMarkerPos) * ((canvas.width-lineNamesWidth) / dist));
-        ctx.beginPath();
-        ctx.moveTo(markerPos, 0);
-        ctx.lineTo(pos, 20)
-        ctx.lineTo(pos, mapCanvasHeight);
-        ctx.stroke();
-    }
-    ctx.translate(-100, 0);
 }
 
 function renderGermplasmNames(lineNames, lineStart, lineEnd)
@@ -420,10 +333,7 @@ function zoom(size)
     boxSize = size;
     font = calculateFontSize('C/G', 'sans-serif');
     ctx.font = font;
-
-    console.log("boxSize: " + boxSize + " fontSize: " + fontSize);
-
-
+    
     setupColorStamps();
     render();
 }
