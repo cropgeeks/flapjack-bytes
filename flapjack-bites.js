@@ -25,7 +25,7 @@ var font = "16px monospaced";
 var fontSize = 100;
 
 var lineNamesWidth = 100;
-var mapCanvasHeight = 30;
+// var mapCanvasHeight = 30;
 
 var stateTable = new Map();
 var lineNames = [];
@@ -209,14 +209,14 @@ function render()
 
 function renderGermplasmNames(lineNames, lineStart, lineEnd)
 {
-    ctx.translate(0, mapCanvasHeight);
+    // ctx.translate(0, mapCanvasHeight);
     var lineCount = 0;
     for (var i=lineStart; i < lineEnd; i++)
     {
         ctx.fillText(lineNames[i], 0, ((lineCount * boxSize) + (boxSize - (fontSize/2))));
         lineCount++;
     }
-    ctx.translate(0, -mapCanvasHeight);
+    // ctx.translate(0, -mapCanvasHeight);
 }
 
 function renderGermplasm(lineStart, lineEnd, alleleStart, alleleEnd)
