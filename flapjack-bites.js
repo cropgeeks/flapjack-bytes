@@ -66,6 +66,31 @@ function GenotypeRenderer(server) {
 
         canvas_holder.append(canvas);
 
+        var zoom_div = document.createElement('div');
+        zoom_div.id = 'zoom-holder';
+
+        var zoom_label = document.createElement('label');
+        zoom_label.setAttribute('for', 'zoom-control');
+        zoom_label.innerHTML = "Zoom:";
+
+        var range = document.createElement('input');
+        range.setAttribute('type', 'range');
+        range.min = 2;
+        range.max = 64;
+        range.value = 16;
+
+        range.addEventListener('change', function(){
+            zoom(range.value);
+        });
+
+        range.addEventListener('input', function(){
+            zoom(range.value);
+        });
+
+        zoom_div.appendChild(zoom_label);
+        zoom_div.appendChild(range);
+        canvas_holder.appendChild(zoom_div);
+
         var params = { "matrixDbId": [matrix_id], "format": 'flapjack'};
 
         brapijs.allelematrix_search(params)
