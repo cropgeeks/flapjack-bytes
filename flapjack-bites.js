@@ -23,6 +23,15 @@ function GenotypeRenderer(server) {
 
     var boxSize = 16;
 
+    var totalWidth;
+    var totalHeight;
+
+    var maxCanvasHeight;
+    var maxCanvasWidth;
+
+    var vertical_scrollbar;
+    var horizontal_scrollbar;
+
     var font = "16px monospaced";
     var fontSize = 100;
 
@@ -61,10 +70,14 @@ function GenotypeRenderer(server) {
         canvas = document.createElement('canvas');
         canvas.id = 'genotype';
         canvas.width = width;
+        maxCanvasWidth = width;
         canvas.height = height;
+        maxCanvasHeight = height;
         ctx = canvas.getContext('2d');
-
         canvas_holder.append(canvas);
+
+        vertical_scrollbar = new ScrollBarKnob(10, 20, canvas.width-10, 0, 5);
+        horizontal_scrollbar = new ScrollBarKnob(20, 10, 0, canvas.height-10, 5);
 
         var zoom_div = document.createElement('div');
         zoom_div.id = 'zoom-holder';
@@ -93,7 +106,7 @@ function GenotypeRenderer(server) {
 
         var params = { "matrixDbId": [matrix_id], "format": 'flapjack'};
 
-        brapijs.allelematrix_search(params)
+        brapijs.allelematrices_search(params)
         .each(function(matrix_object){
             var myInit = { method: 'GET',
                 headers: {
@@ -160,6 +173,32 @@ function GenotypeRenderer(server) {
         this.buffer.width = boxSize;
         this.buffer.height = boxSize;
         drawHetSquare(this.buffer, this.colorLight, this.colorDark, this.colorLight2, this.colorDark2, this.genotype);
+    }
+
+    function ScrollBarKnob(knob_width, knob_height, knob_x, knob_y, corner_radius)
+    {
+        this.knob_width = knob_width;
+        this.knob_height = knob_height;
+        this.knob_x = knob_x;
+        this.knob_y = knob_y;
+        this.corner_radius = corner_radius;
+        this.render = function() {
+            // Set faux rounded corners
+            ctx.lineJoin = "round";
+            ctx.lineWidth = corner_radius;
+
+            ctx.fillStyle = '#aaa';
+            ctx.strokeStyle = '#aaa';
+
+            // Change origin and dimensions to match true size (a stroke makes the shape a bit larger)
+            ctx.strokeRect(knob_x+(corner_radius/2), knob_y+(corner_radius/2), knob_width-corner_radius, knob_height-corner_radius);
+            ctx.fillRect(knob_x+(corner_radius/2), knob_y+(corner_radius/2), knob_width-corner_radius, knob_height-corner_radius);
+        }
+
+        this.move = function(xMove, yMove) {
+            knob_x = xMove;
+            knob_y = yMove;
+        }
     }
 
     function processFileLine(line)
@@ -267,21 +306,44 @@ function GenotypeRenderer(server) {
 
     function render()
     {
-        lineStart = Math.floor(translatedY / boxSize);
+        lineStart = Math.floor(translatedY/boxSize);
         lineEnd = Math.min(lineStart + (canvas.height/boxSize), lineNames.length);
 
         var totalAlleles = lineData[0].length -1;
 
-        var alleleStart = Math.floor(translatedX / boxSize);
+        maxCanvasWidth = lineData[0].length * boxSize;
+        maxCanvasHeight = lineNames.length * boxSize;
+        var alleleStart = Math.floor(translatedX/boxSize);
         var alleleEnd = Math.min(alleleStart + (canvas.width/boxSize) -1, totalAlleles);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         renderGermplasmNames(lineNames, lineStart, lineEnd);
         renderGermplasm(lineStart, lineEnd, alleleStart, alleleEnd);
+        renderScrollbars();
+    }
+
+    function renderScrollbars()
+    {
+        ctx.fillStyle = '#eee';
+        ctx.strokeStyle = '#ccc';
+        ctx.strokeRect(vertical_scrollbar.knob_x, 0, vertical_scrollbar.knob_width, canvas.height-vertical_scrollbar.knob_width);
+        ctx.fillRect(vertical_scrollbar.knob_x, 0, vertical_scrollbar.knob_width, canvas.height-vertical_scrollbar.knob_width);
+        vertical_scrollbar.render();
+        ctx.fillStyle = '#eee';
+        ctx.strokeStyle = '#ccc';
+        ctx.translate(lineNamesWidth, 0);
+        ctx.strokeRect(0, horizontal_scrollbar.knob_y, canvas.width-horizontal_scrollbar.knob_height-lineNamesWidth, horizontal_scrollbar.knob_height);
+        ctx.fillRect(0, horizontal_scrollbar.knob_y, canvas.width-horizontal_scrollbar.knob_height-lineNamesWidth, horizontal_scrollbar.knob_height);
+        horizontal_scrollbar.render();
+        ctx.translate(-lineNamesWidth, 0);
+
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(canvas.width-vertical_scrollbar.knob_width, canvas.height-horizontal_scrollbar.knob_height, vertical_scrollbar.knob_width, vertical_scrollbar.knob_width);
     }
 
     function renderGermplasmNames(lineNames, lineStart, lineEnd)
     {
+        ctx.fillStyle = '#333';
         // ctx.translate(0, mapCanvasHeight);
         var lineCount = 0;
         for (var i=lineStart; i < lineEnd; i++)
@@ -339,6 +401,16 @@ function GenotypeRenderer(server) {
                 translatedX = 0;
             if (translatedY < 0)
                 translatedY = 0;
+            if (Math.floor(translatedX/boxSize) > (Math.floor(maxCanvasWidth/boxSize - canvas.width/boxSize + lineNamesWidth)))
+                translatedX = maxCanvasWidth - canvas.width + vertical_scrollbar.knob_width;
+            if (Math.floor(translatedY/boxSize) > (Math.floor(maxCanvasHeight/boxSize - canvas.height/boxSize)))
+                translatedY = maxCanvasHeight - canvas.height + horizontal_scrollbar.knob_height;
+
+            var scrollX = (translatedX / (maxCanvasWidth+horizontal_scrollbar.knob_width)) * canvas.width;
+            var scrollY = (translatedY / (maxCanvasHeight+vertical_scrollbar.knob_height)) * canvas.height;
+
+            vertical_scrollbar.move(vertical_scrollbar.knob_x, scrollY);
+            horizontal_scrollbar.move(scrollX, horizontal_scrollbar.knob_y);
 
             render();
         }

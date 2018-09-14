@@ -16,7 +16,6 @@
           </div>
           <input type="submit" action="#" value="Submit">
         </form>
-        <!-- <input type="range" min="2" max="64" value="16" onchange="zoom(this.value)" oninput="zoom(this.value)"> -->
       </div>
       <div id="canvas-holder">
         <!-- Empty div that we can insert a canvas into from javascript. -->
@@ -35,7 +34,7 @@
             var base_url = form.server;
             var matrix_id = form.matrix;
             var renderer = GenotypeRenderer(base_url);
-            renderer.renderGenotypes("#canvas-holder",800,400,matrix_id);
+            renderer.renderGenotypes("#canvas-holder",800,600,matrix_id);
             return false;
           });
       });
