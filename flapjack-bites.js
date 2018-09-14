@@ -232,7 +232,7 @@ function GenotypeRenderer(server) {
         // var controls = document.getElementById('controls');
         // var height = window.innerHeight - document.getElementById("canvas-holder").offsetTop;
 
-        font = calculateFontSize('C/G', 'sans-serif');
+        font = calculateFontSize('C/G', 'sans-serif', boxSize);
 
         // Set up the canvas and drawing context for the genotype display
         // canvas = document.createElement('canvas');
@@ -257,11 +257,11 @@ function GenotypeRenderer(server) {
         render();
     }
 
-    function calculateFontSize(text, fontface)
+    function calculateFontSize(text, fontface, size)
     {
         var fontCanvas = document.createElement('canvas');
-        fontCanvas.width = boxSize;
-        fontCanvas.height = boxSize;
+        fontCanvas.width = size;
+        fontCanvas.height = size;
         var fontContext = fontCanvas.getContext('2d');
         
         fontSize = 100;
@@ -432,7 +432,7 @@ function GenotypeRenderer(server) {
         {
             gradientCtx.fillStyle = 'rgb(0,0,0)';
             gradientCtx.font = font;
-            var textWidth = gradientCtx.measureText(text).width
+            var textWidth = gradientCtx.measureText(text).width;
             gradientCtx.fillText(text, (boxSize-textWidth)/2, (boxSize-(fontSize/2)));
         }
     }
@@ -442,6 +442,9 @@ function GenotypeRenderer(server) {
         gradCanvas.width = boxSize;
         gradCanvas.height = boxSize;
         var gradientCtx = gradCanvas.getContext('2d');
+
+        var allele1 = text.charAt(0);
+        var allele2 = text.charAt(2);
 
         var lingrad = gradientCtx.createLinearGradient(0, 0, boxSize, boxSize);
         lingrad.addColorStop(0, color1);
@@ -467,16 +470,18 @@ function GenotypeRenderer(server) {
         if (boxSize >= 10)
         {
             gradientCtx.fillStyle = 'rgb(0,0,0)';
-            gradientCtx.font = font;
-            var textWidth = gradientCtx.measureText(text).width
-            gradientCtx.fillText(text, (boxSize-textWidth)/2, (boxSize-(fontSize/2)));
+            gradientCtx.font = calculateFontSize('C/G', 'sans-serif', boxSize);
+            var allele1Width = gradientCtx.measureText(allele1).width;
+            gradientCtx.fillText(allele1, ((boxSize/2)-allele1Width)/2, fontSize);
+            var allele2Width = gradientCtx.measureText(allele2).width
+            gradientCtx.fillText(allele2, boxSize - ((boxSize/2)+allele2Width)/2, boxSize-(fontSize/4));
         }
     }
 
     function zoom(size)
     {
         boxSize = size;
-        font = calculateFontSize('C/G', 'sans-serif');
+        font = calculateFontSize('C/G', 'sans-serif', boxSize);
         ctx.font = font;
         
         setupColorStamps();
