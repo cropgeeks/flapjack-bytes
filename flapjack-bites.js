@@ -1,8 +1,8 @@
 'use strict';
 
-function GenotypeRenderer(server) {
+function GenotypeRenderer() {
     var genotype_renderer = {};
-    var brapijs = BrAPI(server);
+    var brapijs;// = BrAPI(server);
 
     // Variables for referring to the genotype canvas
     var canvas;
@@ -36,12 +36,13 @@ function GenotypeRenderer(server) {
     var fontSize = 100;
 
     var lineNamesWidth = 100;
-    // var mapCanvasHeight = 30;
-    var mapCanvasHeight = 0;
+    var mapCanvasHeight = 30;
 
     var stateTable = new Map();
     var lineNames = [];
+    var markerNames = [];
     var lineData = [];
+    var markerData = [];
     var colorStamps = [];
 
     var colors = {
@@ -63,7 +64,46 @@ function GenotypeRenderer(server) {
     nucleotides.set('C', new Nucleotide('C', colors.orangeLight, colors.orangeDark));
     nucleotides.set('', new Nucleotide('', colors.white, colors.white));
 
-    genotype_renderer.renderGenotypes = function(dom_parent, width, height, matrix_id) {
+    genotype_renderer.renderGenotypesBrapi = function(dom_parent, width, height, server, matrix_id) {
+        createRendererComponents(dom_parent, width, height);
+
+        brapijs = BrAPI(server);
+
+        var params = { "matrixDbId": [matrix_id], "format": 'flapjack'};
+
+        brapijs.allelematrices_search(params)
+        .each(function(matrix_object){
+            var myInit = { method: 'GET',
+                headers: {
+                    'Content-Type': 'text/tsv'
+                },
+                mode: 'cors',
+                cache: 'default' };
+
+            fetch(matrix_object.__response.metadata.datafiles[0], myInit)
+            .then(function (response) {
+                if (response.status !== 200) {
+                    console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
+                    return;
+                }
+                response.text().then(function (data) {
+                    var lines = data.split(/\r?\n/);
+                    for (var line = 0; line < lines.length; line++) {
+                        processFileLine(lines[line]);
+                    }
+                    init();
+                })
+            })
+            .catch(function (err) {
+                console.log('Fetch Error :-S', err);
+            });
+        });
+
+        return genotype_renderer;
+    }
+
+    function createRendererComponents(dom_parent, width, height)
+    {
         var canvas_holder =  document.getElementById(dom_parent.slice(1));
 
         // Set up the canvas and drawing context for the genotype display
@@ -103,38 +143,6 @@ function GenotypeRenderer(server) {
         zoom_div.appendChild(zoom_label);
         zoom_div.appendChild(range);
         canvas_holder.appendChild(zoom_div);
-
-        var params = { "matrixDbId": [matrix_id], "format": 'flapjack'};
-
-        brapijs.allelematrices_search(params)
-        .each(function(matrix_object){
-            var myInit = { method: 'GET',
-                headers: {
-                    'Content-Type': 'text/tsv'
-                },
-                mode: 'cors',
-                cache: 'default' };
-
-            fetch(matrix_object.__response.metadata.datafiles[0], myInit)
-            .then(function (response) {
-                if (response.status !== 200) {
-                    console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
-                    return;
-                }
-                response.text().then(function (data) {
-                    var lines = data.split(/\r?\n/);
-                    for (var line = 0; line < lines.length; line++) {
-                        processFileLine(lines[line]);
-                    }
-                    init();
-                })
-            })
-            .catch(function (err) {
-                console.log('Fetch Error :-S', err);
-            });
-        });
-
-        return genotype_renderer;
     }
 
     function Nucleotide(allele, colorLight, colorDark)
@@ -199,6 +207,42 @@ function GenotypeRenderer(server) {
             knob_x = xMove;
             knob_y = yMove;
         }
+    }
+
+    function loadMapData()
+    {
+        var file = document.getElementById("map").files[0];
+        console.log("Load map data");
+
+        var reader = new FileReader();
+        reader.onloadend = function(progressEvent)
+        {
+            var markers = this.result.split(/\r?\n/);
+            for (var marker = 0; marker < markers.length; marker++)
+            {
+                processMapFileLine(markers[marker]);
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function processMapFileLine(line)
+    {
+        if (line.startsWith("#") || (!line || 0 === line.length) || line.startsWith('\t'))
+        {
+            return;
+        }
+        
+        var tokens = line.split('\t');
+        if (tokens.length === 2)
+        {
+            return;
+        }
+        var markerName = tokens[0];
+
+        markerNames.push(markerName);
+        var marker = new Marker(markerName, tokens[1], tokens[2]);
+        markerData.push(marker);
     }
 
     function processFileLine(line)
@@ -317,13 +361,46 @@ function GenotypeRenderer(server) {
         var alleleEnd = Math.min(alleleStart + (canvas.width/boxSize) -1, totalAlleles);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        renderMap(alleleStart, alleleEnd);
         renderGermplasmNames(lineNames, lineStart, lineEnd);
         renderGermplasm(lineStart, lineEnd, alleleStart, alleleEnd);
         renderScrollbars();
     }
 
+    function renderMap(alleleStart, alleleEnd)
+    {
+        if (markerData.length == 0)
+        {
+            mapCanvasHeight = 0;
+            return;
+        }
+
+        var firstMarkerPos = markerData[alleleStart].position;
+        var lastMarkerPos = markerData[alleleEnd].position;
+
+        var dist = lastMarkerPos - firstMarkerPos;
+
+        ctx.strokeStyle = 'gray';
+        ctx.translate(lineNamesWidth, 0);
+
+        for (var i=alleleStart; i < alleleEnd; i++)
+        {
+            var pos = (i-alleleStart)*boxSize;
+            pos += (boxSize / 2);
+            var marker = markerData[i];
+            var markerPos = ((marker.position - firstMarkerPos) * ((canvas.width-lineNamesWidth) / dist));
+            ctx.beginPath();
+            ctx.moveTo(markerPos, 0);
+            ctx.lineTo(pos, 20)
+            ctx.lineTo(pos, mapCanvasHeight);
+            ctx.stroke();
+        }
+        ctx.translate(-lineNamesWidth, 0);
+    }
+
     function renderScrollbars()
     {
+        ctx.translate(0, mapCanvasHeight);
         ctx.fillStyle = '#eee';
         ctx.strokeStyle = '#ccc';
         ctx.strokeRect(vertical_scrollbar.knob_x, 0, vertical_scrollbar.knob_width, canvas.height-vertical_scrollbar.knob_width);
@@ -339,24 +416,25 @@ function GenotypeRenderer(server) {
 
         ctx.fillStyle = '#fff';
         ctx.fillRect(canvas.width-vertical_scrollbar.knob_width, canvas.height-horizontal_scrollbar.knob_height, vertical_scrollbar.knob_width, vertical_scrollbar.knob_width);
+        ctx.translate(0, -mapCanvasHeight);
     }
 
     function renderGermplasmNames(lineNames, lineStart, lineEnd)
     {
         ctx.fillStyle = '#333';
-        // ctx.translate(0, mapCanvasHeight);
+        ctx.translate(0, mapCanvasHeight);
         var lineCount = 0;
         for (var i=lineStart; i < lineEnd; i++)
         {
             ctx.fillText(lineNames[i], 0, ((lineCount * boxSize) + (boxSize - (fontSize/2))));
             lineCount++;
         }
-        // ctx.translate(0, -mapCanvasHeight);
+        ctx.translate(0, -mapCanvasHeight);
     }
 
     function renderGermplasm(lineStart, lineEnd, alleleStart, alleleEnd)
     {
-        ctx.translate(lineNamesWidth, 0);
+        ctx.translate(lineNamesWidth, mapCanvasHeight);
         var currentLine = 0;
         for (var i = lineStart; i < lineEnd; i++)
         {
@@ -369,7 +447,7 @@ function GenotypeRenderer(server) {
             }
             currentLine++;
         }
-        ctx.translate(-lineNamesWidth, 0);
+        ctx.translate(-lineNamesWidth, -mapCanvasHeight);
     }
 
     function onmousedown(ev)
@@ -486,11 +564,6 @@ function GenotypeRenderer(server) {
         
         setupColorStamps();
         render();
-    }
-
-    function map (num, in_min, in_max, out_min, out_max) 
-    {
-        return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     }
 
     return genotype_renderer;
