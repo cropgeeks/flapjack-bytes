@@ -102,6 +102,16 @@ function GenotypeRenderer() {
         return genotype_renderer;
     }
 
+    genotype_renderer.renderGenotypesFile = function(dom_parent, width, height, map_file_dom, genotype_file_dom)
+    {
+        createRendererComponents(dom_parent, width, height);
+
+        loadMapData(map_file_dom);
+        loadGenotypeData(genotype_file_dom);
+
+        return genotype_renderer;
+    }
+
     function createRendererComponents(dom_parent, width, height)
     {
         var canvas_holder =  document.getElementById(dom_parent.slice(1));
@@ -117,7 +127,7 @@ function GenotypeRenderer() {
         canvas_holder.append(canvas);
 
         vertical_scrollbar = new ScrollBarKnob(10, 20, canvas.width-10, 0, 5);
-        horizontal_scrollbar = new ScrollBarKnob(20, 10, 0, canvas.height-10, 5);
+        horizontal_scrollbar = new ScrollBarKnob(20, 10, 0, canvas.height-10-mapCanvasHeight, 5);
 
         var zoom_div = document.createElement('div');
         zoom_div.id = 'zoom-holder';
@@ -209,10 +219,11 @@ function GenotypeRenderer() {
         }
     }
 
-    function loadMapData()
+    function loadMapData(map_file_dom)
     {
-        var file = document.getElementById("map").files[0];
+        var file = document.getElementById(map_file_dom.slice(1)).files[0];
         console.log("Load map data");
+        console.log(document.getElementById(map_file_dom.slice(1)).files[0]);
 
         var reader = new FileReader();
         reader.onloadend = function(progressEvent)
@@ -245,6 +256,26 @@ function GenotypeRenderer() {
         markerData.push(marker);
     }
 
+    function loadGenotypeData(genotype_file_dom)
+    {
+        var file = document.getElementById(genotype_file_dom.slice(1)).files[0];
+        console.log(file);
+
+        var reader = new FileReader();
+        reader.onloadend = function(progressEvent)
+        {
+            var lines = this.result.split(/\r?\n/);
+            for (var line = 0; line < lines.length; line++)
+            {
+                processFileLine(lines[line]);
+            }
+
+            init();
+        };
+
+        reader.readAsText(file);
+    }
+
     function processFileLine(line)
     {
         if (line.startsWith("#") || (!line || 0 === line.length) || line.startsWith("Accession") || line.startsWith('\t'))
@@ -273,22 +304,9 @@ function GenotypeRenderer() {
 
     function init()
     {
-        // var controls = document.getElementById('controls');
-        // var height = window.innerHeight - document.getElementById("canvas-holder").offsetTop;
-
         font = calculateFontSize('C/G', 'sans-serif', boxSize);
 
-        // Set up the canvas and drawing context for the genotype display
-        // canvas = document.createElement('canvas');
-        // canvas.id = 'genotype';
-        // ctx = canvas.getContext('2d');
-
         ctx.font = font;
-
-        // document.getElementById('canvas-holder').appendChild(canvas);
-        // canvas.width = document.getElementById('canvas-holder').scrollWidth;
-        // canvas.height = height - controls.offsetHeight;
-        // console.log("canvas height: " + canvas.height + " controls height: " + controls.offsetHeight + " height: " + height);
 
         // Pre-render our gradient squares
         setupColorStamps();
@@ -358,7 +376,8 @@ function GenotypeRenderer() {
         maxCanvasWidth = lineData[0].length * boxSize;
         maxCanvasHeight = lineNames.length * boxSize;
         var alleleStart = Math.floor(translatedX/boxSize);
-        var alleleEnd = Math.min(alleleStart + (canvas.width/boxSize) -1, totalAlleles);
+        var alleleEnd = Math.floor(Math.min(alleleStart + (canvas.width/boxSize), totalAlleles));
+        console.log("lS: " + lineStart + " lE: " + lineEnd + " lDL: " + lineData.length + " aS: " + alleleStart + " aE: " + alleleEnd + " totalAlleles: " + totalAlleles);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         renderMap(alleleStart, alleleEnd);
@@ -380,6 +399,7 @@ function GenotypeRenderer() {
 
         var dist = lastMarkerPos - firstMarkerPos;
 
+        ctx.lineWidth = 1;
         ctx.strokeStyle = 'gray';
         ctx.translate(lineNamesWidth, 0);
 
@@ -442,7 +462,7 @@ function GenotypeRenderer() {
             var currentAllele = 0;
             for (var j=alleleStart; j < alleleEnd; j++)
             {
-                ctx.drawImage(colorStamps[alleles[j]].buffer, (currentAllele * boxSize), mapCanvasHeight + (currentLine * boxSize));
+                ctx.drawImage(colorStamps[alleles[j]].buffer, (currentAllele * boxSize), (currentLine * boxSize));
                 currentAllele++;
             }
             currentLine++;

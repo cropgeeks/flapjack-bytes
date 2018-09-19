@@ -1,0 +1,33 @@
+<html>
+  <head>
+    <title>Flapjack Bites</title>
+    <meta charset="UTF-8">
+  </head>
+  <body>
+      <div>
+          <div>
+            <label for="mapfile">Map file:</label>
+            <input type="file" id="mapfile" name="mapfile">
+          </div>
+          <div>
+            <label for="genofile">Genotype file:</label>
+            <input type="file" id="genofile" name="genofile">
+          </div>
+          <input type="submit" action="#" id="submit" name="submit" value="Submit">
+      </div>
+      <div id="canvas-holder">
+        <!-- Empty div that we can insert a canvas into from javascript. -->
+      </div>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
+      <script src="flapjack-bites.js"></script>
+      <script type="text/javascript">
+        $(document).ready(function(){
+          $("#submit").click(function(){
+            var renderer = GenotypeRenderer();
+            renderer.renderGenotypesFile("#canvas-holder", 800, 600, "#mapfile", "#genofile");
+            return false;
+          });
+      });
+      </script>
+  </body>
+</html>
