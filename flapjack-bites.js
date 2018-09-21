@@ -65,6 +65,7 @@ function GenotypeRenderer() {
     nucleotides.set('', new Nucleotide('', colors.white, colors.white));
 
     genotype_renderer.renderGenotypesBrapi = function(dom_parent, width, height, server, matrix_id) {
+        mapCanvasHeight = 0;
         createRendererComponents(dom_parent, width, height);
 
         brapijs = BrAPI(server);
@@ -377,7 +378,6 @@ function GenotypeRenderer() {
         maxCanvasHeight = lineNames.length * boxSize;
         var alleleStart = Math.floor(translatedX/boxSize);
         var alleleEnd = Math.floor(Math.min(alleleStart + (canvas.width/boxSize), totalAlleles));
-        console.log("lS: " + lineStart + " lE: " + lineEnd + " lDL: " + lineData.length + " aS: " + alleleStart + " aE: " + alleleEnd + " totalAlleles: " + totalAlleles);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         renderMap(alleleStart, alleleEnd);

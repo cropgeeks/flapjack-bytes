@@ -28,7 +28,6 @@
           $("#brapi-form").submit(function(){
             var form = $(this).serializeArray().reduce(function(vals,entry){
               vals[entry.name] = entry.value
-              console.log(entry.name, entry.value);
               return vals
             },{});
             var base_url = form.server;
