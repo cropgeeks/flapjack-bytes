@@ -52,6 +52,22 @@ function GenotypeRenderer() {
         white: 'rgb(255,255,255)'
     };
 
+    class Nucleotide {
+        constructor(allele, colorLight, colorDark) {
+            this.allele = allele;
+            this.colorLight = colorLight;
+            this.colorDark = colorDark;
+        }
+    }
+
+    class Marker {
+        constructor(name, chromosome, position) {
+            this.name = name;
+            this.chromosome = chromosome;
+            this.position = position;
+        }
+    }
+
     var nucleotides = new Map();
     nucleotides.set('A', new Nucleotide('A', colors.greenLight, colors.greenDark));
     nucleotides.set('G', new Nucleotide('G', colors.redLight, colors.redDark));
@@ -149,20 +165,6 @@ function GenotypeRenderer() {
         zoom_div.appendChild(zoom_label);
         zoom_div.appendChild(range);
         canvas_holder.appendChild(zoom_div);
-    }
-
-    function Nucleotide(allele, colorLight, colorDark)
-    {
-        this.allele = allele || '';
-        this.colorLight = colorLight || 'rgb(255,255,255)';
-        this.colorDark = colorDark || 'rgb(255,255,255)';
-    }
-
-    function Marker(name, chromosome, position)
-    {
-        this.name = name;
-        this.chromosome = chromosome;
-        this.position = position;
     }
 
     function HomozygousColorState(nucleotide)
