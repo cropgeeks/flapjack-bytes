@@ -2,7 +2,7 @@
 
 function GenotypeRenderer() {
     var genotype_renderer = {};
-    var brapijs;// = BrAPI(server);
+    var brapijs;
 
     // Variables for referring to the genotype canvas
     var canvas;
@@ -18,13 +18,8 @@ function GenotypeRenderer() {
     // Variables to keep track of where we are in the data
     var lineStart = 0;
     var lineEnd = 0;
-    var alleleStart = 0;
-    var alleleEnd = 0;
 
     var boxSize = 16;
-
-    var totalWidth;
-    var totalHeight;
 
     var maxCanvasHeight;
     var maxCanvasWidth;
@@ -227,7 +222,7 @@ function GenotypeRenderer() {
         console.log(document.getElementById(map_file_dom.slice(1)).files[0]);
 
         var reader = new FileReader();
-        reader.onloadend = function(progressEvent)
+        reader.onloadend = function()
         {
             var markers = this.result.split(/\r?\n/);
             for (var marker = 0; marker < markers.length; marker++)
@@ -263,7 +258,7 @@ function GenotypeRenderer() {
         console.log(file);
 
         var reader = new FileReader();
-        reader.onloadend = function(progressEvent)
+        reader.onloadend = function()
         {
             var lines = this.result.split(/\r?\n/);
             for (var line = 0; line < lines.length; line++)
@@ -478,7 +473,7 @@ function GenotypeRenderer() {
         dragging = true;
     }
 
-    function onmouseup(ev)
+    function onmouseup()
     {
         dragging = false;
     }
