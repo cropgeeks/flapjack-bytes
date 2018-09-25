@@ -68,6 +68,12 @@ function GenotypeRenderer() {
         }
     }
 
+    class ColorState {
+        constructor(buffer) {
+            this.buffer = buffer;
+        }
+    }
+
     var nucleotides = new Map();
     nucleotides.set('A', new Nucleotide('A', colors.greenLight, colors.greenDark));
     nucleotides.set('G', new Nucleotide('G', colors.redLight, colors.redDark));
@@ -165,30 +171,6 @@ function GenotypeRenderer() {
         zoom_div.appendChild(zoom_label);
         zoom_div.appendChild(range);
         canvas_holder.appendChild(zoom_div);
-    }
-
-    function HomozygousColorState(nucleotide)
-    {
-        this.genotype = nucleotide.allele;
-        this.colorLight = nucleotide.colorLight;
-        this.colorDark = nucleotide.colorDark;
-        this.buffer = document.createElement('canvas');
-        this.buffer.width = boxSize;
-        this.buffer.height = boxSize;
-        drawGradientSquare(this.buffer, this.colorLight, this.colorDark, this.genotype);
-    }
-
-    function HeterozygousColorState(nucleotide, nucleotide2)
-    {
-        this.genotype = nucleotide.allele + "/" + nucleotide2.allele;
-        this.colorLight = nucleotide.colorLight;
-        this.colorDark = nucleotide.colorDark;
-        this.colorLight2 = nucleotide2.colorLight;
-        this.colorDark2 = nucleotide2.colorDark;
-        this.buffer = document.createElement('canvas');
-        this.buffer.width = boxSize;
-        this.buffer.height = boxSize;
-        drawHetSquare(this.buffer, this.colorLight, this.colorDark, this.colorLight2, this.colorDark2, this.genotype);
     }
 
     function ScrollBarKnob(knob_width, knob_height, knob_x, knob_y, corner_radius)
@@ -302,10 +284,6 @@ function GenotypeRenderer() {
 
     function init()
     {
-        font = calculateFontSize('C/G', 'sans-serif', boxSize);
-
-        ctx.font = font;
-
         // Pre-render our gradient squares
         setupColorStamps();
 
@@ -333,6 +311,8 @@ function GenotypeRenderer() {
             fontContext.font = fontSize + "px " + fontface;
         }
 
+        ctx.font = fontContext.font;
+
         return fontContext.font;
     }
 
@@ -350,7 +330,8 @@ function GenotypeRenderer() {
                 {
                     nucleotide = nucleotides.get('');
                 }
-                var stamp = new HomozygousColorState(nucleotide)
+                let buffer = drawGradientSquare(boxSize, nucleotide);
+                let stamp = new ColorState(buffer);
                 colorStamps.push(stamp);
             }
             else
@@ -358,7 +339,8 @@ function GenotypeRenderer() {
                 var alleles = key.split('/');
                 var nucleotide1 = nucleotides.get(alleles[0]);
                 var nucleotide2 = nucleotides.get(alleles[1]);
-                var stamp = new HeterozygousColorState(nucleotide1, nucleotide2);
+                let buffer = drawHetSquare(boxSize, nucleotide1, nucleotide2);
+                let stamp = new ColorState(buffer);
                 colorStamps.push(stamp);
             }
         }
@@ -511,39 +493,40 @@ function GenotypeRenderer() {
         }
     }
 
-    function drawGradientSquare(gradCanvas, color1, color2, text)
+    function drawGradientSquare(boxSize, nucleotide)
     {
+        var gradCanvas = document.createElement('canvas');
         gradCanvas.width = boxSize;
         gradCanvas.height = boxSize;
         var gradientCtx = gradCanvas.getContext('2d');
 
         var lingrad = gradientCtx.createLinearGradient(0, 0, boxSize, boxSize);
-        lingrad.addColorStop(0, color1);
-        lingrad.addColorStop(1, color2);
+        lingrad.addColorStop(0, nucleotide.colorLight);
+        lingrad.addColorStop(1, nucleotide.colorDark);
         gradientCtx.fillStyle = lingrad;
         gradientCtx.fillRect(0, 0, boxSize, boxSize);
 
         if (boxSize >= 10)
         {
             gradientCtx.fillStyle = 'rgb(0,0,0)';
-            gradientCtx.font = font;
-            var textWidth = gradientCtx.measureText(text).width;
-            gradientCtx.fillText(text, (boxSize-textWidth)/2, (boxSize-(fontSize/2)));
+            gradientCtx.font = calculateFontSize('C/G', 'sans-serif', boxSize);
+            var textWidth = gradientCtx.measureText(nucleotide.allele).width;
+            gradientCtx.fillText(nucleotide.allele, (boxSize-textWidth)/2, (boxSize-(fontSize/2)));
         }
+
+        return gradCanvas;
     }
 
-    function drawHetSquare(gradCanvas, color1, color2, color3, color4, text)
+    function drawHetSquare(boxSize, nucleotide1, nucleotide2)
     {
+        var gradCanvas = document.createElement('canvas');
         gradCanvas.width = boxSize;
         gradCanvas.height = boxSize;
         var gradientCtx = gradCanvas.getContext('2d');
 
-        var allele1 = text.charAt(0);
-        var allele2 = text.charAt(2);
-
         var lingrad = gradientCtx.createLinearGradient(0, 0, boxSize, boxSize);
-        lingrad.addColorStop(0, color1);
-        lingrad.addColorStop(1, color2);
+        lingrad.addColorStop(0, nucleotide1.colorLight);
+        lingrad.addColorStop(1, nucleotide1.colorDark);
         gradientCtx.fillStyle = lingrad;
         gradientCtx.beginPath();
         gradientCtx.lineTo(boxSize, 0);
@@ -552,8 +535,8 @@ function GenotypeRenderer() {
         gradientCtx.fill();
 
         var lingrad2 = gradientCtx.createLinearGradient(0, 0, boxSize, boxSize);
-        lingrad2.addColorStop(0, color3);
-        lingrad2.addColorStop(1, color4);
+        lingrad2.addColorStop(0, nucleotide2.colorLight);
+        lingrad2.addColorStop(1, nucleotide2.colorDark);
         gradientCtx.fillStyle = lingrad2;
         gradientCtx.beginPath();
         gradientCtx.moveTo(boxSize, 0);
@@ -566,18 +549,18 @@ function GenotypeRenderer() {
         {
             gradientCtx.fillStyle = 'rgb(0,0,0)';
             gradientCtx.font = calculateFontSize('C/G', 'sans-serif', boxSize);
-            var allele1Width = gradientCtx.measureText(allele1).width;
-            gradientCtx.fillText(allele1, ((boxSize/2)-allele1Width)/2, fontSize);
-            var allele2Width = gradientCtx.measureText(allele2).width
-            gradientCtx.fillText(allele2, boxSize - ((boxSize/2)+allele2Width)/2, boxSize-(fontSize/4));
+            var allele1Width = gradientCtx.measureText(nucleotide1.allele).width;
+            gradientCtx.fillText(nucleotide1.allele, ((boxSize/2)-allele1Width)/2, fontSize);
+            var allele2Width = gradientCtx.measureText(nucleotide2.allele).width
+            gradientCtx.fillText(nucleotide2.allele, boxSize - ((boxSize/2)+allele2Width)/2, boxSize-(fontSize/4));
         }
+
+        return gradCanvas;
     }
 
     function zoom(size)
     {
         boxSize = size;
-        font = calculateFontSize('C/G', 'sans-serif', boxSize);
-        ctx.font = font;
         
         setupColorStamps();
         render();
