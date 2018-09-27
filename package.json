@@ -1,0 +1,27 @@
+{
+  "name": "flapjack-bytes",
+  "version": "1.0.0",
+  "description": "BrAPI enabled Flapjack style graphical previews of genotype data",
+  "main": "flapjack-bites.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cropgeeks/flapjack-bytes.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cropgeeks/flapjack-bytes/issues"
+  },
+  "homepage": "https://github.com/cropgeeks/flapjack-bytes#readme",
+  "devDependencies": {
+    "@babel/core": "^7.1.0",
+    "@babel/preset-env": "^7.1.0",
+    "rollup": "^0.66.2",
+    "rollup-plugin-babel": "^4.0.3",
+    "rollup-plugin-node-resolve": "^3.4.0"
+  }
+}
