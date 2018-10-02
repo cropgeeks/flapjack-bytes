@@ -2,7 +2,7 @@
   "name": "flapjack-bytes",
   "version": "1.0.0",
   "description": "BrAPI enabled Flapjack style graphical previews of genotype data",
-  "main": "flapjack-bites.js",
+  "main": "flapjack-bytes.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
