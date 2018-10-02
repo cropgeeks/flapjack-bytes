@@ -54,28 +54,6 @@ export function GenotypeRenderer() {
         white: 'rgb(255,255,255)'
     };
 
-    class Nucleotide {
-        constructor(allele, colorLight, colorDark) {
-            this.allele = allele;
-            this.colorLight = colorLight;
-            this.colorDark = colorDark;
-        }
-    }
-
-    class Marker {
-        constructor(name, chromosome, position) {
-            this.name = name;
-            this.chromosome = chromosome;
-            this.position = position;
-        }
-    }
-
-    class ColorState {
-        constructor(buffer) {
-            this.buffer = buffer;
-        }
-    }
-
     var nucleotides = new Map();
     nucleotides.set('A', new Nucleotide('A', colors.greenLight, colors.greenDark));
     nucleotides.set('G', new Nucleotide('G', colors.redLight, colors.redDark));
