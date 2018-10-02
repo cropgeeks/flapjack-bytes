@@ -1,6 +1,7 @@
 import { Nucleotide } from './nucleotide.js';
 import { Marker } from './marker.js';
 import { ColorState } from './colorstate.js';
+import { ScrollBar } from './scrollbar.js';
 
 export function GenotypeRenderer() {
     var genotype_renderer = {};
@@ -34,6 +35,7 @@ export function GenotypeRenderer() {
 
     var lineNamesWidth = 100;
     var mapCanvasHeight = 30;
+    var alleleCanvasWidth;
 
     var stateTable = new Map();
     var lineNames = [];
@@ -124,8 +126,8 @@ export function GenotypeRenderer() {
         ctx = canvas.getContext('2d');
         canvas_holder.append(canvas);
 
-        vertical_scrollbar = new ScrollBarKnob(10, 20, canvas.width-10, 0, 5);
-        horizontal_scrollbar = new ScrollBarKnob(20, 10, 0, canvas.height-10-mapCanvasHeight, 5);
+        vertical_scrollbar = new ScrollBar(canvas.width, canvas.height, 10, canvas.height, true);
+        horizontal_scrollbar = new ScrollBar(canvas.width, canvas.height, canvas.width, 10, false);
 
         var zoom_div = document.createElement('div');
         zoom_div.id = 'zoom-holder';
@@ -151,32 +153,6 @@ export function GenotypeRenderer() {
         zoom_div.appendChild(zoom_label);
         zoom_div.appendChild(range);
         canvas_holder.appendChild(zoom_div);
-    }
-
-    function ScrollBarKnob(knob_width, knob_height, knob_x, knob_y, corner_radius)
-    {
-        this.knob_width = knob_width;
-        this.knob_height = knob_height;
-        this.knob_x = knob_x;
-        this.knob_y = knob_y;
-        this.corner_radius = corner_radius;
-        this.render = function() {
-            // Set faux rounded corners
-            ctx.lineJoin = "round";
-            ctx.lineWidth = corner_radius;
-
-            ctx.fillStyle = '#aaa';
-            ctx.strokeStyle = '#aaa';
-
-            // Change origin and dimensions to match true size (a stroke makes the shape a bit larger)
-            ctx.strokeRect(knob_x+(corner_radius/2), knob_y+(corner_radius/2), knob_width-corner_radius, knob_height-corner_radius);
-            ctx.fillRect(knob_x+(corner_radius/2), knob_y+(corner_radius/2), knob_width-corner_radius, knob_height-corner_radius);
-        }
-
-        this.move = function(xMove, yMove) {
-            knob_x = xMove;
-            knob_y = yMove;
-        }
     }
 
     function loadMapData(map_file_dom)
@@ -329,14 +305,16 @@ export function GenotypeRenderer() {
     function render()
     {
         lineStart = Math.floor(translatedY/boxSize);
-        lineEnd = Math.min(lineStart + (canvas.height/boxSize), lineNames.length);
+        lineEnd = Math.min(lineStart + Math.floor(canvas.height/boxSize), lineNames.length);
 
         var totalAlleles = lineData[0].length -1;
-
-        maxCanvasWidth = lineData[0].length * boxSize;
+        maxCanvasWidth = totalAlleles * boxSize;
         maxCanvasHeight = lineNames.length * boxSize;
+
+        alleleCanvasWidth = canvas.width - lineNamesWidth;
+
         var alleleStart = Math.floor(translatedX/boxSize);
-        var alleleEnd = Math.floor(Math.min(alleleStart + (canvas.width/boxSize), totalAlleles));
+        var alleleEnd = Math.min(alleleStart + Math.floor(alleleCanvasWidth/boxSize), totalAlleles);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         renderMap(alleleStart, alleleEnd);
@@ -367,7 +345,7 @@ export function GenotypeRenderer() {
             var pos = (i-alleleStart)*boxSize;
             pos += (boxSize / 2);
             var marker = markerData[i];
-            var markerPos = ((marker.position - firstMarkerPos) * ((canvas.width-lineNamesWidth) / dist));
+            var markerPos = ((marker.position - firstMarkerPos) * ((alleleCanvasWidth) / dist));
             ctx.beginPath();
             ctx.moveTo(markerPos, 0);
             ctx.lineTo(pos, 20)
@@ -380,22 +358,11 @@ export function GenotypeRenderer() {
     function renderScrollbars()
     {
         ctx.translate(0, mapCanvasHeight);
-        ctx.fillStyle = '#eee';
-        ctx.strokeStyle = '#ccc';
-        ctx.strokeRect(vertical_scrollbar.knob_x, 0, vertical_scrollbar.knob_width, canvas.height-vertical_scrollbar.knob_width);
-        ctx.fillRect(vertical_scrollbar.knob_x, 0, vertical_scrollbar.knob_width, canvas.height-vertical_scrollbar.knob_width);
-        vertical_scrollbar.render();
-        ctx.fillStyle = '#eee';
-        ctx.strokeStyle = '#ccc';
-        ctx.translate(lineNamesWidth, 0);
-        ctx.strokeRect(0, horizontal_scrollbar.knob_y, canvas.width-horizontal_scrollbar.knob_height-lineNamesWidth, horizontal_scrollbar.knob_height);
-        ctx.fillRect(0, horizontal_scrollbar.knob_y, canvas.width-horizontal_scrollbar.knob_height-lineNamesWidth, horizontal_scrollbar.knob_height);
-        horizontal_scrollbar.render();
-        ctx.translate(-lineNamesWidth, 0);
-
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(canvas.width-vertical_scrollbar.knob_width, canvas.height-horizontal_scrollbar.knob_height, vertical_scrollbar.knob_width, vertical_scrollbar.knob_width);
+        vertical_scrollbar.render(ctx);
         ctx.translate(0, -mapCanvasHeight);
+        ctx.translate(lineNamesWidth, 0);
+        horizontal_scrollbar.render(ctx);
+        ctx.translate(-lineNamesWidth, 0);
     }
 
     function renderGermplasmNames(lineNames, lineStart, lineEnd)
@@ -458,20 +425,26 @@ export function GenotypeRenderer() {
                 translatedX = 0;
             if (translatedY < 0)
                 translatedY = 0;
-            if (Math.floor(translatedX/boxSize) > (Math.floor(maxCanvasWidth/boxSize - canvas.width/boxSize + lineNamesWidth)))
-                translatedX = maxCanvasWidth - canvas.width + vertical_scrollbar.knob_width;
+            if (Math.floor(translatedX/boxSize) >= (Math.floor(maxCanvasWidth/boxSize) - Math.floor(alleleCanvasWidth/boxSize)))
+                translatedX = maxCanvasWidth - alleleCanvasWidth;
             if (Math.floor(translatedY/boxSize) > (Math.floor(maxCanvasHeight/boxSize - canvas.height/boxSize)))
-                translatedY = maxCanvasHeight - canvas.height + horizontal_scrollbar.knob_height;
+                translatedY = maxCanvasHeight - canvas.height;
+            
+            var scrollX = map(translatedX, 0, maxCanvasWidth, 0, (maxCanvasWidth-alleleCanvasWidth));
 
-            var scrollX = (translatedX / (maxCanvasWidth+horizontal_scrollbar.knob_width)) * canvas.width;
-            var scrollY = (translatedY / (maxCanvasHeight+vertical_scrollbar.knob_height)) * canvas.height;
+            console.log(scrollX);
+            var scrollY = (translatedY / maxCanvasHeight) * canvas.height;
 
-            vertical_scrollbar.move(vertical_scrollbar.knob_x, scrollY);
-            horizontal_scrollbar.move(scrollX, horizontal_scrollbar.knob_y);
+            vertical_scrollbar.move(vertical_scrollbar.x, scrollY);
+            horizontal_scrollbar.move(scrollX, horizontal_scrollbar.y);
 
             render();
         }
     }
+
+    function map (num, in_min, in_max, out_min, out_max) {
+        return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+      }
 
     function drawGradientSquare(boxSize, nucleotide)
     {
