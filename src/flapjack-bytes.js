@@ -36,6 +36,7 @@ export function GenotypeRenderer() {
     var lineNamesWidth = 100;
     var mapCanvasHeight = 30;
     var alleleCanvasWidth;
+    var alleleCanvasHeight;
 
     var stateTable = new Map();
     var lineNames = [];
@@ -126,8 +127,8 @@ export function GenotypeRenderer() {
         ctx = canvas.getContext('2d');
         canvas_holder.append(canvas);
 
-        vertical_scrollbar = new ScrollBar(canvas.width, canvas.height, 10, canvas.height, true);
-        horizontal_scrollbar = new ScrollBar(canvas.width, canvas.height, canvas.width, 10, false);
+        vertical_scrollbar = new ScrollBar(canvas.width, canvas.height-mapCanvasHeight-10, 10, canvas.height-mapCanvasHeight-10, true);
+        horizontal_scrollbar = new ScrollBar(canvas.width-lineNamesWidth-10-1, canvas.height, canvas.width-lineNamesWidth-10-1, 10, false);
 
         var zoom_div = document.createElement('div');
         zoom_div.id = 'zoom-holder';
@@ -312,6 +313,7 @@ export function GenotypeRenderer() {
         maxCanvasHeight = lineNames.length * boxSize;
 
         alleleCanvasWidth = canvas.width - lineNamesWidth;
+        alleleCanvasHeight = canvas.height - mapCanvasHeight;
 
         var alleleStart = Math.floor(translatedX/boxSize);
         var alleleEnd = Math.min(alleleStart + Math.floor(alleleCanvasWidth/boxSize), totalAlleles);
@@ -425,15 +427,16 @@ export function GenotypeRenderer() {
                 translatedX = 0;
             if (translatedY < 0)
                 translatedY = 0;
-            if (Math.floor(translatedX/boxSize) >= (Math.floor(maxCanvasWidth/boxSize) - Math.floor(alleleCanvasWidth/boxSize)))
+            if ((translatedX/boxSize) >= ((maxCanvasWidth/boxSize) - (alleleCanvasWidth/boxSize)))
                 translatedX = maxCanvasWidth - alleleCanvasWidth;
-            if (Math.floor(translatedY/boxSize) > (Math.floor(maxCanvasHeight/boxSize - canvas.height/boxSize)))
-                translatedY = maxCanvasHeight - canvas.height;
-            
-            var scrollX = map(translatedX, 0, maxCanvasWidth, 0, (maxCanvasWidth-alleleCanvasWidth));
+            if ((translatedY/boxSize) >= ((maxCanvasHeight/boxSize) - (alleleCanvasHeight/boxSize)))
+                translatedY = maxCanvasHeight - alleleCanvasHeight;
 
-            console.log(scrollX);
-            var scrollY = (translatedY / maxCanvasHeight) * canvas.height;
+            var scrollHeight = alleleCanvasHeight-10-20;
+            var scrollWidth = alleleCanvasWidth-10-20;
+            
+            var scrollX = Math.floor(map(translatedX, 0, maxCanvasWidth-alleleCanvasWidth, 0, scrollWidth));
+            var scrollY = Math.floor(map(translatedY, 0, maxCanvasHeight-alleleCanvasHeight, 0, scrollHeight));
 
             vertical_scrollbar.move(vertical_scrollbar.x, scrollY);
             horizontal_scrollbar.move(scrollX, horizontal_scrollbar.y);

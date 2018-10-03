@@ -7,16 +7,17 @@ export class ScrollBar {
         this.vertical = vertical;
 
         this.x = vertical ? parent_width - width : 0;
-        this.y = vertical ? 0 : parent_height - height; 
+        this.y = vertical ? 0 : parent_height - height;
+
+        console.log(width, height, vertical);
         
-        this.widget = new ScrollBarWidget(this.x, this.y, vertical ? width : 20, vertical ? 20 : height);
+        this.widget = new ScrollBarWidget(this.x, this.y, this.vertical ? this.width : 20, this.vertical ? 20 : this.height);
     }
 
     render(ctx) {
         ctx.fillStyle = '#eee';
-        ctx.strokeStyle = '#ccc';
+        ctx.strokeStyle = '#eee';
 
-        ctx.strokeRect(this.x, this.y, this.width, this.height);
         ctx.fillRect(this.x, this.y, this.width, this.height);
 
         this.widget.render(ctx);
@@ -50,7 +51,7 @@ class ScrollBarWidget {
     }
 
     move(x, y) {
-        this.x = x;
-        this.y = y;
+       this.x = x;
+       this.y = y;
     }
 }
