@@ -8,8 +8,6 @@ export class ScrollBar {
 
         this.x = vertical ? parent_width - width : 0;
         this.y = vertical ? 0 : parent_height - height;
-
-        console.log(width, height, vertical);
         
         this.widget = new ScrollBarWidget(this.x, this.y, this.vertical ? this.width : 20, this.vertical ? 20 : this.height);
     }

@@ -8,6 +8,8 @@ export function GenotypeRenderer() {
     var brapijs;
 
     // Variables for referring to the genotype canvas
+    var backCanvas;
+    var backCtx;
     var canvas;
     var ctx;
 
@@ -44,6 +46,9 @@ export function GenotypeRenderer() {
     var lineData = [];
     var markerData = [];
     var colorStamps = [];
+    var redraw = true;
+    var lineUnderMouse;
+    var markerUnderMouse;
 
     var colors = {
         greenLight: 'rgb(171,255,171)',
@@ -127,6 +132,11 @@ export function GenotypeRenderer() {
         ctx = canvas.getContext('2d');
         canvas_holder.append(canvas);
 
+        backCanvas = document.createElement('canvas');
+        backCanvas.width = width;
+        backCanvas.height = height;
+        backCtx = backCanvas.getContext('2d');
+
         vertical_scrollbar = new ScrollBar(canvas.width, canvas.height-mapCanvasHeight-10, 10, canvas.height-mapCanvasHeight-10, true);
         horizontal_scrollbar = new ScrollBar(canvas.width-lineNamesWidth-10-1, canvas.height, canvas.width-lineNamesWidth-10-1, 10, false);
 
@@ -159,8 +169,6 @@ export function GenotypeRenderer() {
     function loadMapData(map_file_dom)
     {
         var file = document.getElementById(map_file_dom.slice(1)).files[0];
-        console.log("Load map data");
-        console.log(document.getElementById(map_file_dom.slice(1)).files[0]);
 
         var reader = new FileReader();
         reader.onloadend = function()
@@ -196,7 +204,6 @@ export function GenotypeRenderer() {
     function loadGenotypeData(genotype_file_dom)
     {
         var file = document.getElementById(genotype_file_dom.slice(1)).files[0];
-        console.log(file);
 
         var reader = new FileReader();
         reader.onloadend = function()
@@ -249,6 +256,9 @@ export function GenotypeRenderer() {
         window.addEventListener('mouseup', onmouseup, false);
         window.addEventListener('mousemove', onmousemove, false);
 
+        canvas.addEventListener('mousemove', overlay_listener, false);
+        canvas.addEventListener('mouseleave', overlay_leave, false);
+
         render();
     }
 
@@ -268,7 +278,7 @@ export function GenotypeRenderer() {
             fontContext.font = fontSize + "px " + fontface;
         }
 
-        ctx.font = fontContext.font;
+        backCtx.font = fontContext.font;
 
         return fontContext.font;
     }
@@ -319,10 +329,28 @@ export function GenotypeRenderer() {
         var alleleEnd = Math.min(alleleStart + Math.floor(alleleCanvasWidth/boxSize), totalAlleles);
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        renderMap(alleleStart, alleleEnd);
-        renderGermplasmNames(lineNames, lineStart, lineEnd);
-        renderGermplasm(lineStart, lineEnd, alleleStart, alleleEnd);
-        renderScrollbars();
+
+        if (redraw) {
+            backCtx.clearRect(0, 0, canvas.width, canvas.height);
+            renderMap(alleleStart, alleleEnd);
+            renderGermplasmNames(lineNames, lineStart, lineEnd);
+            renderGermplasm(lineStart, lineEnd, alleleStart, alleleEnd);
+            renderScrollbars();
+        }
+
+        ctx.drawImage(backCanvas, 0, 0);
+
+        if (lineUnderMouse && markerUnderMouse) {
+            ctx.translate(lineNamesWidth, mapCanvasHeight);
+            ctx.globalAlpha = 0.4;
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(markerUnderMouse*boxSize, 0, boxSize, alleleCanvasHeight);
+            ctx.fillRect(0, lineUnderMouse*boxSize, alleleCanvasWidth, boxSize);
+            ctx.translate(-lineNamesWidth, -mapCanvasHeight);
+            ctx.globalAlpha = 1;
+        }
+
+        redraw = false;
     }
 
     function renderMap(alleleStart, alleleEnd)
@@ -338,9 +366,9 @@ export function GenotypeRenderer() {
 
         var dist = lastMarkerPos - firstMarkerPos;
 
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = 'gray';
-        ctx.translate(lineNamesWidth, 0);
+        backCtx.lineWidth = 1;
+        backCtx.strokeStyle = 'gray';
+        backCtx.translate(lineNamesWidth, 0);
 
         for (var i=alleleStart; i < alleleEnd; i++)
         {
@@ -348,41 +376,47 @@ export function GenotypeRenderer() {
             pos += (boxSize / 2);
             var marker = markerData[i];
             var markerPos = ((marker.position - firstMarkerPos) * ((alleleCanvasWidth) / dist));
-            ctx.beginPath();
-            ctx.moveTo(markerPos, 0);
-            ctx.lineTo(pos, 20)
-            ctx.lineTo(pos, mapCanvasHeight);
-            ctx.stroke();
+            backCtx.beginPath();
+            backCtx.moveTo(markerPos, 0);
+            backCtx.lineTo(pos, 20)
+            backCtx.lineTo(pos, mapCanvasHeight);
+            backCtx.stroke();
         }
-        ctx.translate(-lineNamesWidth, 0);
+        backCtx.translate(-lineNamesWidth, 0);
     }
 
     function renderScrollbars()
     {
-        ctx.translate(0, mapCanvasHeight);
-        vertical_scrollbar.render(ctx);
-        ctx.translate(0, -mapCanvasHeight);
-        ctx.translate(lineNamesWidth, 0);
-        horizontal_scrollbar.render(ctx);
-        ctx.translate(-lineNamesWidth, 0);
+        backCtx.translate(0, mapCanvasHeight);
+        vertical_scrollbar.render(backCtx);
+        backCtx.translate(0, -mapCanvasHeight);
+        backCtx.translate(lineNamesWidth, 0);
+        horizontal_scrollbar.render(backCtx);
+        backCtx.translate(-lineNamesWidth, 0);
+
+        backCtx.translate(lineNamesWidth, mapCanvasHeight);
+        backCtx.fillStyle = "#aaa";
+        backCtx.strokeRect(alleleCanvasWidth-10, alleleCanvasHeight-10, 10, 10);
+        backCtx.fillRect(alleleCanvasWidth-10, alleleCanvasHeight-10, 10, 10);
+        backCtx.translate(-lineNamesWidth, -mapCanvasHeight);
     }
 
     function renderGermplasmNames(lineNames, lineStart, lineEnd)
     {
-        ctx.fillStyle = '#333';
-        ctx.translate(0, mapCanvasHeight);
+        backCtx.fillStyle = '#333';
+        backCtx.translate(0, mapCanvasHeight);
         var lineCount = 0;
         for (var i=lineStart; i < lineEnd; i++)
         {
-            ctx.fillText(lineNames[i], 0, ((lineCount * boxSize) + (boxSize - (fontSize/2))));
+            backCtx.fillText(lineNames[i], 0, ((lineCount * boxSize) + (boxSize - (fontSize/2))));
             lineCount++;
         }
-        ctx.translate(0, -mapCanvasHeight);
+        backCtx.translate(0, -mapCanvasHeight);
     }
 
     function renderGermplasm(lineStart, lineEnd, alleleStart, alleleEnd)
     {
-        ctx.translate(lineNamesWidth, mapCanvasHeight);
+        backCtx.translate(lineNamesWidth, mapCanvasHeight);
         var currentLine = 0;
         for (var i = lineStart; i < lineEnd; i++)
         {
@@ -390,12 +424,12 @@ export function GenotypeRenderer() {
             var currentAllele = 0;
             for (var j=alleleStart; j < alleleEnd; j++)
             {
-                ctx.drawImage(colorStamps[alleles[j]].buffer, (currentAllele * boxSize), (currentLine * boxSize));
+                backCtx.drawImage(colorStamps[alleles[j]].buffer, (currentAllele * boxSize), (currentLine * boxSize));
                 currentAllele++;
             }
             currentLine++;
         }
-        ctx.translate(-lineNamesWidth, -mapCanvasHeight);
+        backCtx.translate(-lineNamesWidth, -mapCanvasHeight);
     }
 
     function onmousedown(ev)
@@ -441,8 +475,34 @@ export function GenotypeRenderer() {
             vertical_scrollbar.move(vertical_scrollbar.x, scrollY);
             horizontal_scrollbar.move(scrollX, horizontal_scrollbar.y);
 
+            redraw = true;
+
             render();
         }
+    }
+
+    function overlay_listener(ev)
+    {
+        var e = ev || event;
+        
+        var rect = canvas.getBoundingClientRect();
+        var x = (e.clientX - rect.left) / (rect.right - rect.left) * canvas.width;
+        var y = (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height;
+
+        if (x >= lineNamesWidth && x < canvas.width && y >= mapCanvasHeight && y < canvas.height) {
+            markerUnderMouse = Math.floor((x-lineNamesWidth) / boxSize);
+            lineUnderMouse = Math.floor((y-mapCanvasHeight) / boxSize);
+        }
+        else {
+            lineUnderMouse = markerUnderMouse = undefined;
+        }
+
+        render();
+    }
+
+    function overlay_leave(ev) {
+        lineUnderMouse = markerUnderMouse = undefined;
+        render();
     }
 
     function map (num, in_min, in_max, out_min, out_max) {
@@ -519,6 +579,9 @@ export function GenotypeRenderer() {
         boxSize = size;
         
         setupColorStamps();
+
+        redraw = true;
+        
         render();
     }
 
