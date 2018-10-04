@@ -23,7 +23,7 @@
       <script type="text/javascript">
         $(document).ready(function(){
           $("#submit").click(function(){
-            var renderer = GenotypeRenderer.GenotypeRenderer();
+            var renderer = GenotypeRenderer();
             renderer.renderGenotypesFile("#canvas-holder", 800, 600, "#mapfile", "#genofile");
             return false;
           });
