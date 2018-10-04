@@ -71,7 +71,7 @@ export function GenotypeRenderer() {
 
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId) {
     mapCanvasHeight = 0;
-    createRendererComponents(domParent, width, height);
+    // createRendererComponents(domParent, width, height);
 
     brapiJs = BrAPI(server);
 
@@ -82,38 +82,63 @@ export function GenotypeRenderer() {
 
     brapiJs.allelematrices_search(params)
       .each(function (matrixObject) {
-        var myInit = {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'text/tsv'
-          },
-          mode: 'cors',
-          cache: 'default'
-        };
+        // var myInit = {
+        //   method: 'GET',
+        //   headers: {
+        //     'Content-Type': 'text/tsv'
+        //   },
+        //   mode: 'cors',
+        //   cache: 'default'
+        // };
 
-        fetch(matrixObject.__response.metadata.datafiles[0], myInit)
-          .then(function (response) {
-            if (response.status !== 200) {
-              console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
-              return;
-            }
-            response.text().then(function (data) {
-              var lines = data.split(/\r?\n/);
-              for (var line = 0; line < lines.length; line++) {
-                processFileLine(lines[line]);
-              }
-              init();
-            })
-          })
-          .catch(function (err) {
-            console.log('Fetch Error :-S', err);
-          });
+        renderGenotypesUrl(domParent, width, height, undefined, matrixObject.__response.metadata.datafiles[0]);
       });
 
     return genotypeRenderer;
   }
 
-  genotypeRenderer.renderGenotypesFile = function (domParent, width, height, mapFileDom, genotypeFileDom) {
+  genotypeRenderer.renderGenotypesUrl = function(domParent, width, height, mapFileURL, genotypeFileURL) {
+    createRendererComponents(domParent, width, height);
+
+    fetch(mapFileURL)
+      .then(function (response) {
+        if (response.status !== 200) {
+          console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
+          return;
+        }
+        response.text().then(function (data) {
+          var lines = data.split(/\r?\n/);
+          for (var line = 0; line < lines.length; line++) {
+            processMapFileLine(lines[line]);
+          }
+        })
+      })
+      .catch(function (err) {
+        console.log('Fetch Error :-S', err);
+      });
+
+    fetch(genotypeFileURL)
+      .then(function (response) {
+        if (response.status !== 200) {
+          console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
+          return;
+        }
+        response.text().then(function (data) {
+          var lines = data.split(/\r?\n/);
+          for (var line = 0; line < lines.length; line++) {
+            processFileLine(lines[line]);
+          }
+          init();
+        })
+      })
+      .catch(function (err) {
+        console.log('Fetch Error :-S', err);
+      });
+
+      return genotypeRenderer;
+  }
+
+  genotypeRenderer.renderGenotypesFile = function(domParent, width, height, mapFileDom, genotypeFileDom) {
     createRendererComponents(domParent, width, height);
 
     loadMapData(mapFileDom);
