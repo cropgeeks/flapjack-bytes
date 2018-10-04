@@ -472,7 +472,7 @@ export function GenotypeRenderer() {
     render();
   }
 
-  function map(num, inMin, inMax, outMin, outMaxx) {
+  function map(num, inMin, inMax, outMin, outMax) {
     return (num - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
   }
 
