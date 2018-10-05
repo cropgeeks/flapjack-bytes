@@ -1,7 +1,7 @@
-import { Nucleotide } from './nucleotide';
-import { Marker } from './marker';
-import { ColorState } from './colorstate';
-import { ScrollBar } from './scrollbar';
+import Nucleotide from './nucleotide';
+import Marker from './marker';
+import ColorState from './colorstate';
+import ScrollBar from './scrollbar';
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};

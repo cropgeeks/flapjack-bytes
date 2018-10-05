@@ -1,4 +1,4 @@
-export class ScrollBar {
+export default class ScrollBar {
   constructor(parentWidth, parentHeight, width, height, vertical) {
     this.parentWidth = parentWidth;
     this.parentHeight = parentHeight;
@@ -37,15 +37,17 @@ class ScrollBarWidget {
 
   render(ctx) {
     // Set faux rounded corners
-    ctx.lineJoin = "round";
+    ctx.lineJoin = 'round';
     ctx.lineWidth = this.corner_radius;
 
     ctx.fillStyle = '#aaa';
     ctx.strokeStyle = '#aaa';
 
     // Change origin and dimensions to match true size (a stroke makes the shape a bit larger)
-    ctx.strokeRect(this.x + (this.corner_radius / 2), this.y + (this.corner_radius / 2), this.width - this.corner_radius, this.height - this.corner_radius);
-    ctx.fillRect(this.x + (this.corner_radius / 2), this.y + (this.corner_radius / 2), this.width - this.corner_radius, this.height - this.corner_radius);
+    ctx.strokeRect(this.x + (this.corner_radius / 2), this.y + (this.corner_radius / 2),
+      this.width - this.corner_radius, this.height - this.corner_radius);
+    ctx.fillRect(this.x + (this.corner_radius / 2), this.y + (this.corner_radius / 2),
+      this.width - this.corner_radius, this.height - this.corner_radius);
   }
 
   move(x, y) {

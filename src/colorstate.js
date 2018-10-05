@@ -1,5 +1,5 @@
-export class ColorState {
+export default class ColorState {
   constructor(buffer) {
     this.buffer = buffer;
   }
-};
+}
