@@ -1,43 +1,23 @@
 import Nucleotide from './nucleotide';
 import Marker from './marker';
 import ColorState from './colorstate';
-import ScrollBar from './scrollbar';
+import GenotypeCanvas from './genotypecanvas';
+import CanvasController from './canvascontroller';
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
   let brapiJs;
 
   // Variables for referring to the genotype canvas
-  let backCanvas;
-  let backCtx;
-  let canvas;
-  let ctx;
-
-  // Mouse related variables
-  let dragStartX = null;
-  let dragStartY = null;
-  let dragging = false;
-  let translatedX = 0;
-  let translatedY = 0;
+  let genotypeCanvas;
+  let canvasController;
 
   // Variables to keep track of where we are in the data
   let lineStart = 0;
   let lineEnd = 0;
 
-  let boxSize = 16;
-
-  let maxCanvasHeight;
-  let maxCanvasWidth;
-
-  let verticalScrollbar;
-  let horizontalScrollbar;
-
+  const boxSize = 16;
   let fontSize = 100;
-
-  const lineNamesWidth = 100;
-  let mapCanvasHeight = 30;
-  let alleleCanvasWidth;
-  let alleleCanvasHeight;
 
   const stateTable = new Map();
   const lineNames = [];
@@ -46,8 +26,6 @@ export default function GenotypeRenderer() {
   const markerData = [];
   let colorStamps = [];
   let redraw = true;
-  let lineUnderMouse;
-  let markerUnderMouse;
 
   const colors = {
     greenLight: 'rgb(171,255,171)',
@@ -139,7 +117,7 @@ export default function GenotypeRenderer() {
 
   genotypeRenderer.renderGenotypesFile = function (domParent, width, height, mapFileDom, genotypeFileDom) {
     createRendererComponents(domParent, width, height);
-
+    
     loadMapData(mapFileDom);
     loadGenotypeData(genotypeFileDom);
 
@@ -149,23 +127,8 @@ export default function GenotypeRenderer() {
   function createRendererComponents(domParent, width, height) {
     const canvasHolder = document.getElementById(domParent.slice(1));
 
-    // Set up the canvas and drawing context for the genotype display
-    canvas = document.createElement('canvas');
-    canvas.id = 'genotype';
-    canvas.width = width;
-    maxCanvasWidth = width;
-    canvas.height = height;
-    maxCanvasHeight = height;
-    ctx = canvas.getContext('2d');
-    canvasHolder.append(canvas);
-
-    backCanvas = document.createElement('canvas');
-    backCanvas.width = width;
-    backCanvas.height = height;
-    backCtx = backCanvas.getContext('2d');
-
-    verticalScrollbar = new ScrollBar(canvas.width, canvas.height - mapCanvasHeight - 10, 10, canvas.height - mapCanvasHeight - 10, true);
-    horizontalScrollbar = new ScrollBar(canvas.width - lineNamesWidth - 10 - 1, canvas.height, canvas.width - lineNamesWidth - 10 - 1, 10, false);
+    genotypeCanvas = new GenotypeCanvas(width, height, boxSize, fontSize);
+    canvasHolder.append(genotypeCanvas.canvas);
 
     const zoomDiv = document.createElement('div');
     zoomDiv.id = 'zoom-holder';
@@ -191,6 +154,8 @@ export default function GenotypeRenderer() {
     zoomDiv.appendChild(zoomLabel);
     zoomDiv.appendChild(range);
     canvasHolder.appendChild(zoomDiv);
+
+    canvasController = new CanvasController(genotypeCanvas);
   }
 
   function loadMapData(mapFileDom) {
@@ -232,7 +197,9 @@ export default function GenotypeRenderer() {
         processFileLine(lines[line]);
       }
 
-      init();
+      setupColorStamps(boxSize);
+      genotypeCanvas.init(markerData, lineNames, lineData, colorStamps);
+      genotypeCanvas.prerender();
     };
 
     reader.readAsText(file);
@@ -259,21 +226,6 @@ export default function GenotypeRenderer() {
     return stateTable.get(allele);
   }
 
-  function init() {
-    // Pre-render our gradient squares
-    setupColorStamps();
-
-    // Add event handlers for mouse events to allow movement of the displays
-    canvas.addEventListener('mousedown', onmousedown, false);
-    window.addEventListener('mouseup', onmouseup, false);
-    window.addEventListener('mousemove', onmousemove, false);
-
-    canvas.addEventListener('mousemove', overlayListener, false);
-    canvas.addEventListener('mouseleave', overlayLeave, false);
-
-    render();
-  }
-
   function calculateFontSize(text, fontface, size) {
     const fontCanvas = document.createElement('canvas');
     fontCanvas.width = size;
@@ -288,13 +240,16 @@ export default function GenotypeRenderer() {
       fontContext.font = `${fontSize}px ${fontface}`;
     }
 
-    backCtx.font = fontContext.font;
+    const { backContext } = genotypeCanvas;
+
+    backContext.font = fontContext.font;
+    genotypeCanvas.fontSize = fontSize;
 
     return fontContext.font;
   }
 
   // Generates a set of homozygous and heterozygous color stamps from the stateTable
-  function setupColorStamps() {
+  function setupColorStamps(size) {
     colorStamps = [];
     for (let key of stateTable.keys()) {
       if (key.length <= 1) {
@@ -303,267 +258,84 @@ export default function GenotypeRenderer() {
         if (nucleotide === undefined) {
           nucleotide = nucleotides.get('');
         }
-        const buffer = drawGradientSquare(boxSize, nucleotide);
+        const buffer = drawGradientSquare(size, nucleotide);
         const stamp = new ColorState(buffer);
         colorStamps.push(stamp);
       } else {
         let alleles = key.split('/');
         let nucleotide1 = nucleotides.get(alleles[0]);
         let nucleotide2 = nucleotides.get(alleles[1]);
-        const buffer = drawHetSquare(boxSize, nucleotide1, nucleotide2);
+        const buffer = drawHetSquare(size, nucleotide1, nucleotide2);
         const stamp = new ColorState(buffer);
         colorStamps.push(stamp);
       }
     }
   }
 
-  function render() {
-    lineStart = Math.floor(translatedY / boxSize);
-    lineEnd = Math.min(lineStart + Math.floor(canvas.height / boxSize), lineNames.length);
-
-    const totalAlleles = lineData[0].length - 1;
-    maxCanvasWidth = totalAlleles * boxSize;
-    maxCanvasHeight = lineNames.length * boxSize;
-
-    alleleCanvasWidth = canvas.width - lineNamesWidth;
-    alleleCanvasHeight = canvas.height - mapCanvasHeight;
-
-    const alleleStart = Math.floor(translatedX / boxSize);
-    const alleleEnd = Math.min(alleleStart + Math.floor(alleleCanvasWidth / boxSize), totalAlleles);
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (redraw) {
-      backCtx.clearRect(0, 0, canvas.width, canvas.height);
-      renderMap(alleleStart, alleleEnd);
-      renderGermplasmNames(lineNames, lineStart, lineEnd);
-      renderGermplasm(lineStart, lineEnd, alleleStart, alleleEnd);
-      renderScrollbars();
-    }
-
-    ctx.drawImage(backCanvas, 0, 0);
-
-    if (lineUnderMouse && markerUnderMouse) {
-      ctx.translate(lineNamesWidth, mapCanvasHeight);
-      ctx.globalAlpha = 0.4;
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(markerUnderMouse * boxSize, 0, boxSize, alleleCanvasHeight);
-      ctx.fillRect(0, lineUnderMouse * boxSize, alleleCanvasWidth, boxSize);
-      ctx.translate(-lineNamesWidth, -mapCanvasHeight);
-      ctx.globalAlpha = 1;
-    }
-
-    redraw = false;
-  }
-
-  function renderMap(alleleStart, alleleEnd) {
-    if (markerData.length === 0) {
-      mapCanvasHeight = 0;
-      return;
-    }
-
-    const firstMarkerPos = markerData[alleleStart].position;
-    const lastMarkerPos = markerData[alleleEnd].position;
-
-    const dist = lastMarkerPos - firstMarkerPos;
-
-    backCtx.lineWidth = 1;
-    backCtx.strokeStyle = 'gray';
-    backCtx.translate(lineNamesWidth, 0);
-
-    for (let i = alleleStart; i < alleleEnd; i += 1) {
-      let pos = (i - alleleStart) * boxSize;
-      pos += (boxSize / 2);
-      const marker = markerData[i];
-      const markerPos = ((marker.position - firstMarkerPos) * ((alleleCanvasWidth) / dist));
-      backCtx.beginPath();
-      backCtx.moveTo(markerPos, 0);
-      backCtx.lineTo(pos, 20);
-      backCtx.lineTo(pos, mapCanvasHeight);
-      backCtx.stroke();
-    }
-    backCtx.translate(-lineNamesWidth, 0);
-  }
-
-  function renderScrollbars() {
-    backCtx.translate(0, mapCanvasHeight);
-    verticalScrollbar.render(backCtx);
-    backCtx.translate(0, -mapCanvasHeight);
-    backCtx.translate(lineNamesWidth, 0);
-    horizontalScrollbar.render(backCtx);
-    backCtx.translate(-lineNamesWidth, 0);
-
-    backCtx.translate(lineNamesWidth, mapCanvasHeight);
-    backCtx.fillStyle = '#aaa';
-    backCtx.strokeRect(alleleCanvasWidth - 10, alleleCanvasHeight - 10, 10, 10);
-    backCtx.fillRect(alleleCanvasWidth - 10, alleleCanvasHeight - 10, 10, 10);
-    backCtx.translate(-lineNamesWidth, -mapCanvasHeight);
-  }
-
-  function renderGermplasmNames(lineNames, lineStart, lineEnd) {
-    backCtx.fillStyle = '#333';
-    backCtx.translate(0, mapCanvasHeight);
-    let lineCount = 0;
-    for (let i = lineStart; i < lineEnd; i += 1) {
-      backCtx.fillText(lineNames[i], 0, ((lineCount * boxSize) + (boxSize - (fontSize / 2))));
-      lineCount += 1;
-    }
-    backCtx.translate(0, -mapCanvasHeight);
-  }
-
-  function renderGermplasm(lineStart, lineEnd, alleleStart, alleleEnd) {
-    backCtx.translate(lineNamesWidth, mapCanvasHeight);
-    let currentLine = 0;
-    for (let i = lineStart; i < lineEnd; i += 1) {
-      const alleles = lineData[i];
-      let currentAllele = 0;
-      for (let j = alleleStart; j < alleleEnd; j += 1) {
-        backCtx.drawImage(colorStamps[alleles[j]].buffer, (currentAllele * boxSize), (currentLine * boxSize));
-        currentAllele += 1;
-      }
-      currentLine += 1;
-    }
-    backCtx.translate(-lineNamesWidth, -mapCanvasHeight);
-  }
-
-  function onmousedown(ev) {
-    const e = ev || event;
-    dragStartX = e.pageX;
-    dragStartY = e.pageY;
-    dragging = true;
-  }
-
-  function onmouseup() {
-    dragging = false;
-  }
-
-  function onmousemove(ev) {
-    const e = ev || event;
-    if (dragging) {
-      const diffX = e.pageX - dragStartX;
-      translatedX -= diffX;
-      const diffY = e.pageY - dragStartY;
-      translatedY -= diffY;
-      dragStartX = e.pageX;
-      dragStartY = e.pageY;
-
-      if (translatedX < 0) { translatedX = 0; }
-      if (translatedY < 0) { translatedY = 0; }
-      if ((translatedX / boxSize) >= ((maxCanvasWidth / boxSize) - (alleleCanvasWidth / boxSize))) { translatedX = maxCanvasWidth - alleleCanvasWidth; }
-      if ((translatedY / boxSize) >= ((maxCanvasHeight / boxSize) - (alleleCanvasHeight / boxSize))) { translatedY = maxCanvasHeight - alleleCanvasHeight; }
-
-      const scrollHeight = alleleCanvasHeight - 10 - 20;
-      const scrollWidth = alleleCanvasWidth - 10 - 20;
-
-      const scrollX = Math.floor(map(translatedX, 0, maxCanvasWidth - alleleCanvasWidth, 0, scrollWidth));
-      const scrollY = Math.floor(map(translatedY, 0, maxCanvasHeight - alleleCanvasHeight, 0, scrollHeight));
-
-      verticalScrollbar.move(verticalScrollbar.x, scrollY);
-      horizontalScrollbar.move(scrollX, horizontalScrollbar.y);
-
-      redraw = true;
-
-      render();
-    }
-  }
-
-  function overlayListener(ev) {
-    const e = ev || event;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / (rect.right - rect.left) * canvas.width;
-    const y = (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height;
-
-    if (x >= lineNamesWidth && x < canvas.width && y >= mapCanvasHeight && y < canvas.height) {
-      markerUnderMouse = Math.floor((x - lineNamesWidth) / boxSize);
-      lineUnderMouse = Math.floor((y - mapCanvasHeight) / boxSize);
-    } else {
-      lineUnderMouse = undefined;
-      markerUnderMouse = undefined;
-    }
-
-    render();
-  }
-
-  function overlayLeave() {
-    lineUnderMouse = undefined;
-    markerUnderMouse = undefined;
-    render();
-  }
-
-  function map(num, inMin, inMax, outMin, outMax) {
-    return (num - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
-  }
-
-  function drawGradientSquare(boxSize, nucleotide) {
+  function drawGradientSquare(size, nucleotide) {
     const gradCanvas = document.createElement('canvas');
-    gradCanvas.width = boxSize;
-    gradCanvas.height = boxSize;
+    gradCanvas.width = size;
+    gradCanvas.height = size;
     const gradientCtx = gradCanvas.getContext('2d');
 
-    const lingrad = gradientCtx.createLinearGradient(0, 0, boxSize, boxSize);
+    const lingrad = gradientCtx.createLinearGradient(0, 0, size, size);
     lingrad.addColorStop(0, nucleotide.colorLight);
     lingrad.addColorStop(1, nucleotide.colorDark);
     gradientCtx.fillStyle = lingrad;
-    gradientCtx.fillRect(0, 0, boxSize, boxSize);
+    gradientCtx.fillRect(0, 0, size, size);
 
-    if (boxSize >= 10) {
+    if (size >= 10) {
       gradientCtx.fillStyle = 'rgb(0,0,0)';
-      gradientCtx.font = calculateFontSize('C/G', 'sans-serif', boxSize);
+      gradientCtx.font = calculateFontSize('C/G', 'sans-serif', size);
       const textWidth = gradientCtx.measureText(nucleotide.allele).width;
-      gradientCtx.fillText(nucleotide.allele, (boxSize - textWidth) / 2, (boxSize - (fontSize / 2)));
+      gradientCtx.fillText(nucleotide.allele, (size - textWidth) / 2, (size - (fontSize / 2)));
     }
 
     return gradCanvas;
   }
 
-  function drawHetSquare(boxSize, nucleotide1, nucleotide2) {
+  function drawHetSquare(size, nucleotide1, nucleotide2) {
     const gradCanvas = document.createElement('canvas');
-    gradCanvas.width = boxSize;
-    gradCanvas.height = boxSize;
+    gradCanvas.width = size;
+    gradCanvas.height = size;
     const gradientCtx = gradCanvas.getContext('2d');
 
-    const lingrad = gradientCtx.createLinearGradient(0, 0, boxSize, boxSize);
+    const lingrad = gradientCtx.createLinearGradient(0, 0, size, size);
     lingrad.addColorStop(0, nucleotide1.colorLight);
     lingrad.addColorStop(1, nucleotide1.colorDark);
     gradientCtx.fillStyle = lingrad;
     gradientCtx.beginPath();
-    gradientCtx.lineTo(boxSize, 0);
-    gradientCtx.lineTo(0, boxSize);
+    gradientCtx.lineTo(size, 0);
+    gradientCtx.lineTo(0, size);
     gradientCtx.lineTo(0, 0);
     gradientCtx.fill();
 
-    const lingrad2 = gradientCtx.createLinearGradient(0, 0, boxSize, boxSize);
+    const lingrad2 = gradientCtx.createLinearGradient(0, 0, size, size);
     lingrad2.addColorStop(0, nucleotide2.colorLight);
     lingrad2.addColorStop(1, nucleotide2.colorDark);
     gradientCtx.fillStyle = lingrad2;
     gradientCtx.beginPath();
-    gradientCtx.moveTo(boxSize, 0);
-    gradientCtx.lineTo(boxSize, boxSize);
-    gradientCtx.lineTo(0, boxSize);
-    gradientCtx.lineTo(boxSize, 0);
+    gradientCtx.moveTo(size, 0);
+    gradientCtx.lineTo(size, size);
+    gradientCtx.lineTo(0, size);
+    gradientCtx.lineTo(size, 0);
     gradientCtx.fill();
 
-    if (boxSize >= 10) {
+    if (size >= 10) {
       gradientCtx.fillStyle = 'rgb(0,0,0)';
-      gradientCtx.font = calculateFontSize('C/G', 'sans-serif', boxSize);
+      gradientCtx.font = calculateFontSize('C/G', 'sans-serif', size);
       const allele1Width = gradientCtx.measureText(nucleotide1.allele).width;
-      gradientCtx.fillText(nucleotide1.allele, ((boxSize / 2) - allele1Width) / 2, fontSize);
+      gradientCtx.fillText(nucleotide1.allele, ((size / 2) - allele1Width) / 2, fontSize);
       const allele2Width = gradientCtx.measureText(nucleotide2.allele).width;
-      gradientCtx.fillText(nucleotide2.allele, boxSize - ((boxSize / 2) + allele2Width) / 2, boxSize - (fontSize / 4));
+      gradientCtx.fillText(nucleotide2.allele, size - ((size / 2) + allele2Width) / 2, size - (fontSize / 4));
     }
 
     return gradCanvas;
   }
 
   function zoom(size) {
-    boxSize = size;
-
-    setupColorStamps();
-
-    redraw = true;
-
-    render();
+    setupColorStamps(size);
+    genotypeCanvas.zoom(size, colorStamps);
   }
 
   return genotypeRenderer;
