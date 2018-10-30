@@ -11,17 +11,18 @@ export default class GenotypeCanvas {
     this.backBuffer.width = width;
     this.backBuffer.height = height;
     this.backContext = this.backBuffer.getContext('2d');
+    this.qtlCanvasHeight = 30;
     this.mapCanvasHeight = 30;
     this.lineNamesWidth = 100;
     this.alleleCanvasWidth = width - this.lineNamesWidth;
-    this.alleleCanvasHeight = height - this.mapCanvasHeight;
+    this.alleleCanvasHeight = height - this.mapCanvasHeight - this.qtlCanvasHeight;
     this.backContext.lineWidth = 1;
 
     this.boxSize = boxSize;
     this.fontSize = fontSize;
 
-    this.verticalScrollbar = new ScrollBar(width, height - this.mapCanvasHeight - 10,
-      10, height - this.mapCanvasHeight - 10, true);
+    this.verticalScrollbar = new ScrollBar(width, this.alleleCanvasHeight - 10,
+      10, this.alleleCanvasHeight - 10, true);
     this.horizontalScrollbar = new ScrollBar(width - this.lineNamesWidth - 10 - 1,
       height, width - this.lineNamesWidth - 10 - 1, 10, false);
 
@@ -34,6 +35,7 @@ export default class GenotypeCanvas {
     this.markerData = [];
     this.lineNames = [];
     this.lineData = [];
+    this.qtls = [];
     this.redraw = true;
     this.colorStamps = [];
 
@@ -41,7 +43,7 @@ export default class GenotypeCanvas {
     this.lineUnderMouse = undefined;
   }
 
-  init(markerData, lineNames, lineData, colorStamps) {
+  init(markerData, lineNames, lineData, qtls, colorStamps) {
     this.totalMarkers = markerData.length;
     this.totalLines = lineNames.length;
 
@@ -51,6 +53,7 @@ export default class GenotypeCanvas {
     this.markerData = markerData;
     this.lineNames = lineNames;
     this.lineData = lineData;
+    this.qtls = qtls;
     this.colorStamps = colorStamps;
   }
 
@@ -71,7 +74,7 @@ export default class GenotypeCanvas {
         alleleData.push(this.lineData[i].slice(alleleStart, alleleEnd));
       }
 
-      this.render(markers, names, alleleData);
+      this.render(markers, names, alleleData, this.qtls);
     }
 
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
@@ -89,12 +92,41 @@ export default class GenotypeCanvas {
     this.redraw = false;
   }
 
-  render(markerData, lineNames, lineData) {
+  render(markerData, lineNames, lineData, qtls) {
     this.backContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.renderQtls(qtls, markerData);
     this.renderMap(markerData);
     this.renderGermplasmNames(lineNames);
     this.renderGermplasm(lineData);
     this.renderScrollbars();
+  }
+
+  renderQtls(qtlData, markerData) {
+    this.backContext.translate(this.lineNamesWidth, 0);
+
+    const firstMarkerPos = markerData[0].position;
+    const lastMarkerPos = markerData[markerData.length - 1].position;
+
+    const dist = lastMarkerPos - firstMarkerPos;
+
+    for (let i = 0; i < qtlData.length; i += 1) {
+      const qtl = qtlData[i];
+      if (qtl.max > firstMarkerPos && qtl.min < lastMarkerPos) {
+        let start = Math.max(firstMarkerPos, qtl.min);
+        let end = Math.min(lastMarkerPos, qtl.max);
+        
+        start = ((start - firstMarkerPos) * ((this.alleleCanvasWidth) / dist));
+        end = ((end - firstMarkerPos) * ((this.alleleCanvasWidth) / dist));
+
+        this.backContext.lineWidth = 1;
+        this.backContext.strokeStyle = 'gray';
+        this.backContext.fillStyle = this.rainbowColor(this.qtls.length, i);
+        this.backContext.strokeRect(start, 5, end - start + 1, 10);
+        this.backContext.fillRect(start, 5, end - start + 1, 10);
+      }
+    }
+
+    this.backContext.translate(-this.lineNamesWidth, 0);
   }
 
   renderMap(alleles) {
@@ -105,7 +137,7 @@ export default class GenotypeCanvas {
 
     this.backContext.lineWidth = 1;
     this.backContext.strokeStyle = 'gray';
-    this.backContext.translate(this.lineNamesWidth, 0);
+    this.backContext.translate(this.lineNamesWidth, this.qtlCanvasHeight);
 
     for (let i = 0; i < alleles.length; i += 1) {
       let pos = i * this.boxSize;
@@ -119,41 +151,41 @@ export default class GenotypeCanvas {
       this.backContext.stroke();
     }
 
-    this.backContext.translate(-this.lineNamesWidth, 0);
+    this.backContext.translate(-this.lineNamesWidth, -this.qtlCanvasHeight);
   }
 
   renderGermplasmNames(lineNames) {
     this.backContext.fillStyle = '#333';
-    this.backContext.translate(0, this.mapCanvasHeight);
+    this.backContext.translate(0, this.mapCanvasHeight + this.qtlCanvasHeight);
     for (let i = 0; i < lineNames.length; i += 1) {
       this.backContext.fillText(lineNames[i], 0, ((i * this.boxSize) + (this.boxSize - (this.fontSize / 2))));
     }
-    this.backContext.translate(0, -this.mapCanvasHeight);
+    this.backContext.translate(0, -(this.mapCanvasHeight + this.qtlCanvasHeight));
   }
 
   renderGermplasm(lineData) {
-    this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
+    this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight + this.qtlCanvasHeight);
     for (let i = 0; i < lineData.length; i += 1) {
       for (let j = 0; j < lineData[i].length; j += 1) {
         this.backContext.drawImage(this.colorStamps[lineData[i][j]].buffer, (j * this.boxSize), (i * this.boxSize));
       }
     }
-    this.backContext.translate(-this.lineNamesWidth, -this.mapCanvasHeight);
+    this.backContext.translate(-this.lineNamesWidth, -(this.mapCanvasHeight + this.qtlCanvasHeight));
   }
 
   renderScrollbars() {
-    this.backContext.translate(0, this.mapCanvasHeight);
+    this.backContext.translate(0, this.mapCanvasHeight + this.qtlCanvasHeight);
     this.verticalScrollbar.render(this.backContext);
-    this.backContext.translate(0, -this.mapCanvasHeight);
+    this.backContext.translate(0, -(this.mapCanvasHeight + this.qtlCanvasHeight));
     this.backContext.translate(this.lineNamesWidth, 0);
     this.horizontalScrollbar.render(this.backContext);
     this.backContext.translate(-this.lineNamesWidth, 0);
 
-    this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
+    this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight + this.qtlCanvasHeight);
     this.backContext.fillStyle = '#aaa';
     this.backContext.strokeRect(this.alleleCanvasWidth - 10, this.alleleCanvasHeight - 10, 10, 10);
     this.backContext.fillRect(this.alleleCanvasWidth - 10, this.alleleCanvasHeight - 10, 10, 10);
-    this.backContext.translate(-this.lineNamesWidth, -this.mapCanvasHeight);
+    this.backContext.translate(-this.lineNamesWidth, -(this.mapCanvasHeight + this.qtlCanvasHeight));
   }
 
   move(diffX, diffY) {
@@ -204,4 +236,25 @@ export default class GenotypeCanvas {
     this.redraw = true;
     this.prerender();
   }
+
+  rainbowColor(numOfSteps, step) {
+    // This function generates vibrant, "evenly spaced" colours (i.e. no clustering). This is ideal for creating easily distinguishable vibrant markers in Google Maps and other apps.
+    // Adam Cole, 2011-Sept-14
+    // HSV to RBG adapted from: http://mjijackson.com/2008/02/rgb-to-hsl-and-rgb-to-hsv-color-model-conversion-algorithms-in-javascript
+    let r, g, b;
+    const h = step / numOfSteps;
+    const i = ~~(h * 6);
+    const f = h * 6 - i;
+    const q = 1 - f;
+    switch(i % 6){
+        case 0: r = 1; g = f; b = 0; break;
+        case 1: r = q; g = 1; b = 0; break;
+        case 2: r = 0; g = 1; b = f; break;
+        case 3: r = 0; g = q; b = 1; break;
+        case 4: r = f; g = 0; b = 1; break;
+        case 5: r = 1; g = 0; b = q; break;
+    }
+    let c = "#" + ("00" + (~ ~(r * 255)).toString(16)).slice(-2) + ("00" + (~ ~(g * 255)).toString(16)).slice(-2) + ("00" + (~ ~(b * 255)).toString(16)).slice(-2);
+    return (c);
+}
 }

@@ -3,6 +3,7 @@ import Marker from './marker';
 import ColorState from './colorstate';
 import GenotypeCanvas from './genotypecanvas';
 import CanvasController from './canvascontroller';
+import Qtl from './qtl';
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -12,10 +13,6 @@ export default function GenotypeRenderer() {
   let genotypeCanvas;
   let canvasController;
 
-  // Variables to keep track of where we are in the data
-  let lineStart = 0;
-  let lineEnd = 0;
-
   const boxSize = 16;
   let fontSize = 100;
 
@@ -24,8 +21,10 @@ export default function GenotypeRenderer() {
   const markerNames = [];
   const lineData = [];
   const markerData = [];
+  const chromosomes = new Set();
+  let qtls = [];
+  const qtlMap = new Map();
   let colorStamps = [];
-  let redraw = true;
 
   const colors = {
     greenLight: 'rgb(171,255,171)',
@@ -115,10 +114,11 @@ export default function GenotypeRenderer() {
     return genotypeRenderer;
   };
 
-  genotypeRenderer.renderGenotypesFile = function (domParent, width, height, mapFileDom, genotypeFileDom) {
+  genotypeRenderer.renderGenotypesFile = function (domParent, width, height, mapFileDom, genotypeFileDom, qtlFileDom) {
     createRendererComponents(domParent, width, height);
     
     loadMapData(mapFileDom);
+    loadQTLData(qtlFileDom);
     loadGenotypeData(genotypeFileDom);
 
     return genotypeRenderer;
@@ -158,6 +158,64 @@ export default function GenotypeRenderer() {
     canvasController = new CanvasController(genotypeCanvas);
   }
 
+  function loadQTLData(qtlFileDom) {
+    const file = document.getElementById(qtlFileDom.slice(1)).files[0];
+
+    const reader = new FileReader();
+    reader.onloadend = (data) => {
+      const qtlData = data.target.result.split(/\r?\n/);
+      for (let qtl = 0; qtl < qtlData.length; qtl += 1) {
+        processQtlFileLine(qtlData[qtl]);
+      }
+
+      qtls = Array.from(qtlMap.values());
+      qtls.sort(compareQtl);
+
+      qtls.forEach(qtl => console.log(qtl));
+    };
+    reader.readAsText(file);
+  }
+
+  function compareQtl(qtlA, qtlB) {
+    if (qtlA.min < qtlB.min) {
+      return -1;
+    }
+    if (qtlA.min > qtlB.min) {
+      return 1;
+    }
+    return 0;
+  }
+
+  function processQtlFileLine(line) {
+    if (line.startsWith('#') || (!line || line.length === 0) || line.startsWith('\t')) {
+      return;
+    }
+    
+    const tokens = line.split('\t');
+    if (chromosomes.has(tokens[1]) === false) {
+      return;
+    }
+
+    let name = tokens[0];
+    name = name.slice(0, (name.lastIndexOf('.')));
+
+    let qtl;
+    if (qtlMap.has(name)) {
+      qtl = qtlMap.get(name);
+    }
+    else {
+      qtl = new Qtl(name, tokens[1], parseInt(tokens[2].replace(/,/g, '')), parseInt(tokens[3].replace(/,/g, '')), parseInt(tokens[4].replace(/,/g, '')));
+    }
+    if (qtl.min > tokens[3]) {
+      qtl.min = parseInt(tokens[3].replace(/,/g, ''));
+    }
+    if (qtl.max < tokens[4]) {
+      qtl.max = parseInt(tokens[4].replace(/,/g, ''));
+    }
+
+    qtlMap.set(name, qtl);
+  }
+
   function loadMapData(mapFileDom) {
     const file = document.getElementById(mapFileDom.slice(1)).files[0];
 
@@ -183,8 +241,10 @@ export default function GenotypeRenderer() {
     const markerName = tokens[0];
 
     markerNames.push(markerName);
-    const marker = new Marker(markerName, tokens[1], tokens[2]);
+    const marker = new Marker(markerName, tokens[1], parseInt(tokens[2].replace(/,/g, '')));
     markerData.push(marker);
+    
+    chromosomes.add(tokens[1]);
   }
 
   function loadGenotypeData(genotypeFileDom) {
@@ -198,7 +258,7 @@ export default function GenotypeRenderer() {
       }
 
       setupColorStamps(boxSize);
-      genotypeCanvas.init(markerData, lineNames, lineData, colorStamps);
+      genotypeCanvas.init(markerData, lineNames, lineData, qtls, colorStamps);
       genotypeCanvas.prerender();
     };
 
