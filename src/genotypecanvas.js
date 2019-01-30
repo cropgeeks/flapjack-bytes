@@ -18,6 +18,8 @@ export default class GenotypeCanvas {
     this.alleleCanvasHeight = height - this.mapCanvasHeight - this.qtlCanvasHeight;
     this.backContext.lineWidth = 1;
 
+    console.log(boxSize);
+
     this.boxSize = boxSize;
     this.fontSize = fontSize;
 
@@ -189,27 +191,29 @@ export default class GenotypeCanvas {
   }
 
   move(diffX, diffY) {
-    this.translatedX -= diffX;
-    if (this.translatedX < 0) { this.translatedX = 0; }
-
-    this.translatedY -= diffY;
-    if (this.translatedY < 0) { this.translatedY = 0; }
-
-    if ((this.translatedX / this.boxSize) >= ((this.maxCanvasWidth / this.boxSize) - (this.alleleCanvasWidth / this.boxSize))) { this.translatedX = this.maxCanvasWidth - this.alleleCanvasWidth; }
-    if ((this.translatedY / this.boxSize) >= ((this.maxCanvasHeight / this.boxSize) - (this.alleleCanvasHeight / this.boxSize))) { this.translatedY = this.maxCanvasHeight - this.alleleCanvasHeight; }
-
-    const scrollHeight = this.alleleCanvasHeight - 10 - 20;
-    const scrollWidth = this.alleleCanvasWidth - 10 - 20;
-
     const mapToRange = (num, inMin, inMax, outMin, outMax) => {
       return (num - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
     };
 
-    const scrollX = Math.floor(mapToRange(this.translatedX, 0, this.maxCanvasWidth - this.alleleCanvasWidth, 0, scrollWidth));
-    const scrollY = Math.floor(mapToRange(this.translatedY, 0, this.maxCanvasHeight - this.alleleCanvasHeight, 0, scrollHeight));
+    if (this.maxCanvasWidth > this.canvas.width) {
+      this.translatedX -= diffX;
+      if (this.translatedX < 0) { this.translatedX = 0; }
+      if ((this.translatedX / this.boxSize) >= ((this.maxCanvasWidth / this.boxSize) - (this.alleleCanvasWidth / this.boxSize))) { this.translatedX = this.maxCanvasWidth - this.alleleCanvasWidth; }
 
-    this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
-    this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
+      const scrollWidth = this.alleleCanvasWidth - 10 - 20;
+      const scrollX = Math.floor(mapToRange(this.translatedX, 0, this.maxCanvasWidth - this.alleleCanvasWidth, 0, scrollWidth));
+      this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
+    }
+
+    if (this.maxCanvasHeight > this.canvas.height) {
+      this.translatedY -= diffY;
+      if (this.translatedY < 0) { this.translatedY = 0; }
+      if ((this.translatedY / this.boxSize) >= ((this.maxCanvasHeight / this.boxSize) - (this.alleleCanvasHeight / this.boxSize))) { this.translatedY = this.maxCanvasHeight - this.alleleCanvasHeight; }
+
+      const scrollHeight = this.alleleCanvasHeight - 10 - 20;
+      const scrollY = Math.floor(mapToRange(this.translatedY, 0, this.maxCanvasHeight - this.alleleCanvasHeight, 0, scrollHeight));
+      this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
+    }
 
     this.redraw = true;
     this.prerender();
@@ -230,8 +234,8 @@ export default class GenotypeCanvas {
   zoom(size, colorStamps) {
     this.boxSize = size;
     this.colorStamps = colorStamps;
-    this.maxCanvasWidth = this.totalMarkers * this.boxSize;
-    this.maxCanvasHeight = this.totalLines * this.boxSize;
+    this.maxCanvasWidth = Math.max(this.totalMarkers * this.boxSize, this.canvas.width);
+    this.maxCanvasHeight = Math.max(this.totalLines * this.boxSize, this.canvas.height);
 
     this.redraw = true;
     this.prerender();
