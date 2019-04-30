@@ -18,8 +18,6 @@ export default class GenotypeCanvas {
     this.alleleCanvasHeight = height - this.mapCanvasHeight - this.qtlCanvasHeight;
     this.backContext.lineWidth = 1;
 
-    console.log(boxSize);
-
     this.boxSize = boxSize;
     this.fontSize = fontSize;
 
@@ -46,7 +44,8 @@ export default class GenotypeCanvas {
   }
 
   init(markerData, lineNames, lineData, qtls, colorStamps) {
-    this.totalMarkers = markerData.length;
+    this.totalMarkers = markerData.length === 0 ? lineData[0].length : markerData.length;
+
     this.totalLines = lineNames.length;
 
     this.maxCanvasWidth = this.totalMarkers * this.boxSize;
@@ -70,6 +69,15 @@ export default class GenotypeCanvas {
       const alleleEnd = Math.min(alleleStart + Math.floor(this.alleleCanvasWidth / this.boxSize), this.totalMarkers);
 
       const markers = this.markerData.slice(alleleStart, alleleEnd);
+
+      if (typeof markers[0] === 'undefined') {
+        this.mapCanvasHeight = 0;
+        this.qtlCanvasHeight = 0;
+        this.alleleCanvasHeight = this.canvas.height;
+        this.verticalScrollbar = new ScrollBar(this.canvas.width, this.alleleCanvasHeight - 10,
+          10, this.alleleCanvasHeight - 10, true);
+      }
+
       const names = this.lineNames.slice(lineStart, lineEnd);
       const alleleData = [];
       for (let i = lineStart; i < lineEnd; i += 1) {
@@ -104,56 +112,60 @@ export default class GenotypeCanvas {
   }
 
   renderQtls(qtlData, markerData) {
-    this.backContext.translate(this.lineNamesWidth, 0);
+    if (typeof markerData[0] !== 'undefined' && typeof qtlData[0] !== 'undefined') {
+      this.backContext.translate(this.lineNamesWidth, 0);
 
-    const firstMarkerPos = markerData[0].position;
-    const lastMarkerPos = markerData[markerData.length - 1].position;
+      const firstMarkerPos = markerData[0].position;
+      const lastMarkerPos = markerData[markerData.length - 1].position;
 
-    const dist = lastMarkerPos - firstMarkerPos;
+      const dist = lastMarkerPos - firstMarkerPos;
 
-    for (let i = 0; i < qtlData.length; i += 1) {
-      const qtl = qtlData[i];
-      if (qtl.max > firstMarkerPos && qtl.min < lastMarkerPos) {
-        let start = Math.max(firstMarkerPos, qtl.min);
-        let end = Math.min(lastMarkerPos, qtl.max);
-        
-        start = ((start - firstMarkerPos) * ((this.alleleCanvasWidth) / dist));
-        end = ((end - firstMarkerPos) * ((this.alleleCanvasWidth) / dist));
+      for (let i = 0; i < qtlData.length; i += 1) {
+        const qtl = qtlData[i];
+        if (qtl.max > firstMarkerPos && qtl.min < lastMarkerPos) {
+          let start = Math.max(firstMarkerPos, qtl.min);
+          let end = Math.min(lastMarkerPos, qtl.max);
+          
+          start = ((start - firstMarkerPos) * ((this.alleleCanvasWidth) / dist));
+          end = ((end - firstMarkerPos) * ((this.alleleCanvasWidth) / dist));
 
-        this.backContext.lineWidth = 1;
-        this.backContext.strokeStyle = 'gray';
-        this.backContext.fillStyle = this.rainbowColor(this.qtls.length, i);
-        this.backContext.strokeRect(start, 5, end - start + 1, 10);
-        this.backContext.fillRect(start, 5, end - start + 1, 10);
+          this.backContext.lineWidth = 1;
+          this.backContext.strokeStyle = 'gray';
+          this.backContext.fillStyle = this.rainbowColor(this.qtls.length, i);
+          this.backContext.strokeRect(start, 5, end - start + 1, 10);
+          this.backContext.fillRect(start, 5, end - start + 1, 10);
+        }
       }
-    }
 
-    this.backContext.translate(-this.lineNamesWidth, 0);
+      this.backContext.translate(-this.lineNamesWidth, 0);
+    }
   }
 
   renderMap(alleles) {
-    const firstMarkerPos = alleles[0].position;
-    const lastMarkerPos = alleles[alleles.length - 1].position;
+    if (typeof alleles[0] !== 'undefined') {
+      const firstMarkerPos = alleles[0].position;
+      const lastMarkerPos = alleles[alleles.length - 1].position;
 
-    const dist = lastMarkerPos - firstMarkerPos;
+      const dist = lastMarkerPos - firstMarkerPos;
 
-    this.backContext.lineWidth = 1;
-    this.backContext.strokeStyle = 'gray';
-    this.backContext.translate(this.lineNamesWidth, this.qtlCanvasHeight);
+      this.backContext.lineWidth = 1;
+      this.backContext.strokeStyle = 'gray';
+      this.backContext.translate(this.lineNamesWidth, this.qtlCanvasHeight);
 
-    for (let i = 0; i < alleles.length; i += 1) {
-      let pos = i * this.boxSize;
-      pos += (this.boxSize / 2);
-      const marker = alleles[i];
-      const markerPos = ((marker.position - firstMarkerPos) * ((this.alleleCanvasWidth) / dist));
-      this.backContext.beginPath();
-      this.backContext.moveTo(markerPos, 0);
-      this.backContext.lineTo(pos, 20);
-      this.backContext.lineTo(pos, this.mapCanvasHeight);
-      this.backContext.stroke();
+      for (let i = 0; i < alleles.length; i += 1) {
+        let pos = i * this.boxSize;
+        pos += (this.boxSize / 2);
+        const marker = alleles[i];
+        const markerPos = ((marker.position - firstMarkerPos) * ((this.alleleCanvasWidth) / dist));
+        this.backContext.beginPath();
+        this.backContext.moveTo(markerPos, 0);
+        this.backContext.lineTo(pos, 20);
+        this.backContext.lineTo(pos, this.mapCanvasHeight);
+        this.backContext.stroke();
+      }
+
+      this.backContext.translate(-this.lineNamesWidth, -this.qtlCanvasHeight);
     }
-
-    this.backContext.translate(-this.lineNamesWidth, -this.qtlCanvasHeight);
   }
 
   renderGermplasmNames(lineNames) {

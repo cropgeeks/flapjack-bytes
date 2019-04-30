@@ -161,19 +161,21 @@ export default function GenotypeRenderer() {
   function loadQTLData(qtlFileDom) {
     const file = document.getElementById(qtlFileDom.slice(1)).files[0];
 
-    const reader = new FileReader();
-    reader.onloadend = (data) => {
-      const qtlData = data.target.result.split(/\r?\n/);
-      for (let qtl = 0; qtl < qtlData.length; qtl += 1) {
-        processQtlFileLine(qtlData[qtl]);
-      }
+    if (typeof file !== 'undefined') {
+      const reader = new FileReader();
+      reader.onloadend = (data) => {
+        const qtlData = data.target.result.split(/\r?\n/);
+        for (let qtl = 0; qtl < qtlData.length; qtl += 1) {
+          processQtlFileLine(qtlData[qtl]);
+        }
 
-      qtls = Array.from(qtlMap.values());
-      qtls.sort(compareQtl);
+        qtls = Array.from(qtlMap.values());
+        qtls.sort(compareQtl);
 
-      qtls.forEach(qtl => console.log(qtl));
-    };
-    reader.readAsText(file);
+        qtls.forEach(qtl => console.log(qtl));
+      };
+      reader.readAsText(file);
+    }
   }
 
   function compareQtl(qtlA, qtlB) {
@@ -219,14 +221,16 @@ export default function GenotypeRenderer() {
   function loadMapData(mapFileDom) {
     const file = document.getElementById(mapFileDom.slice(1)).files[0];
 
-    const reader = new FileReader();
-    reader.onloadend = (data) => {
-      const markers = data.target.result.split(/\r?\n/);
-      for (let marker = 0; marker < markers.length; marker += 1) {
-        processMapFileLine(markers[marker]);
-      }
-    };
-    reader.readAsText(file);
+    if (typeof file !== 'undefined') {
+      const reader = new FileReader();
+      reader.onloadend = (data) => {
+        const markers = data.target.result.split(/\r?\n/);
+        for (let marker = 0; marker < markers.length; marker += 1) {
+          processMapFileLine(markers[marker]);
+        }
+      };
+      reader.readAsText(file);
+    }
   }
 
   function processMapFileLine(line) {
