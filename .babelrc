@@ -1,13 +1,12 @@
 {
     "presets": [
         [
-            "@babel/env",
-            {
-                "modules": false
+            "@babel/preset-env", {
+                "targets": {
+                    "browsers": ["last 2 versions", "ie >= 7"],
+                },
+                "modules": false,
             }
         ]
-    ],
-    "exclude": [
-        "node_modules/**"
-]
-  }
+    ]
+}
