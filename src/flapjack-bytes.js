@@ -46,10 +46,8 @@ export default function GenotypeRenderer() {
   nucleotides.set('', new Nucleotide('', colors.white, colors.white));
 
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId) {
-    mapCanvasHeight = 0;
-    // createRendererComponents(domParent, width, height);
 
-    brapiJs = BrAPI(server);
+    brapiJs = BrAPI(server, '1.2', null, null);
 
     let params = {
       'matrixDbId': [matrixId],
@@ -58,16 +56,10 @@ export default function GenotypeRenderer() {
 
     brapiJs.allelematrices_search(params)
       .each((matrixObject) => {
-        // var myInit = {
-        //   method: 'GET',
-        //   headers: {
-        //     'Content-Type': 'text/tsv'
-        //   },
-        //   mode: 'cors',
-        //   cache: 'default'
-        // };
 
-        renderGenotypesUrl(domParent, width, height, undefined, matrixObject.__response.metadata.datafiles[0]);
+        console.log('wotsit');;
+
+        genotypeRenderer.renderGenotypesUrl(domParent, width, height, undefined, matrixObject.__response.metadata.datafiles[0]);
       });
 
     return genotypeRenderer;
@@ -76,7 +68,8 @@ export default function GenotypeRenderer() {
   genotypeRenderer.renderGenotypesUrl = function (domParent, width, height, mapFileURL, genotypeFileURL) {
     createRendererComponents(domParent, width, height);
 
-    fetch(mapFileURL)
+    if (typeof mapFileURL !== 'undefined') {
+      fetch(mapFileURL)
       .then((response) => {
         if (response.status !== 200) {
           console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
@@ -92,7 +85,8 @@ export default function GenotypeRenderer() {
       .catch((err) => {
         console.log('Fetch Error :-S', err);
       });
-
+    }
+    
     fetch(genotypeFileURL)
       .then((response) => {
         if (response.status !== 200) {
@@ -104,7 +98,9 @@ export default function GenotypeRenderer() {
           for (let line = 0; line < lines.length; line += 1) {
             processFileLine(lines[line]);
           }
-          init();
+          setupColorStamps(boxSize);
+          genotypeCanvas.init(markerData, lineNames, lineData, qtls, colorStamps);
+          genotypeCanvas.prerender();
         });
       })
       .catch((err) => {
