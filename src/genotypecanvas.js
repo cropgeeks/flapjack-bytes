@@ -70,13 +70,11 @@ export default class GenotypeCanvas {
 
       const markers = this.markerData.slice(alleleStart, alleleEnd);
 
-      if (typeof markers[0] === 'undefined') {
-        this.mapCanvasHeight = 0;
-        this.qtlCanvasHeight = 0;
-        this.alleleCanvasHeight = this.canvas.height;
-        this.verticalScrollbar = new ScrollBar(this.canvas.width, this.alleleCanvasHeight - 10,
-          10, this.alleleCanvasHeight - 10, true);
-      }
+      this.mapCanvasHeight = typeof markers[0] === 'undefined' ? 0 : this.mapCanvasHeight;
+      this.qtlCanvasHeight = typeof this.qtls[0] === 'undefined' ? 0 : this.qtlCanvasHeight;
+      this.alleleCanvasHeight = this.canvas.height - this.mapCanvasHeight - this.qtlCanvasHeight;
+      this.verticalScrollbar = new ScrollBar(this.canvas.width, this.alleleCanvasHeight - 10,
+        10, this.alleleCanvasHeight - 10, true);
 
       const names = this.lineNames.slice(lineStart, lineEnd);
       const alleleData = [];

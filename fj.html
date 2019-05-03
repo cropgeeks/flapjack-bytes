@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>Flapjack Bites</title>
+    <title>Flapjack Bytes</title>
     <meta charset="UTF-8">
   </head>
   <body>
@@ -9,6 +9,10 @@
           <div>
             <label for="server">BrAPI server</label>
             <input type="text" id="server" name="server" placeholder="http://localhost:9002/germinate-demo/cactuar-devel/brapi/v1/">
+          </div>
+          <div>
+            <label for="map">Map ID</label>
+            <input type="text" id="map" name="map" placeholder="1">
           </div>
           <div>
             <label for="matrix">Matrix ID</label>
@@ -20,8 +24,8 @@
       <div id="canvas-holder">
         <!-- Empty div that we can insert a canvas into from javascript. -->
       </div>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
-      <script src="flapjack-bites.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.js"></script>
+      <script src="build/flapjack-bytes.js"></script>
       <script src="BrAPI.js"></script>
       <script type="text/javascript">
         $(document).ready(function(){
@@ -31,9 +35,10 @@
               return vals
             },{});
             var base_url = form.server;
+            var map_id = form.map;
             var matrix_id = form.matrix;
             var renderer = GenotypeRenderer();
-            renderer.renderGenotypesBrapi("#canvas-holder", 800, 600, base_url, matrix_id);
+            renderer.renderGenotypesBrapi("#canvas-holder", $(window).width(), 600, base_url, matrix_id, map_id);
             return false;
           });
       });

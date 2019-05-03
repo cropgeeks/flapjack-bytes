@@ -45,19 +45,36 @@ export default function GenotypeRenderer() {
   nucleotides.set('C', new Nucleotide('C', colors.orangeLight, colors.orangeDark));
   nucleotides.set('', new Nucleotide('', colors.white, colors.white));
 
-  genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId) {
+  genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId) {
+    console.log(mapId);
 
-    brapiJs = BrAPI(server, '1.2', null, null);
+    var brapiJs = BrAPI(server, '1.3', null, null);
 
     let params = {
+      'mapsDbId': mapId,
+    };
+
+    // let positions = [];
+
+    brapiJs.maps_positions(params)
+      .each((marker) => {
+
+        markerNames.push(marker.markerName);
+        const m = new Marker(marker.markerName, marker.linkageGroupName, parseInt(marker.location));
+        markerData.push(m);
+    
+        chromosomes.add(marker.linkageGroupName);
+      });
+
+    let matrixParams = {
       'matrixDbId': [matrixId],
       'format': 'flapjack',
     };
 
-    brapiJs.allelematrices_search(params)
+    brapiJs.allelematrices_search(matrixParams)
       .each((matrixObject) => {
 
-        console.log('wotsit');;
+        console.log('wotsit');
 
         genotypeRenderer.renderGenotypesUrl(domParent, width, height, undefined, matrixObject.__response.metadata.datafiles[0]);
       });
