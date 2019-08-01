@@ -45,10 +45,10 @@ export default function GenotypeRenderer() {
   nucleotides.set('C', new Nucleotide('C', colors.orangeLight, colors.orangeDark));
   nucleotides.set('', new Nucleotide('', colors.white, colors.white));
 
-  genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId) {
+  genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
     console.log(mapId);
 
-    var brapiJs = BrAPI(server, '1.3', null, null);
+    var brapiJs = BrAPI(server, '1.2', authToken);
 
     let params = {
       'mapsDbId': mapId,
@@ -76,17 +76,17 @@ export default function GenotypeRenderer() {
 
         console.log('wotsit');
 
-        genotypeRenderer.renderGenotypesUrl(domParent, width, height, undefined, matrixObject.__response.metadata.datafiles[0]);
+        genotypeRenderer.renderGenotypesUrl(domParent, width, height, undefined, matrixObject.__response.metadata.datafiles[0], authToken);
       });
 
     return genotypeRenderer;
   };
 
-  genotypeRenderer.renderGenotypesUrl = function (domParent, width, height, mapFileURL, genotypeFileURL) {
+  genotypeRenderer.renderGenotypesUrl = function (domParent, width, height, mapFileURL, genotypeFileURL, authToken) {
     createRendererComponents(domParent, width, height);
 
     if (typeof mapFileURL !== 'undefined') {
-      fetch(mapFileURL)
+      fetch(mapFileURL, {headers: { "Authorization": "Bearer " + authToken }})
       .then((response) => {
         if (response.status !== 200) {
           console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
@@ -104,7 +104,7 @@ export default function GenotypeRenderer() {
       });
     }
     
-    fetch(genotypeFileURL)
+    fetch(genotypeFileURL, {headers: { "Authorization": "Bearer " + authToken }})
       .then((response) => {
         if (response.status !== 200) {
           console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
@@ -123,6 +123,13 @@ export default function GenotypeRenderer() {
       .catch((err) => {
         console.log('Fetch Error :-S', err);
       });
+
+      // TODO: Invesitgate using older event emitting code for IE support
+
+      // Create the event.
+      var event = new Event('FlapjackFinished');
+
+      domParent.dispatchEvent(event);
 
     return genotypeRenderer;
   };
