@@ -56,6 +56,8 @@ export default function GenotypeRenderer() {
 
     // let positions = [];
 
+    sendEvent("LoadingMap", domParent)
+
     brapiJs.maps_positions(params)
       .each((marker) => {
 
@@ -65,6 +67,8 @@ export default function GenotypeRenderer() {
     
         chromosomes.add(marker.linkageGroupName);
       });
+
+    sendEvent("PollingMatrix", domParent)
 
     let matrixParams = {
       'matrixDbId': [matrixId],
@@ -124,12 +128,7 @@ export default function GenotypeRenderer() {
         console.log('Fetch Error :-S', err);
       });
 
-      // TODO: Invesitgate using older event emitting code for IE support
-
-      // Create the event.
-      var event = new Event('FlapjackFinished');
-
-      domParent.dispatchEvent(event);
+      sendEvent('FlapjackFinished', domParent);
 
     return genotypeRenderer;
   };
@@ -420,6 +419,16 @@ export default function GenotypeRenderer() {
   function zoom(size) {
     setupColorStamps(size);
     genotypeCanvas.zoom(size, colorStamps);
+  }
+
+  function sendEvent(eventName, domParent) {
+    // TODO: Invesitgate using older event emitting code for IE support
+    var canvasHolder = document.getElementById(domParent.slice(1));
+
+    // Create the event.
+    var event = new Event(eventName);
+
+    canvasHolder.dispatchEvent(event);
   }
 
   return genotypeRenderer;
