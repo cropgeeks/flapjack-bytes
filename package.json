@@ -4,7 +4,7 @@
   "description": "BrAPI enabled Flapjack style graphical previews of genotype data",
   "main": "flapjack-bytes.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --reporter=nyan"
   },
   "repository": {
     "type": "git",
