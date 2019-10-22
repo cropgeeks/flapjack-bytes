@@ -345,12 +345,28 @@ export default function GenotypeRenderer() {
         const stamp = new ColorState(buffer);
         colorStamps.push(stamp);
       } else {
-        let alleles = key.split('/');
-        let nucleotide1 = nucleotides.get(alleles[0]);
-        let nucleotide2 = nucleotides.get(alleles[1]);
-        const buffer = drawHetSquare(size, nucleotide1, nucleotide2);
-        const stamp = new ColorState(buffer);
-        colorStamps.push(stamp);
+        if (key.length === 2) {
+          let nucleotide1 = nucleotides.get(key[0]);
+          let nucleotide2 = nucleotides.get(key[1]);
+          let buffer;
+          if (key[0] === key[1]) {
+            if (key[0] === "N") {
+              nucleotide1 = nucleotides.get('')
+            }
+            buffer = drawGradientSquare(size, nucleotide1);
+          } else {
+            buffer = drawHetSquare(size, nucleotide1, nucleotide2);
+          }
+          const stamp = new ColorState(buffer);
+          colorStamps.push(stamp);
+        } else {
+          let alleles = key.split('/');
+          let nucleotide1 = nucleotides.get(alleles[0]);
+          let nucleotide2 = nucleotides.get(alleles[1]);
+          const buffer = drawHetSquare(size, nucleotide1, nucleotide2);
+          const stamp = new ColorState(buffer);
+          colorStamps.push(stamp);
+        }
       }
     }
   }
