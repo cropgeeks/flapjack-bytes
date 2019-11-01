@@ -38,12 +38,19 @@ export default function GenotypeRenderer() {
     white: 'rgb(255,255,255)',
   };
 
+  const nucleotideA = new Nucleotide('A', colors.greenLight, colors.greenDark);
+  const nucleotideG = new Nucleotide('G', colors.redLight, colors.redDark);
+  const nucleotideT = new Nucleotide('T', colors.blueLight, colors.blueDark);
+  const nucleotideC = new Nucleotide('C', colors.orangeLight, colors.orangeDark);
+  const nucleotideMissing = new Nucleotide('', colors.white, colors.white);
+
   const nucleotides = new Map();
-  nucleotides.set('A', new Nucleotide('A', colors.greenLight, colors.greenDark));
-  nucleotides.set('G', new Nucleotide('G', colors.redLight, colors.redDark));
-  nucleotides.set('T', new Nucleotide('T', colors.blueLight, colors.blueDark));
-  nucleotides.set('C', new Nucleotide('C', colors.orangeLight, colors.orangeDark));
-  nucleotides.set('', new Nucleotide('', colors.white, colors.white));
+  nucleotides.set('A', nucleotideA);
+  nucleotides.set('G', nucleotideG);
+  nucleotides.set('T', nucleotideT);
+  nucleotides.set('C', nucleotideC);
+  nucleotides.set('', nucleotideMissing);
+  nucleotides.set('N', nucleotideMissing);
 
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
     console.log(mapId);
@@ -300,7 +307,7 @@ export default function GenotypeRenderer() {
   }
 
   function getState(allele) {
-    if (allele === '-' || (!allele || allele.length === 0)) {allele = '';}
+    if (allele === '-' || allele === 'NN' || (!allele || allele.length === 0)) {allele = '';}
 
     if (!stateTable.has(allele)) {
       stateTable.set(allele, stateTable.size);
@@ -331,44 +338,41 @@ export default function GenotypeRenderer() {
     return fontContext.font;
   }
 
+  function makeColorStampFromBiallelicData(genotype, size) {
+    const nucleotide1 = nucleotides.get(genotype[0]);
+    const nucleotide2 = nucleotides.get(genotype[1]);
+    let buffer;
+
+    if (genotype[0] === genotype[1]) {
+      buffer = drawGradientSquare(size, nucleotide1);
+    } else {
+      buffer = drawHetSquare(size, nucleotide1, nucleotide2);
+    }
+
+    return new ColorState(buffer);
+  }
+
   // Generates a set of homozygous and heterozygous color stamps from the stateTable
   function setupColorStamps(size) {
     colorStamps = [];
-    for (let key of stateTable.keys()) {
-      if (key.length <= 1) {
-        // If we fail to find a key for whatever reason, get the blank stamp
-        let nucleotide = nucleotides.get(key);
-        if (nucleotide === undefined) {
-          nucleotide = nucleotides.get('');
-        }
+    stateTable.forEach((value, key) => {
+      if (key.length === 2) {
+        const stamp = makeColorStampFromBiallelicData(key, size);
+        colorStamps.push(stamp);
+      } else if (key.length <= 1) {
+        const nucleotide = nucleotides.get(key);
         const buffer = drawGradientSquare(size, nucleotide);
         const stamp = new ColorState(buffer);
         colorStamps.push(stamp);
       } else {
-        if (key.length === 2) {
-          let nucleotide1 = nucleotides.get(key[0]);
-          let nucleotide2 = nucleotides.get(key[1]);
-          let buffer;
-          if (key[0] === key[1]) {
-            if (key[0] === "N") {
-              nucleotide1 = nucleotides.get('')
-            }
-            buffer = drawGradientSquare(size, nucleotide1);
-          } else {
-            buffer = drawHetSquare(size, nucleotide1, nucleotide2);
-          }
-          const stamp = new ColorState(buffer);
-          colorStamps.push(stamp);
-        } else {
-          let alleles = key.split('/');
-          let nucleotide1 = nucleotides.get(alleles[0]);
-          let nucleotide2 = nucleotides.get(alleles[1]);
-          const buffer = drawHetSquare(size, nucleotide1, nucleotide2);
-          const stamp = new ColorState(buffer);
-          colorStamps.push(stamp);
-        }
+        const alleles = key.split('/');
+        const nucleotide1 = nucleotides.get(alleles[0]);
+        const nucleotide2 = nucleotides.get(alleles[1]);
+        const buffer = drawHetSquare(size, nucleotide1, nucleotide2);
+        const stamp = new ColorState(buffer);
+        colorStamps.push(stamp);
       }
-    }
+    });
   }
 
   function drawGradientSquare(size, nucleotide) {
