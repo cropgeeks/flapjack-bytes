@@ -1,10 +1,10 @@
-import Marker from './marker';
-import ColorState from './colorstate';
+import Marker from './Marker';
 import GenotypeCanvas from './genotypecanvas';
 import CanvasController from './canvascontroller';
 import Qtl from './qtl';
 import GenotypeImporter from './GenotypeImporter';
 import NucleotideColorScheme from './NucleotideColorScheme';
+import MapImporter from './MapImporter';
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -17,12 +17,6 @@ export default function GenotypeRenderer() {
   const boxSize = 16;
   let fontSize = 100;
 
-  let stateTable = new Map();
-  let lineNames = [];
-  let markerNames = [];
-  let lineData = [];
-  const markerData = [];
-  const chromosomes = new Set();
   let qtls = [];
   const qtlMap = new Map();
   let colorScheme;
@@ -115,21 +109,43 @@ export default function GenotypeRenderer() {
     return genotypeRenderer;
   };
 
+  function loadFromFile(fileDom) {
+    const file = document.getElementById(fileDom.slice(1)).files[0];
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => {
+        reader.abort();
+        reject(new DOMException('Problem parsing input file'));
+      };
+
+      reader.onload = () => {
+        resolve(reader.result);
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // eslint-disable-next-line func-names
   genotypeRenderer.renderGenotypesFile = function (domParent, width, height, mapFileDom, genotypeFileDom, qtlFileDom) {
     createRendererComponents(domParent, width, height);
-    
+    let markerData = [];
     // loadMapData(mapFileDom);
     // loadQTLData(qtlFileDom);
     // loadGenotypeData(genotypeFileDom);
-
+    const mapPromise = loadFromFile(mapFileDom);
     const genotypePromise = loadFromFile(genotypeFileDom);
+
+    mapPromise.then((result) => {
+      const mapImporter = new MapImporter();
+      mapImporter.parseFile(result);
+      markerData = mapImporter.markerData;
+    });
+
     genotypePromise.then((result) => {
       const genotypeImporter = new GenotypeImporter();
       // console.log(result);
       genotypeImporter.parseFile(result);
-      lineNames = genotypeImporter.lineNames;
-      lineData = genotypeImporter.lineData;
-      stateTable = genotypeImporter.stateTable;
+      const { lineNames, lineData, stateTable } = genotypeImporter;
 
       colorScheme = new NucleotideColorScheme(stateTable, document);
       colorScheme.setupColorStamps(boxSize);
@@ -173,22 +189,6 @@ export default function GenotypeRenderer() {
     canvasHolder.appendChild(zoomDiv);
 
     canvasController = new CanvasController(genotypeCanvas);
-  }
-
-  function loadFromFile(fileDom) {
-    const file = document.getElementById(fileDom.slice(1)).files[0];
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => {
-        reader.abort();
-        reject(new DOMException('Problem parsing input file'));
-      };
-
-      reader.onload = () => {
-        resolve(reader.result);
-      };
-      reader.readAsText(file);
-    });
   }
 
   function loadQTLData(qtlFileDom) {
@@ -249,39 +249,6 @@ export default function GenotypeRenderer() {
     }
 
     qtlMap.set(name, qtl);
-  }
-
-  function loadMapData(mapFileDom) {
-    const file = document.getElementById(mapFileDom.slice(1)).files[0];
-
-    if (typeof file !== 'undefined') {
-      const reader = new FileReader();
-      reader.onloadend = (data) => {
-        const markers = data.target.result.split(/\r?\n/);
-        for (let marker = 0; marker < markers.length; marker += 1) {
-          processMapFileLine(markers[marker]);
-        }
-      };
-      reader.readAsText(file);
-    }
-  }
-
-  function processMapFileLine(line) {
-    if (line.startsWith('#') || (!line || line.length === 0) || line.startsWith('\t')) {
-      return;
-    }
-
-    const tokens = line.split('\t');
-    if (tokens.length === 2) {
-      return;
-    }
-    const markerName = tokens[0];
-
-    markerNames.push(markerName);
-    const marker = new Marker(markerName, tokens[1], parseInt(tokens[2].replace(/,/g, '')));
-    markerData.push(marker);
-    
-    chromosomes.add(tokens[1]);
   }
 
   function zoom(size) {
