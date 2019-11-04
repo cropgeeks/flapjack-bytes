@@ -1,9 +1,9 @@
-import Nucleotide from './nucleotide';
 import Marker from './marker';
 import ColorState from './colorstate';
 import GenotypeCanvas from './genotypecanvas';
 import CanvasController from './canvascontroller';
 import Qtl from './qtl';
+import GenotypeImporter from './GenotypeImporter';
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -16,7 +16,7 @@ export default function GenotypeRenderer() {
   const boxSize = 16;
   let fontSize = 100;
 
-  const stateTable = new Map();
+  let stateTable = new Map();
   const lineNames = [];
   const markerNames = [];
   const lineData = [];
@@ -38,19 +38,19 @@ export default function GenotypeRenderer() {
     white: 'rgb(255,255,255)',
   };
 
-  const nucleotideA = new Nucleotide('A', colors.greenLight, colors.greenDark);
-  const nucleotideG = new Nucleotide('G', colors.redLight, colors.redDark);
-  const nucleotideT = new Nucleotide('T', colors.blueLight, colors.blueDark);
-  const nucleotideC = new Nucleotide('C', colors.orangeLight, colors.orangeDark);
-  const nucleotideMissing = new Nucleotide('', colors.white, colors.white);
+  // const nucleotideA = new Nucleotide('A', colors.greenLight, colors.greenDark);
+  // const nucleotideG = new Nucleotide('G', colors.redLight, colors.redDark);
+  // const nucleotideT = new Nucleotide('T', colors.blueLight, colors.blueDark);
+  // const nucleotideC = new Nucleotide('C', colors.orangeLight, colors.orangeDark);
+  // const nucleotideMissing = new Nucleotide('', colors.white, colors.white);
 
-  const nucleotides = new Map();
-  nucleotides.set('A', nucleotideA);
-  nucleotides.set('G', nucleotideG);
-  nucleotides.set('T', nucleotideT);
-  nucleotides.set('C', nucleotideC);
-  nucleotides.set('', nucleotideMissing);
-  nucleotides.set('N', nucleotideMissing);
+  // const nucleotides = new Map();
+  // nucleotides.set('A', nucleotideA);
+  // nucleotides.set('G', nucleotideG);
+  // nucleotides.set('T', nucleotideT);
+  // nucleotides.set('C', nucleotideC);
+  // nucleotides.set('', nucleotideMissing);
+  // nucleotides.set('N', nucleotideMissing);
 
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
     console.log(mapId);
@@ -143,9 +143,19 @@ export default function GenotypeRenderer() {
   genotypeRenderer.renderGenotypesFile = function (domParent, width, height, mapFileDom, genotypeFileDom, qtlFileDom) {
     createRendererComponents(domParent, width, height);
     
-    loadMapData(mapFileDom);
-    loadQTLData(qtlFileDom);
-    loadGenotypeData(genotypeFileDom);
+    // loadMapData(mapFileDom);
+    // loadQTLData(qtlFileDom);
+    // loadGenotypeData(genotypeFileDom);
+
+    const genotypePromise = loadFromFile(genotypeFileDom);
+    genotypePromise.then((result) => {
+      const genotypeImporter = new GenotypeImporter();
+      // console.log(result);
+      genotypeImporter.parseFile(result);
+      this.lineNames = genotypeImporter.lineNames;
+      this.lineData = genotypeImporter.lineData;
+      this.stateTable = genotypeImporter.stateTable;
+    });
 
     return genotypeRenderer;
   };
@@ -182,6 +192,22 @@ export default function GenotypeRenderer() {
     canvasHolder.appendChild(zoomDiv);
 
     canvasController = new CanvasController(genotypeCanvas);
+  }
+
+  function loadFromFile(fileDom) {
+    const file = document.getElementById(fileDom.slice(1)).files[0];
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => {
+        reader.abort();
+        reject(new DOMException('Problem parsing input file'));
+      };
+
+      reader.onload = () => {
+        resolve(reader.result);
+      };
+      reader.readAsText(file);
+    });
   }
 
   function loadQTLData(qtlFileDom) {
@@ -275,45 +301,6 @@ export default function GenotypeRenderer() {
     markerData.push(marker);
     
     chromosomes.add(tokens[1]);
-  }
-
-  function loadGenotypeData(genotypeFileDom) {
-    const file = document.getElementById(genotypeFileDom.slice(1)).files[0];
-
-    const reader = new FileReader();
-    reader.onloadend = (data) => {
-      const lines = data.target.result.split(/\r?\n/);
-      for (let line = 0; line < lines.length; line += 1) {
-        processFileLine(lines[line]);
-      }
-
-      setupColorStamps(boxSize);
-      genotypeCanvas.init(markerData, lineNames, lineData, qtls, colorStamps);
-      genotypeCanvas.prerender();
-    };
-
-    reader.readAsText(file);
-  }
-
-  function processFileLine(line) {
-    if (line.startsWith('#') || (!line || line.length === 0) || line.startsWith('Accession') || line.startsWith('\t')) {
-      return;
-    }
-
-    const tokens = line.split('\t');
-    const lineName = tokens[0];
-    lineNames.push(lineName);
-    lineData.push(tokens.slice(1).map(getState));
-  }
-
-  function getState(allele) {
-    if (allele === '-' || allele === 'NN' || (!allele || allele.length === 0)) {allele = '';}
-
-    if (!stateTable.has(allele)) {
-      stateTable.set(allele, stateTable.size);
-    }
-
-    return stateTable.get(allele);
   }
 
   function calculateFontSize(text, fontface, size) {
