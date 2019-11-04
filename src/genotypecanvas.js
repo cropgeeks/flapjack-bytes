@@ -179,7 +179,7 @@ export default class GenotypeCanvas {
     this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight + this.qtlCanvasHeight);
     for (let i = 0; i < lineData.length; i += 1) {
       for (let j = 0; j < lineData[i].length; j += 1) {
-        this.backContext.drawImage(this.colorStamps[lineData[i][j]].buffer, (j * this.boxSize), (i * this.boxSize));
+        this.backContext.drawImage(this.colorStamps[lineData[i][j]], (j * this.boxSize), (i * this.boxSize));
       }
     }
     this.backContext.translate(-this.lineNamesWidth, -(this.mapCanvasHeight + this.qtlCanvasHeight));

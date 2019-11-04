@@ -4,6 +4,7 @@ import GenotypeCanvas from './genotypecanvas';
 import CanvasController from './canvascontroller';
 import Qtl from './qtl';
 import GenotypeImporter from './GenotypeImporter';
+import NucleotideColorScheme from './NucleotideColorScheme';
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -17,40 +18,14 @@ export default function GenotypeRenderer() {
   let fontSize = 100;
 
   let stateTable = new Map();
-  const lineNames = [];
-  const markerNames = [];
-  const lineData = [];
+  let lineNames = [];
+  let markerNames = [];
+  let lineData = [];
   const markerData = [];
   const chromosomes = new Set();
   let qtls = [];
   const qtlMap = new Map();
-  let colorStamps = [];
-
-  const colors = {
-    greenLight: 'rgb(171,255,171)',
-    greenDark: 'rgb(86,179,86)',
-    redLight: 'rgb(255,171,171)',
-    redDark: 'rgb(179,86,86)',
-    blueLight: 'rgb(171,171,255)',
-    blueDark: 'rgb(86,86,179)',
-    orangeLight: 'rgb(255,228,171)',
-    orangeDark: 'rgb(179,114,86)',
-    white: 'rgb(255,255,255)',
-  };
-
-  // const nucleotideA = new Nucleotide('A', colors.greenLight, colors.greenDark);
-  // const nucleotideG = new Nucleotide('G', colors.redLight, colors.redDark);
-  // const nucleotideT = new Nucleotide('T', colors.blueLight, colors.blueDark);
-  // const nucleotideC = new Nucleotide('C', colors.orangeLight, colors.orangeDark);
-  // const nucleotideMissing = new Nucleotide('', colors.white, colors.white);
-
-  // const nucleotides = new Map();
-  // nucleotides.set('A', nucleotideA);
-  // nucleotides.set('G', nucleotideG);
-  // nucleotides.set('T', nucleotideT);
-  // nucleotides.set('C', nucleotideC);
-  // nucleotides.set('', nucleotideMissing);
-  // nucleotides.set('N', nucleotideMissing);
+  let colorScheme;
 
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
     console.log(mapId);
@@ -152,9 +127,15 @@ export default function GenotypeRenderer() {
       const genotypeImporter = new GenotypeImporter();
       // console.log(result);
       genotypeImporter.parseFile(result);
-      this.lineNames = genotypeImporter.lineNames;
-      this.lineData = genotypeImporter.lineData;
-      this.stateTable = genotypeImporter.stateTable;
+      lineNames = genotypeImporter.lineNames;
+      lineData = genotypeImporter.lineData;
+      stateTable = genotypeImporter.stateTable;
+
+      colorScheme = new NucleotideColorScheme(stateTable, document);
+      colorScheme.setupColorStamps(boxSize);
+      
+      genotypeCanvas.init(markerData, lineNames, lineData, qtls, colorScheme.colorStamps);
+      genotypeCanvas.prerender();
     });
 
     return genotypeRenderer;
@@ -303,129 +284,9 @@ export default function GenotypeRenderer() {
     chromosomes.add(tokens[1]);
   }
 
-  function calculateFontSize(text, fontface, size) {
-    const fontCanvas = document.createElement('canvas');
-    fontCanvas.width = size;
-    fontCanvas.height = size;
-    const fontContext = fontCanvas.getContext('2d');
-
-    fontSize = 100;
-    fontContext.font = `${fontSize}px ${fontface}`;
-
-    while (fontContext.measureText(text).width > fontCanvas.width) {
-      fontSize -= 1;
-      fontContext.font = `${fontSize}px ${fontface}`;
-    }
-
-    const { backContext } = genotypeCanvas;
-
-    backContext.font = fontContext.font;
-    genotypeCanvas.fontSize = fontSize;
-
-    return fontContext.font;
-  }
-
-  function makeColorStampFromBiallelicData(genotype, size) {
-    const nucleotide1 = nucleotides.get(genotype[0]);
-    const nucleotide2 = nucleotides.get(genotype[1]);
-    let buffer;
-
-    if (genotype[0] === genotype[1]) {
-      buffer = drawGradientSquare(size, nucleotide1);
-    } else {
-      buffer = drawHetSquare(size, nucleotide1, nucleotide2);
-    }
-
-    return new ColorState(buffer);
-  }
-
-  // Generates a set of homozygous and heterozygous color stamps from the stateTable
-  function setupColorStamps(size) {
-    colorStamps = [];
-    stateTable.forEach((value, key) => {
-      if (key.length === 2) {
-        const stamp = makeColorStampFromBiallelicData(key, size);
-        colorStamps.push(stamp);
-      } else if (key.length <= 1) {
-        const nucleotide = nucleotides.get(key);
-        const buffer = drawGradientSquare(size, nucleotide);
-        const stamp = new ColorState(buffer);
-        colorStamps.push(stamp);
-      } else {
-        const alleles = key.split('/');
-        const nucleotide1 = nucleotides.get(alleles[0]);
-        const nucleotide2 = nucleotides.get(alleles[1]);
-        const buffer = drawHetSquare(size, nucleotide1, nucleotide2);
-        const stamp = new ColorState(buffer);
-        colorStamps.push(stamp);
-      }
-    });
-  }
-
-  function drawGradientSquare(size, nucleotide) {
-    const gradCanvas = document.createElement('canvas');
-    gradCanvas.width = size;
-    gradCanvas.height = size;
-    const gradientCtx = gradCanvas.getContext('2d');
-
-    const lingrad = gradientCtx.createLinearGradient(0, 0, size, size);
-    lingrad.addColorStop(0, nucleotide.colorLight);
-    lingrad.addColorStop(1, nucleotide.colorDark);
-    gradientCtx.fillStyle = lingrad;
-    gradientCtx.fillRect(0, 0, size, size);
-
-    if (size >= 10) {
-      gradientCtx.fillStyle = 'rgb(0,0,0)';
-      gradientCtx.font = calculateFontSize('C/G', 'sans-serif', size);
-      const textWidth = gradientCtx.measureText(nucleotide.allele).width;
-      gradientCtx.fillText(nucleotide.allele, (size - textWidth) / 2, (size - (fontSize / 2)));
-    }
-
-    return gradCanvas;
-  }
-
-  function drawHetSquare(size, nucleotide1, nucleotide2) {
-    const gradCanvas = document.createElement('canvas');
-    gradCanvas.width = size;
-    gradCanvas.height = size;
-    const gradientCtx = gradCanvas.getContext('2d');
-
-    const lingrad = gradientCtx.createLinearGradient(0, 0, size, size);
-    lingrad.addColorStop(0, nucleotide1.colorLight);
-    lingrad.addColorStop(1, nucleotide1.colorDark);
-    gradientCtx.fillStyle = lingrad;
-    gradientCtx.beginPath();
-    gradientCtx.lineTo(size, 0);
-    gradientCtx.lineTo(0, size);
-    gradientCtx.lineTo(0, 0);
-    gradientCtx.fill();
-
-    const lingrad2 = gradientCtx.createLinearGradient(0, 0, size, size);
-    lingrad2.addColorStop(0, nucleotide2.colorLight);
-    lingrad2.addColorStop(1, nucleotide2.colorDark);
-    gradientCtx.fillStyle = lingrad2;
-    gradientCtx.beginPath();
-    gradientCtx.moveTo(size, 0);
-    gradientCtx.lineTo(size, size);
-    gradientCtx.lineTo(0, size);
-    gradientCtx.lineTo(size, 0);
-    gradientCtx.fill();
-
-    if (size >= 10) {
-      gradientCtx.fillStyle = 'rgb(0,0,0)';
-      gradientCtx.font = calculateFontSize('C/G', 'sans-serif', size);
-      const allele1Width = gradientCtx.measureText(nucleotide1.allele).width;
-      gradientCtx.fillText(nucleotide1.allele, ((size / 2) - allele1Width) / 2, fontSize);
-      const allele2Width = gradientCtx.measureText(nucleotide2.allele).width;
-      gradientCtx.fillText(nucleotide2.allele, size - ((size / 2) + allele2Width) / 2, size - (fontSize / 4));
-    }
-
-    return gradCanvas;
-  }
-
   function zoom(size) {
-    setupColorStamps(size);
-    genotypeCanvas.zoom(size, colorStamps);
+    colorScheme.setupColorStamps(size);
+    genotypeCanvas.zoom(size, colorScheme.colorStamps);
   }
 
   function sendEvent(eventName, domParent) {
