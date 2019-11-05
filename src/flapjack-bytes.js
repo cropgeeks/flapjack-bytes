@@ -1,10 +1,11 @@
 import Marker from './Marker';
 import GenotypeCanvas from './genotypecanvas';
 import CanvasController from './canvascontroller';
-import Qtl from './qtl';
+import Qtl from './Qtl';
 import GenotypeImporter from './GenotypeImporter';
 import NucleotideColorScheme from './NucleotideColorScheme';
 import MapImporter from './MapImporter';
+import QtlImporter from './QtlImporter';
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -17,8 +18,6 @@ export default function GenotypeRenderer() {
   const boxSize = 16;
   let fontSize = 100;
 
-  let qtls = [];
-  const qtlMap = new Map();
   let colorScheme;
 
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
@@ -129,18 +128,29 @@ export default function GenotypeRenderer() {
   genotypeRenderer.renderGenotypesFile = function (domParent, width, height, mapFileDom, genotypeFileDom, qtlFileDom) {
     createRendererComponents(domParent, width, height);
     let markerData = [];
+    let qtls = [];
     // loadMapData(mapFileDom);
     // loadQTLData(qtlFileDom);
     // loadGenotypeData(genotypeFileDom);
     const mapPromise = loadFromFile(mapFileDom);
+    const qtlPromise = loadFromFile(qtlFileDom);
     const genotypePromise = loadFromFile(genotypeFileDom);
 
+    // Load map data
     mapPromise.then((result) => {
       const mapImporter = new MapImporter();
       mapImporter.parseFile(result);
       markerData = mapImporter.markerData;
     });
 
+    // Then QTL data
+    qtlPromise.then((result) => {
+      const qtlImporter = new QtlImporter();
+      qtlImporter.parseFile(result);
+      qtls = qtlImporter.qtls;
+    });
+
+    // Then genotype data
     genotypePromise.then((result) => {
       const genotypeImporter = new GenotypeImporter();
       // console.log(result);
@@ -189,66 +199,6 @@ export default function GenotypeRenderer() {
     canvasHolder.appendChild(zoomDiv);
 
     canvasController = new CanvasController(genotypeCanvas);
-  }
-
-  function loadQTLData(qtlFileDom) {
-    const file = document.getElementById(qtlFileDom.slice(1)).files[0];
-
-    if (typeof file !== 'undefined') {
-      const reader = new FileReader();
-      reader.onloadend = (data) => {
-        const qtlData = data.target.result.split(/\r?\n/);
-        for (let qtl = 0; qtl < qtlData.length; qtl += 1) {
-          processQtlFileLine(qtlData[qtl]);
-        }
-
-        qtls = Array.from(qtlMap.values());
-        qtls.sort(compareQtl);
-
-        qtls.forEach(qtl => console.log(qtl));
-      };
-      reader.readAsText(file);
-    }
-  }
-
-  function compareQtl(qtlA, qtlB) {
-    if (qtlA.min < qtlB.min) {
-      return -1;
-    }
-    if (qtlA.min > qtlB.min) {
-      return 1;
-    }
-    return 0;
-  }
-
-  function processQtlFileLine(line) {
-    if (line.startsWith('#') || (!line || line.length === 0) || line.startsWith('\t')) {
-      return;
-    }
-    
-    const tokens = line.split('\t');
-    if (chromosomes.has(tokens[1]) === false) {
-      return;
-    }
-
-    let name = tokens[0];
-    name = name.slice(0, (name.lastIndexOf('.')));
-
-    let qtl;
-    if (qtlMap.has(name)) {
-      qtl = qtlMap.get(name);
-    }
-    else {
-      qtl = new Qtl(name, tokens[1], parseInt(tokens[2].replace(/,/g, '')), parseInt(tokens[3].replace(/,/g, '')), parseInt(tokens[4].replace(/,/g, '')));
-    }
-    if (qtl.min > tokens[3]) {
-      qtl.min = parseInt(tokens[3].replace(/,/g, ''));
-    }
-    if (qtl.max < tokens[4]) {
-      qtl.max = parseInt(tokens[4].replace(/,/g, ''));
-    }
-
-    qtlMap.set(name, qtl);
   }
 
   function zoom(size) {
