@@ -1,9 +1,12 @@
 import Marker from './Marker';
+import Chromosome from './Chromosome';
+import GenomeMap from './GenomeMap';
 
 export default class MapImporter {
   constructor() {
     this.markerNames = [];
     this.markerData = [];
+    this.chromosomeNames = new Set();
   }
 
   processMapFileLine(line) {
@@ -17,11 +20,29 @@ export default class MapImporter {
     const tokens = line.split('\t');
     if (tokens.length === 3) {
       const markerName = tokens[0];
+      const chromosome = tokens[1];
+      const pos = tokens[2];
 
-      this.markerNames.push(markerName);
-      const marker = new Marker(markerName, tokens[1], parseInt(tokens[2].replace(/,/g, ''), 10));
+      // Keep track of the chromosomes that we've found
+      this.chromosomeNames.add(chromosome);
+
+      // Create a marker object and add it to our array of markers
+      const marker = new Marker(markerName, chromosome, parseInt(pos.replace(/,/g, ''), 10));
       this.markerData.push(marker);
     }
+  }
+
+  createMap() {
+    const chromosomes = [];
+    this.chromosomeNames.forEach((name) => {
+      const chromosomeMarkers = this.markerData.filter(m => m.chromosome === name);
+      const markerPositions = this.markerData.map(marker => marker.position);
+      const chromosomeEnd = Math.max(...markerPositions);
+      const chromosome = new Chromosome(name, chromosomeEnd, chromosomeMarkers);
+      chromosomes.push(chromosome);
+    });
+
+    return new GenomeMap(chromosomes);
   }
 
   parseFile(fileContents) {
@@ -29,5 +50,9 @@ export default class MapImporter {
     for (let marker = 0; marker < markers.length; marker += 1) {
       this.processMapFileLine(markers[marker]);
     }
+
+    const map = this.createMap();
+
+    return map;
   }
 }
