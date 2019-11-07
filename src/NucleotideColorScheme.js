@@ -119,9 +119,9 @@ export default class NucleotideColorScheme {
       gradientCtx.fillStyle = 'rgb(0,0,0)';
       gradientCtx.font = this.calculateFontSize('C/G', 'sans-serif', size);
       const allele1Width = gradientCtx.measureText(genotype.allele1).width;
-      gradientCtx.fillText(color1.allele, ((size / 2) - allele1Width) / 2, this.fontSize);
+      gradientCtx.fillText(genotype.allele1, ((size / 2) - allele1Width) / 2, this.fontSize);
       const allele2Width = gradientCtx.measureText(genotype.allele2).width;
-      gradientCtx.fillText(color2.allele, size - ((size / 2) + allele2Width) / 2, size - (this.fontSize / 4));
+      gradientCtx.fillText(genotype.allele2, size - ((size / 2) + allele2Width) / 2, size - (this.fontSize / 4));
     }
 
     return gradCanvas;
