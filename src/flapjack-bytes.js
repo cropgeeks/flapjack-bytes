@@ -129,9 +129,7 @@ export default function GenotypeRenderer() {
     createRendererComponents(domParent, width, height);
     let markerData = [];
     let qtls = [];
-    // loadMapData(mapFileDom);
-    // loadQTLData(qtlFileDom);
-    // loadGenotypeData(genotypeFileDom);
+
     const mapPromise = loadFromFile(mapFileDom);
     const qtlPromise = loadFromFile(qtlFileDom);
     const genotypePromise = loadFromFile(genotypeFileDom);
@@ -159,7 +157,7 @@ export default function GenotypeRenderer() {
 
       colorScheme = new NucleotideColorScheme(stateTable, document);
       colorScheme.setupColorStamps(boxSize);
-      
+
       genotypeCanvas.init(markerData, lineNames, lineData, qtls, colorScheme.colorStamps);
       genotypeCanvas.prerender();
     });
