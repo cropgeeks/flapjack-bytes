@@ -6,7 +6,7 @@ export default class Genotype {
   }
 
   getText() {
-    return this.allele1 === this.allele2 ? this.allele1 : this.getHetText();
+    return this.isHomozygous ? this.allele1 : this.getHetText();
   }
 
   getHetText() {
