@@ -36,7 +36,7 @@ export default class MapImporter {
     const chromosomes = [];
     this.chromosomeNames.forEach((name) => {
       const chromosomeMarkers = this.markerData.filter(m => m.chromosome === name);
-      const markerPositions = this.markerData.map(marker => marker.position);
+      const markerPositions = chromosomeMarkers.map(marker => marker.position);
       const chromosomeEnd = Math.max(...markerPositions);
       const chromosome = new Chromosome(name, chromosomeEnd, chromosomeMarkers);
       chromosomes.push(chromosome);
