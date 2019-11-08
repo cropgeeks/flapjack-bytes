@@ -1,17 +1,21 @@
 import nodeResolve from 'rollup-plugin-node-resolve';
 import babel from 'rollup-plugin-babel';
+import commonjs from 'rollup-plugin-commonjs';
 
 export default {
-    entry: 'src/flapjack-bytes.js',
-    dest: 'build/flapjack-bytes.js',
+  input: 'src/flapjack-bytes.js',
+  output: {
+    file: 'build/flapjack-bytes.js',
     format: 'umd',
-    moduleName: 'GenotypeRenderer',
+    name: 'GenotypeRenderer',
+  },
 
-    plugins: [
-        nodeResolve(),
+  plugins: [
+    nodeResolve(),
 
-        babel({
-            exclude: 'node_modules/**',
-          }),
-    ]
+    babel({
+      exclude: 'node_modules/**',
+    }),
+    commonjs(),
+  ],
 };
