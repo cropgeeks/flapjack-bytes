@@ -7,4 +7,8 @@ export default class Chromosome {
 
     this.markers.sort((a, b) => (a.position > b.position ? 1 : -1));
   }
+
+  markerCount() {
+    return this.markers.length;
+  }
 }

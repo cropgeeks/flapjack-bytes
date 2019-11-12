@@ -20,6 +20,8 @@ export default function GenotypeRenderer() {
 
   let colorScheme;
 
+  let genomeMap;
+
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
     console.log(mapId);
 
@@ -137,7 +139,7 @@ export default function GenotypeRenderer() {
     // Load map data
     mapPromise.then((result) => {
       const mapImporter = new MapImporter();
-      mapImporter.parseFile(result);
+      genomeMap = mapImporter.parseFile(result);
       markerData = mapImporter.markerData;
     });
 
@@ -158,7 +160,7 @@ export default function GenotypeRenderer() {
       colorScheme = new NucleotideColorScheme(stateTable, document);
       colorScheme.setupColorStamps(boxSize);
 
-      genotypeCanvas.init(markerData, lineNames, lineData, qtls, colorScheme.colorStamps);
+      genotypeCanvas.init(markerData, lineNames, lineData, qtls, colorScheme.colorStamps, genomeMap);
       genotypeCanvas.prerender();
     });
 
