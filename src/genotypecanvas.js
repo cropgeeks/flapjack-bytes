@@ -32,7 +32,6 @@ export default class GenotypeCanvas {
     this.maxCanvasHeight = 0;
     this.totalMarkers = 0;
     this.totalLines = 0;
-    this.markerData = [];
     this.lineNames = [];
     this.lineData = [];
     this.qtls = [];
@@ -45,36 +44,35 @@ export default class GenotypeCanvas {
     this.lineUnderMouse = undefined;
 
     this.genomeMap = undefined;
+    this.germplasmDataSet = undefined;
   }
 
-  init(markerData, lineNames, lineData, qtls, colorStamps, genomeMap) {
-    this.totalMarkers = markerData.length === 0 ? lineData[0].length : markerData.length;
-
-    this.totalLines = lineNames.length;
+  init(genomeMap, germplasmDataSet, qtls, colorStamps) {
+    this.genomeMap = genomeMap;
+    this.germplasmDataSet = germplasmDataSet;
+    
+    this.totalMarkers = genomeMap.totalMarkerCount();
+    this.totalLines = germplasmDataSet.germplasmList.length;
 
     this.maxCanvasWidth = this.totalMarkers * this.boxSize;
     this.maxCanvasHeight = this.totalLines * this.boxSize;
 
-    this.markerData = markerData;
-    this.lineNames = lineNames;
-    this.lineData = lineData;
     this.qtls = qtls;
     this.colorStamps = colorStamps;
-
-    this.genomeMap = genomeMap;
   }
 
   prerender() {
     this.drawingContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (this.redraw) {
-      const lineStart = Math.floor(this.translatedY / this.boxSize);
-      const lineEnd = Math.min(lineStart + Math.floor(this.canvas.height / this.boxSize), this.totalLines);
-
       this.markerStart = Math.floor(this.translatedX / this.boxSize);
       this.markerEnd = Math.min(Math.floor((this.translatedX + this.alleleCanvasWidth) / this.boxSize), this.totalMarkers);
       const markerData = this.genomeMap.markersFor(this.markerStart, this.markerEnd);
       const dataWidth = this.markerEnd - this.markerStart;
+
+      const germplasmStart = Math.floor(this.translatedY / this.boxSize);
+      const germplasmEnd = Math.min(germplasmStart + Math.floor(this.canvas.height / this.boxSize), this.totalLines);
+      const germplasmData = this.germplasmDataSet.germplasmFor(germplasmStart, germplasmEnd);
 
       this.mapCanvasHeight = typeof markerData[0] === 'undefined' ? 0 : this.mapCanvasHeight;
       this.qtlCanvasHeight = typeof this.qtls[0] === 'undefined' ? 0 : this.qtlCanvasHeight;
@@ -82,13 +80,7 @@ export default class GenotypeCanvas {
       this.verticalScrollbar = new ScrollBar(this.canvas.width, this.alleleCanvasHeight - 10,
         10, this.alleleCanvasHeight - 10, true);
 
-      const names = this.lineNames.slice(lineStart, lineEnd);
-      // const alleleData = [];
-      // for (let i = lineStart; i < lineEnd; i += 1) {
-      //   alleleData.push(this.lineData[i].slice(alleleStart, alleleEnd));
-      // }
-
-      this.render(markerData, names, 'alleleData', this.qtls, dataWidth);
+      this.render(markerData, germplasmData, this.qtls, dataWidth);
     }
 
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
@@ -106,11 +98,11 @@ export default class GenotypeCanvas {
     this.redraw = false;
   }
 
-  render(markerData, lineNames, lineData, qtls, dataWidth) {
+  render(markerData, germplasmData, qtls, dataWidth) {
     this.backContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.renderQtls(qtls, markerData);
     this.renderMap(markerData, dataWidth);
-    // this.renderGermplasmNames(lineNames);
+    this.renderGermplasmNames(germplasmData);
     // this.renderGermplasm(lineData);
     this.renderScrollbars();
   }
@@ -176,41 +168,39 @@ export default class GenotypeCanvas {
   }
 
   renderMap(markerData, dataWidth) {
-    if (typeof this.markerStart !== 'undefined') {
-      // Set the line style for drawing the map and markers
-      this.backContext.lineWidth = 1;
-      this.backContext.strokeStyle = 'gray';
+    // Set the line style for drawing the map and markers
+    this.backContext.lineWidth = 1;
+    this.backContext.strokeStyle = 'gray';
 
-      // Translate to the correct position to draw the map
-      this.backContext.translate(this.lineNamesWidth, this.qtlCanvasHeight);
-      
-      // We need to count the total translation for multiple chromosome rendering
-      let cumulativeTranslation = 0;
+    // Translate to the correct position to draw the map
+    this.backContext.translate(this.lineNamesWidth, this.qtlCanvasHeight);
 
-      markerData.forEach((chromosome) => {
-        const { markers } = chromosome;
-        // Draw a rectangle outline for the map
-        const canvasW = this.alleleCanvasWidth - this.verticalScrollbar.width;
-        if (cumulativeTranslation < canvasW) {
-          let mapWidth = Math.floor(canvasW * (markers.length / dataWidth));
-          if (cumulativeTranslation + mapWidth > canvasW) {
-            mapWidth = canvasW - cumulativeTranslation;
-          }
-          this.backContext.strokeRect(0, 1, mapWidth, 10);
+    // We need to count the total translation for multiple chromosome rendering
+    let cumulativeTranslation = 0;
 
-          this.renderMarkers(markers, mapWidth);
-          
-          cumulativeTranslation += mapWidth + 20;
-
-          this.backContext.translate(mapWidth + 20, 0);
+    markerData.forEach((chromosome) => {
+      const { markers } = chromosome;
+      // Draw a rectangle outline for the map
+      const canvasW = this.alleleCanvasWidth - this.verticalScrollbar.width;
+      if (cumulativeTranslation < canvasW) {
+        let mapWidth = Math.floor(canvasW * (markers.length / dataWidth));
+        if (cumulativeTranslation + mapWidth > canvasW) {
+          mapWidth = canvasW - cumulativeTranslation;
         }
-      });
-    }
+        this.backContext.strokeRect(0, 1, mapWidth, 10);
+
+        this.renderMarkers(markers, mapWidth);
+
+        cumulativeTranslation += mapWidth + 20;
+        this.backContext.translate(mapWidth + 20, 0);
+      }
+    });
 
     this.backContext.resetTransform();
   }
 
-  renderGermplasmNames(lineNames) {
+  renderGermplasmNames(germplasmData) {
+    const lineNames = germplasmData.map(germplasm => germplasm.name);
     this.backContext.fillStyle = '#333';
     this.backContext.translate(0, this.mapCanvasHeight + this.qtlCanvasHeight);
     for (let i = 0; i < lineNames.length; i += 1) {

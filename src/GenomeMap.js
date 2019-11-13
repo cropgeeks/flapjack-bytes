@@ -45,4 +45,20 @@ export default class GenomeMap {
 
     return foundMarkers;
   }
+
+  markerByName(markerName) {
+    let found = -1;
+    this.chromosomes.forEach((chromosome, idx) => {
+      const markerIndex = chromosome.markers.map(m => m.name).indexOf(markerName);
+      if (markerIndex !== -1) {
+        found = { chromosome: idx, markerIndex };
+      }
+    });
+
+    return found;
+  }
+
+  totalMarkerCount() {
+    return this.chromosomes.map(c => c.markerCount()).reduce((a, b) => a + b, 0);
+  }
 }

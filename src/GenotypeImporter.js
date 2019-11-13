@@ -1,13 +1,17 @@
 import Genotype from './Genotype';
+import GermplasmDataSet from './GermplasmDataSet';
+import Germplasm from './Germplasm';
 
 export default class GenotypeImporter {
-  constructor() {
+  constructor(genomeMap) {
     this.rawToGenoMap = new Map();
     this.rawToGenoMap.set('', Genotype.fromString(''));
     this.stateTable = new Map();
     this.stateTable.set(this.rawToGenoMap.get(''), 0);
-    this.lineNames = [];
-    this.lineData = [];
+
+    this.genomeMap = genomeMap;
+    this.markerIndices = new Map();
+    this.germplasmList = [];
   }
 
   getState(genoString) {
@@ -33,15 +37,45 @@ export default class GenotypeImporter {
     return index;
   }
 
+  initGenotypeData() {
+    const data = [];
+    this.genomeMap.chromosomes.forEach((chromosome) => {
+      data.push(Array(chromosome.markerCount()).fill(0));
+    });
+
+    return data;
+  }
+
   processFileLine(line) {
-    if (line.startsWith('#') || (!line || line.length === 0) || line.startsWith('Accession') || line.startsWith('\t')) {
+    if (line.startsWith('#') || (!line || line.length === 0)) {
+      return;
+    }
+
+    if (line.startsWith('Accession') || line.startsWith('\t')) {
+      const markerNames = line.split('\t');
+      markerNames.slice(1).forEach((name, idx) => {
+        const indices = this.genomeMap.markerByName(name);
+        if (indices !== -1) {
+          this.markerIndices.set(idx, indices);
+        }
+      });
+      // TODO: write code to deal with cases where we don't have a map here...
+      // console.log(this.genomeMap.totalMarkerCount());
       return;
     }
     const tokens = line.split('\t');
     const lineName = tokens[0];
-    const data = tokens.slice(1).map(this.getState.bind(this));
-    this.lineNames.push(lineName);
-    this.lineData.push(data);
+    const genotypeData = this.initGenotypeData();
+    tokens.slice(1).forEach((state, idx) => {
+      const indices = this.markerIndices.get(idx);
+      // console.log(indices);
+      if (indices !== undefined && indices !== -1) {
+        genotypeData[indices.chromosome][indices.markerIndex] = this.getState(state);
+      }
+    });
+
+    const germplasm = new Germplasm(lineName, genotypeData);
+    this.germplasmList.push(germplasm);
   }
 
   parseFile(fileContents) {
@@ -49,5 +83,7 @@ export default class GenotypeImporter {
     for (let line = 0; line < lines.length; line += 1) {
       this.processFileLine(lines[line]);
     }
+
+    return new GermplasmDataSet(this.germplasmList);
   }
 }
