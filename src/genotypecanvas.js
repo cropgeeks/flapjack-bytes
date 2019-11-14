@@ -11,11 +11,10 @@ export default class GenotypeCanvas {
     this.backBuffer.width = width;
     this.backBuffer.height = height;
     this.backContext = this.backBuffer.getContext('2d');
-    this.qtlCanvasHeight = 30;
-    this.mapCanvasHeight = 30;
+    this.mapCanvasHeight = 40;
     this.lineNamesWidth = 100;
     this.alleleCanvasWidth = width - this.lineNamesWidth;
-    this.alleleCanvasHeight = height - this.mapCanvasHeight - this.qtlCanvasHeight;
+    this.alleleCanvasHeight = height - this.mapCanvasHeight;
     this.backContext.lineWidth = 1;
 
     this.boxSize = boxSize;
@@ -34,7 +33,6 @@ export default class GenotypeCanvas {
     this.totalLines = 0;
     this.lineNames = [];
     this.lineData = [];
-    this.qtls = [];
     this.redraw = true;
     this.colorStamps = [];
     this.markerStart = 0;
@@ -47,7 +45,7 @@ export default class GenotypeCanvas {
     this.germplasmDataSet = undefined;
   }
 
-  init(genomeMap, germplasmDataSet, qtls, colorStamps) {
+  init(genomeMap, germplasmDataSet, colorStamps) {
     this.genomeMap = genomeMap;
     this.germplasmDataSet = germplasmDataSet;
     
@@ -57,7 +55,6 @@ export default class GenotypeCanvas {
     this.maxCanvasWidth = this.totalMarkers * this.boxSize;
     this.maxCanvasHeight = this.totalLines * this.boxSize;
 
-    this.qtls = qtls;
     this.colorStamps = colorStamps;
   }
 
@@ -75,66 +72,35 @@ export default class GenotypeCanvas {
       const germplasmData = this.germplasmDataSet.germplasmFor(germplasmStart, germplasmEnd);
 
       this.mapCanvasHeight = typeof markerData[0] === 'undefined' ? 0 : this.mapCanvasHeight;
-      this.qtlCanvasHeight = typeof this.qtls[0] === 'undefined' ? 0 : this.qtlCanvasHeight;
-      this.alleleCanvasHeight = this.canvas.height - this.mapCanvasHeight - this.qtlCanvasHeight;
+      this.alleleCanvasHeight = this.canvas.height - this.mapCanvasHeight;
       this.verticalScrollbar = new ScrollBar(this.canvas.width, this.alleleCanvasHeight - 10,
         10, this.alleleCanvasHeight - 10, true);
 
-      this.render(markerData, germplasmData, this.qtls, dataWidth);
+      this.render(markerData, germplasmData, dataWidth);
     }
 
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
 
-    if (this.lineUnderMouse && this.markerUnderMouse) {
-      this.drawingContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
-      this.drawingContext.globalAlpha = 0.4;
-      this.drawingContext.fillStyle = '#fff';
-      this.drawingContext.fillRect(this.markerUnderMouse * this.boxSize, 0, this.boxSize, this.alleleCanvasHeight);
-      this.drawingContext.fillRect(0, this.lineUnderMouse * this.boxSize, this.alleleCanvasWidth, this.boxSize);
-      this.drawingContext.translate(-this.lineNamesWidth, -this.mapCanvasHeight);
-      this.drawingContext.globalAlpha = 1;
-    }
+    // TODO: bring back in once we have everything else working;
+    // if (this.lineUnderMouse && this.markerUnderMouse) {
+    //   this.drawingContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
+    //   this.drawingContext.globalAlpha = 0.4;
+    //   this.drawingContext.fillStyle = '#fff';
+    //   this.drawingContext.fillRect(this.markerUnderMouse * this.boxSize, 0, this.boxSize, this.alleleCanvasHeight);
+    //   this.drawingContext.fillRect(0, this.lineUnderMouse * this.boxSize, this.alleleCanvasWidth, this.boxSize);
+    //   this.drawingContext.translate(-this.lineNamesWidth, -this.mapCanvasHeight);
+    //   this.drawingContext.globalAlpha = 1;
+    // }
 
     this.redraw = false;
   }
 
-  render(markerData, germplasmData, qtls, dataWidth) {
+  render(markerData, germplasmData, dataWidth) {
     this.backContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.renderQtls(qtls, markerData);
     this.renderMap(markerData, dataWidth);
     this.renderGermplasmNames(germplasmData);
     // this.renderGermplasm(lineData);
     this.renderScrollbars();
-  }
-
-  renderQtls(qtlData, markerData) {
-    if (typeof markerData[0] !== 'undefined' && typeof qtlData[0] !== 'undefined') {
-      this.backContext.translate(this.lineNamesWidth, 0);
-
-      const firstMarkerPos = markerData[0].position;
-      const lastMarkerPos = markerData[markerData.length - 1].position;
-
-      const dist = lastMarkerPos - firstMarkerPos;
-
-      for (let i = 0; i < qtlData.length; i += 1) {
-        const qtl = qtlData[i];
-        if (qtl.max > firstMarkerPos && qtl.min < lastMarkerPos) {
-          let start = Math.max(firstMarkerPos, qtl.min);
-          let end = Math.min(lastMarkerPos, qtl.max);
-          
-          start = ((start - firstMarkerPos) * ((this.alleleCanvasWidth) / dist));
-          end = ((end - firstMarkerPos) * ((this.alleleCanvasWidth) / dist));
-
-          this.backContext.lineWidth = 1;
-          this.backContext.strokeStyle = 'gray';
-          this.backContext.fillStyle = this.rainbowColor(this.qtls.length, i);
-          this.backContext.strokeRect(start, 5, end - start + 1, 10);
-          this.backContext.fillRect(start, 5, end - start + 1, 10);
-        }
-      }
-
-      this.backContext.translate(-this.lineNamesWidth, 0);
-    }
   }
 
   renderMarker(marker, genoMarkerPos, firstMarkerPos, mapScaleFactor) {
@@ -146,7 +112,7 @@ export default class GenotypeCanvas {
     // Draw diagonal line to marker position on the genotype canvas
     this.backContext.lineTo(genoMarkerPos, 20);
     // Draw a vertical line down to the genotype canvas
-    this.backContext.lineTo(genoMarkerPos, this.mapCanvasHeight);
+    this.backContext.lineTo(genoMarkerPos, 30);
     this.backContext.stroke();
   }
 
@@ -168,12 +134,13 @@ export default class GenotypeCanvas {
   }
 
   renderMap(markerData, dataWidth) {
+    this.backContext.save();
     // Set the line style for drawing the map and markers
     this.backContext.lineWidth = 1;
     this.backContext.strokeStyle = 'gray';
 
     // Translate to the correct position to draw the map
-    this.backContext.translate(this.lineNamesWidth, this.qtlCanvasHeight);
+    this.backContext.translate(this.lineNamesWidth, 0);
 
     // We need to count the total translation for multiple chromosome rendering
     let cumulativeTranslation = 0;
@@ -196,42 +163,47 @@ export default class GenotypeCanvas {
       }
     });
 
-    this.backContext.resetTransform();
+    this.backContext.restore();
   }
 
   renderGermplasmNames(germplasmData) {
+    this.backContext.save();
     const lineNames = germplasmData.map(germplasm => germplasm.name);
     this.backContext.fillStyle = '#333';
-    this.backContext.translate(0, this.mapCanvasHeight + this.qtlCanvasHeight);
-    for (let i = 0; i < lineNames.length; i += 1) {
-      this.backContext.fillText(lineNames[i], 0, ((i * this.boxSize) + (this.boxSize - (this.fontSize / 2))));
-    }
-    this.backContext.translate(0, -(this.mapCanvasHeight + this.qtlCanvasHeight));
+    this.backContext.translate(0, this.mapCanvasHeight);
+
+    lineNames.forEach((name, idx) => {
+      this.backContext.fillText(name, 0, idx * this.boxSize);
+    });
+    this.backContext.restore();
   }
 
   renderGermplasm(lineData) {
-    this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight + this.qtlCanvasHeight);
-    for (let i = 0; i < lineData.length; i += 1) {
-      for (let j = 0; j < lineData[i].length; j += 1) {
-        this.backContext.drawImage(this.colorStamps[lineData[i][j]], (j * this.boxSize), (i * this.boxSize));
-      }
-    }
-    this.backContext.translate(-this.lineNamesWidth, -(this.mapCanvasHeight + this.qtlCanvasHeight));
+    // this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
+    // for (let i = 0; i < lineData.length; i += 1) {
+    //   for (let j = 0; j < lineData[i].length; j += 1) {
+    //     this.backContext.drawImage(this.colorStamps[lineData[i][j]], (j * this.boxSize), (i * this.boxSize));
+    //   }
+    // }
+    // this.backContext.translate(-this.lineNamesWidth, -(this.mapCanvasHeight));
   }
 
   renderScrollbars() {
-    this.backContext.translate(0, this.mapCanvasHeight + this.qtlCanvasHeight);
+    this.backContext.save();
+    this.backContext.translate(0, this.mapCanvasHeight);
     this.verticalScrollbar.render(this.backContext);
-    this.backContext.translate(0, -(this.mapCanvasHeight + this.qtlCanvasHeight));
+    this.backContext.restore();
+    this.backContext.save();
     this.backContext.translate(this.lineNamesWidth, 0);
     this.horizontalScrollbar.render(this.backContext);
-    this.backContext.translate(-this.lineNamesWidth, 0);
+    this.backContext.restore();
 
-    this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight + this.qtlCanvasHeight);
+    this.backContext.save();
+    this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
     this.backContext.fillStyle = '#aaa';
     this.backContext.strokeRect(this.alleleCanvasWidth - 10, this.alleleCanvasHeight - 10, 10, 10);
     this.backContext.fillRect(this.alleleCanvasWidth - 10, this.alleleCanvasHeight - 10, 10, 10);
-    this.backContext.translate(-this.lineNamesWidth, -(this.mapCanvasHeight + this.qtlCanvasHeight));
+    this.backContext.restore();
   }
 
   move(diffX, diffY) {

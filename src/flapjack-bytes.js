@@ -129,11 +129,11 @@ export default function GenotypeRenderer() {
   // eslint-disable-next-line func-names
   genotypeRenderer.renderGenotypesFile = function (domParent, width, height, mapFileDom, genotypeFileDom, qtlFileDom) {
     createRendererComponents(domParent, width, height);
-    let qtls = [];
+    // let qtls = [];
     let germplasmData;
 
     const mapPromise = loadFromFile(mapFileDom);
-    const qtlPromise = loadFromFile(qtlFileDom);
+    // const qtlPromise = loadFromFile(qtlFileDom);
     const genotypePromise = loadFromFile(genotypeFileDom);
 
     // Load map data
@@ -142,12 +142,12 @@ export default function GenotypeRenderer() {
       genomeMap = mapImporter.parseFile(result);
     });
 
-    // Then QTL data
-    qtlPromise.then((result) => {
-      const qtlImporter = new QtlImporter();
-      qtlImporter.parseFile(result);
-      qtls = qtlImporter.qtls;
-    });
+    // // Then QTL data
+    // qtlPromise.then((result) => {
+    //   const qtlImporter = new QtlImporter();
+    //   qtlImporter.parseFile(result);
+    //   qtls = qtlImporter.qtls;
+    // });
 
     // Then genotype data
     genotypePromise.then((result) => {
@@ -158,7 +158,7 @@ export default function GenotypeRenderer() {
       colorScheme = new NucleotideColorScheme(stateTable, document);
       colorScheme.setupColorStamps(boxSize);
 
-      genotypeCanvas.init(genomeMap, germplasmData, qtls, colorScheme.colorStamps);
+      genotypeCanvas.init(genomeMap, germplasmData, colorScheme.colorStamps);
       genotypeCanvas.prerender();
     });
 
