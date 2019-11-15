@@ -65,13 +65,14 @@ export default class GenotypeCanvas {
 
       const germplasmStart = Math.floor(this.translatedY / this.boxSize);
       const germplasmEnd = Math.min(germplasmStart + Math.floor(this.canvas.height / this.boxSize), this.dataSet.lineCount());
+      const genotypeData = this.dataSet.genotypeDataFor(germplasmStart, germplasmEnd, markerStart, markerEnd);
 
       this.mapCanvasHeight = typeof markerData[0] === 'undefined' ? 0 : this.mapCanvasHeight;
       this.alleleCanvasHeight = this.canvas.height - this.mapCanvasHeight;
       this.verticalScrollbar = new ScrollBar(this.canvas.width, this.alleleCanvasHeight - 10,
         10, this.alleleCanvasHeight - 10, true);
 
-      this.render(markerStart, markerEnd, germplasmStart, germplasmEnd);
+      this.render(markerData, genotypeData, dataWidth);
     }
 
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
@@ -90,11 +91,11 @@ export default class GenotypeCanvas {
     this.redraw = false;
   }
 
-  render(markerStart, markerEnd, germplasmStart, germplasmEnd) {
+  render(markerData, genotypeData, dataWidth) {
     this.backContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.renderMap(markerStart, markerEnd);
-    this.renderGermplasmNames(germplasmStart, germplasmEnd);
-    this.renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd);
+    this.renderMap(markerData, dataWidth);
+    this.renderGermplasmNames(genotypeData);
+    this.renderGermplasm(genotypeData, dataWidth);
     this.renderScrollbars();
   }
 
@@ -128,10 +129,7 @@ export default class GenotypeCanvas {
     }
   }
 
-  renderMap(markerStart, markerEnd) {
-    const markerData = this.dataSet.mapDataFor(markerStart, markerEnd);
-    const dataWidth = markerEnd - markerStart;
-
+  renderMap(markerData, dataWidth) {
     this.backContext.save();
     // Set the line style for drawing the map and markers
     this.backContext.lineWidth = 1;
@@ -164,9 +162,9 @@ export default class GenotypeCanvas {
     this.backContext.restore();
   }
 
-  renderGermplasmNames(germplasmStart, germplasmEnd) {
+  renderGermplasmNames(genotypeData) {
     this.backContext.save();
-    const lineNames = this.dataSet.germplasmFor(germplasmStart, germplasmEnd).map(germplasm => germplasm.name);
+    const lineNames = genotypeData.map(germplasm => germplasm.name);
     this.backContext.fillStyle = '#333';
     this.backContext.translate(0, this.mapCanvasHeight);
 
@@ -176,12 +174,9 @@ export default class GenotypeCanvas {
     this.backContext.restore();
   }
 
-  renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd) {
+  renderGermplasm(genotypeData, dataWidth) {
     this.backContext.save();
     this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
-    
-    const genotypeData = this.dataSet.genotypeDataFor(germplasmStart, germplasmEnd, markerStart, markerEnd);
-
 
     for (let germplasm = 0; germplasm < genotypeData.length; germplasm += 1) {
       const { data } = genotypeData[germplasm];
@@ -192,7 +187,7 @@ export default class GenotypeCanvas {
          // Draw a rectangle outline for the map
         const canvasW = this.alleleCanvasWidth;
         if (cumulativeTranslation < canvasW) {
-          let mapWidth = Math.floor(canvasW * (genotypes.length / (markerEnd - markerStart)));
+          let mapWidth = Math.floor(canvasW * (genotypes.length / dataWidth));
           if (cumulativeTranslation + mapWidth > canvasW) {
             mapWidth = canvasW - cumulativeTranslation;
           }
