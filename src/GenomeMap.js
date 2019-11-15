@@ -46,6 +46,19 @@ export default class GenomeMap {
     return foundMarkers;
   }
 
+  chromosomePositionsFor(dataStart, dataEnd) {
+    const foundChromosomes = this.intervalTree.search(dataStart, dataEnd);
+    const positions = [];
+    foundChromosomes.forEach((chromosome) => {
+      const chromStart = this.chromosomeStarts.get(chromosome);
+      const firstMarker = Math.max(dataStart - chromStart, 0);
+      const lastMarker = Math.min(chromosome.markerCount(), dataEnd - chromStart);
+      positions.push({ chromosomeIndex: this.chromosomes.indexOf(chromosome), firstMarker, lastMarker });
+    });
+
+    return positions;
+  }
+
   markerByName(markerName) {
     let found = -1;
     this.chromosomes.forEach((chromosome, idx) => {
@@ -58,7 +71,7 @@ export default class GenomeMap {
     return found;
   }
 
-  totalMarkerCount() {
+  markerCount() {
     return this.chromosomes.map(c => c.markerCount()).reduce((a, b) => a + b, 0);
   }
 }

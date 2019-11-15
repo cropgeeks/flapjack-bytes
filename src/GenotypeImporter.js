@@ -1,5 +1,4 @@
 import Genotype from './Genotype';
-import GermplasmDataSet from './GermplasmDataSet';
 import Germplasm from './Germplasm';
 
 export default class GenotypeImporter {
@@ -84,6 +83,6 @@ export default class GenotypeImporter {
       this.processFileLine(lines[line]);
     }
 
-    return new GermplasmDataSet(this.germplasmList);
+    return this.germplasmList;
   }
 }

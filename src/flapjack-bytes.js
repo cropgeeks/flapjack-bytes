@@ -6,6 +6,7 @@ import GenotypeImporter from './GenotypeImporter';
 import NucleotideColorScheme from './NucleotideColorScheme';
 import MapImporter from './MapImporter';
 import QtlImporter from './QtlImporter';
+import DataSet from './DataSet';
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -21,6 +22,7 @@ export default function GenotypeRenderer() {
   let colorScheme;
 
   let genomeMap;
+  let dataSet;
 
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
     console.log(mapId);
@@ -158,7 +160,9 @@ export default function GenotypeRenderer() {
       colorScheme = new NucleotideColorScheme(stateTable, document);
       colorScheme.setupColorStamps(boxSize);
 
-      genotypeCanvas.init(genomeMap, germplasmData, colorScheme.colorStamps);
+      dataSet = new DataSet(genomeMap, germplasmData);
+
+      genotypeCanvas.init(dataSet, colorScheme.colorStamps);
       genotypeCanvas.prerender();
     });
 
