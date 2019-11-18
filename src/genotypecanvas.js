@@ -196,7 +196,7 @@ export default class GenotypeCanvas {
           if (cumulativeTranslation + mapWidth > canvasW) {
             mapWidth = canvasW - cumulativeTranslation;
           }
-          for (let genotype = 0; genotype < genotypes.length; genotype += 1) {
+          for (let genotype = 0; genotype < genotypes.length && (genotype * this.boxSize) < mapWidth; genotype += 1) {
             this.backContext.drawImage(colorStamps[genotypes[genotype]], (genotype * this.boxSize), (germplasm * this.boxSize));
           }
           cumulativeTranslation += mapWidth + 50;
