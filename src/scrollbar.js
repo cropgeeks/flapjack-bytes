@@ -24,6 +24,14 @@ export default class ScrollBar {
   move(x, y) {
     this.widget.move(x, y);
   }
+
+  // The width of the horizontal scrollbar can change depending on the width
+  // of the germplasmNameCanvas
+  updateWidth(newWidth) {
+    if (!this.vertical) {
+      this.width = newWidth;
+    }
+  }
 }
 
 class ScrollBarWidget {

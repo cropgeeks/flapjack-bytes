@@ -312,8 +312,7 @@ export default class GenotypeCanvas {
     const longestName = Math.max(...germplasm.map(g => this.backContext.measureText(g.name).width));
     this.nameCanvasWidth = longestName;
 
-    this.horizontalScrollbar = new ScrollBar(this.alleleCanvasWidth(),
-      this.canvas.height, this.alleleCanvasWidth(), this.scrollbarHeight, false);
+    this.horizontalScrollbar.updateWidth(this.alleleCanvasWidth());
   }
 
   zoom(size) {
