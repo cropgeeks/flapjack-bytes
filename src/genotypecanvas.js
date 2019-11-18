@@ -17,25 +17,21 @@ export default class GenotypeCanvas {
     this.scrollbarWidth = 10;
     this.scrollbarHeight = 10;
 
-    this.alleleCanvasWidth = width - this.nameCanvasWidth - this.scrollbarWidth;
-    this.alleleCanvasHeight = height - this.mapCanvasHeight - this.scrollbarHeight;
     this.backContext.lineWidth = 1;
 
     this.boxSize = boxSize;
     this.fontSize = 100;
     this.font = undefined;
 
-    this.verticalScrollbar = new ScrollBar(width, this.alleleCanvasHeight + this.scrollbarHeight,
-      this.scrollbarWidth, this.alleleCanvasHeight, true);
-    this.horizontalScrollbar = new ScrollBar(width - this.nameCanvasWidth + this.scrollbarWidth - 1,
-      height, width - this.nameCanvasWidth - 1, this.scrollbarHeight, false);
+    this.verticalScrollbar = new ScrollBar(width, this.alleleCanvasHeight() + this.scrollbarHeight,
+      this.scrollbarWidth, this.alleleCanvasHeight(), true);
+    this.horizontalScrollbar = new ScrollBar(this.alleleCanvasWidth(),
+      height, this.alleleCanvasWidth(), this.scrollbarHeight, false);
 
     this.translatedX = 0;
     this.translatedY = 0;
     this.maxCanvasWidth = 0;
     this.maxCanvasHeight = 0;
-    this.lineNames = [];
-    this.lineData = [];
     this.redraw = true;
     this.colorScheme = undefined;
 
@@ -43,6 +39,14 @@ export default class GenotypeCanvas {
     this.lineUnderMouse = undefined;
 
     this.dataSet = undefined;
+  }
+
+  alleleCanvasWidth() {
+    return this.canvas.width - this.nameCanvasWidth - this.scrollbarWidth;
+  }
+
+  alleleCanvasHeight() {
+    return this.canvas.height - this.mapCanvasHeight - this.scrollbarHeight;
   }
 
   init(dataSet, colorScheme) {
@@ -60,7 +64,7 @@ export default class GenotypeCanvas {
     this.drawingContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (this.redraw) {
-      const dataWidth = Math.floor(this.alleleCanvasWidth / this.boxSize);
+      const dataWidth = Math.floor(this.alleleCanvasWidth() / this.boxSize);
 
       const markerStart = Math.floor(this.translatedX / this.boxSize);
       const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCount());
@@ -71,9 +75,8 @@ export default class GenotypeCanvas {
       const genotypeData = this.dataSet.genotypeDataFor(germplasmStart, germplasmEnd, markerStart, markerEnd);
 
       this.mapCanvasHeight = typeof markerData[0] === 'undefined' ? 0 : this.mapCanvasHeight;
-      this.alleleCanvasHeight = this.canvas.height - this.mapCanvasHeight;
-      this.verticalScrollbar = new ScrollBar(this.canvas.width, this.alleleCanvasHeight - 10,
-        10, this.alleleCanvasHeight - 10, true);
+      this.verticalScrollbar = new ScrollBar(this.canvas.width, this.alleleCanvasHeight(),
+        10, this.alleleCanvasHeight(), true);
 
       this.render(markerData, genotypeData, dataWidth);
     }
@@ -147,7 +150,7 @@ export default class GenotypeCanvas {
     markerData.forEach((chromosome) => {
       const { markers } = chromosome;
       // Draw a rectangle outline for the map
-      const canvasW = this.alleleCanvasWidth;
+      const canvasW = this.alleleCanvasWidth();
       if (cumulativeTranslation < canvasW) {
         let mapWidth = Math.floor(canvasW * (markers.length / dataWidth));
         if (cumulativeTranslation + mapWidth > canvasW) {
@@ -190,7 +193,7 @@ export default class GenotypeCanvas {
       for (let chromosome = 0; chromosome < data.length; chromosome += 1) {
         const { genotypes } = data[chromosome];
         // Draw a rectangle outline for the map
-        const canvasW = this.alleleCanvasWidth;
+        const canvasW = this.alleleCanvasWidth();
         if (cumulativeTranslation < canvasW) {
           let mapWidth = Math.floor(canvasW * (genotypes.length / dataWidth));
           if (cumulativeTranslation + mapWidth > canvasW) {
@@ -222,8 +225,8 @@ export default class GenotypeCanvas {
     this.backContext.save();
     this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
     this.backContext.fillStyle = '#aaa';
-    this.backContext.strokeRect(this.alleleCanvasWidth, this.alleleCanvasHeight - this.scrollbarHeight, this.scrollbarWidth, this.scrollbarHeight);
-    this.backContext.fillRect(this.alleleCanvasWidth, this.alleleCanvasHeight - this.scrollbarHeight, this.scrollbarWidth, this.scrollbarHeight);
+    this.backContext.strokeRect(this.alleleCanvasWidth(), this.alleleCanvasHeight(), this.scrollbarWidth, this.scrollbarHeight);
+    this.backContext.fillRect(this.alleleCanvasWidth(), this.alleleCanvasHeight(), this.scrollbarWidth, this.scrollbarHeight);
     this.backContext.restore();
   }
 
@@ -235,8 +238,8 @@ export default class GenotypeCanvas {
     if (this.maxCanvasWidth > this.canvas.width) {
       this.translatedX -= diffX;
       if (this.translatedX < 0) { this.translatedX = 0; }
-      if ((this.translatedX / this.boxSize) >= ((this.maxCanvasWidth / this.boxSize) - (this.alleleCanvasWidth / this.boxSize))) {
-        this.translatedX = this.maxCanvasWidth - this.alleleCanvasWidth;
+      if ((this.translatedX / this.boxSize) >= ((this.maxCanvasWidth / this.boxSize) - (this.alleleCanvasWidth() / this.boxSize))) {
+        this.translatedX = this.maxCanvasWidth - this.alleleCanvasWidth();
       }
 
       // console.log(this.translatedX, Math.floor(this.translatedX / this.boxSize), (this.translatedX + this.alleleCanvasWidth), Math.floor((this.translatedX + this.alleleCanvasWidth) / this.boxSize), this.boxSize);
@@ -244,18 +247,18 @@ export default class GenotypeCanvas {
       // let foundChroms = this.genomeMap.markersFor(Math.floor(this.translatedX / this.boxSize), Math.floor((this.translatedX + this.alleleCanvasWidth) / this.boxSize));
       // console.log(foundChroms);
 
-      const scrollWidth = this.alleleCanvasWidth - 10 - 20;
-      const scrollX = Math.floor(this.mapToRange(this.translatedX, 0, this.maxCanvasWidth - this.alleleCanvasWidth, 0, scrollWidth));
+      const scrollWidth = this.alleleCanvasWidth() - 10 - 20;
+      const scrollX = Math.floor(this.mapToRange(this.translatedX, 0, this.maxCanvasWidth - this.alleleCanvasWidth(), 0, scrollWidth));
       this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
     }
 
     if (this.maxCanvasHeight > this.canvas.height) {
       this.translatedY -= diffY;
       if (this.translatedY < 0) { this.translatedY = 0; }
-      if ((this.translatedY / this.boxSize) >= ((this.maxCanvasHeight / this.boxSize) - (this.alleleCanvasHeight / this.boxSize))) { this.translatedY = this.maxCanvasHeight - this.alleleCanvasHeight; }
+      if ((this.translatedY / this.boxSize) >= ((this.maxCanvasHeight / this.boxSize) - (this.alleleCanvasHeight() / this.boxSize))) { this.translatedY = this.maxCanvasHeight - this.alleleCanvasHeight(); }
 
-      const scrollHeight = this.alleleCanvasHeight - 10 - 20;
-      const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, this.maxCanvasHeight - this.alleleCanvasHeight, 0, scrollHeight));
+      const scrollHeight = this.alleleCanvasHeight() - 10 - 20;
+      const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, this.maxCanvasHeight - this.alleleCanvasHeight(), 0, scrollHeight));
       this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
     }
 
@@ -308,6 +311,9 @@ export default class GenotypeCanvas {
     const germplasm = this.dataSet.germplasmList;
     const longestName = Math.max(...germplasm.map(g => this.backContext.measureText(g.name).width));
     this.nameCanvasWidth = longestName;
+
+    this.horizontalScrollbar = new ScrollBar(this.alleleCanvasWidth(),
+      this.canvas.height, this.alleleCanvasWidth(), this.scrollbarHeight, false);
   }
 
   zoom(size) {
