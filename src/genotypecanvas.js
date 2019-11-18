@@ -1,7 +1,7 @@
 import ScrollBar from './scrollbar';
 
 export default class GenotypeCanvas {
-  constructor(width, height, boxSize, fontSize) {
+  constructor(width, height, boxSize) {
     this.canvas = document.createElement('canvas');
     this.canvas.width = width;
     this.canvas.height = height;
@@ -22,7 +22,8 @@ export default class GenotypeCanvas {
     this.backContext.lineWidth = 1;
 
     this.boxSize = boxSize;
-    this.fontSize = fontSize;
+    this.fontSize = 100;
+    this.font = undefined;
 
     this.verticalScrollbar = new ScrollBar(width, this.alleleCanvasHeight + this.scrollbarHeight,
       this.scrollbarWidth, this.alleleCanvasHeight, true);
@@ -36,7 +37,7 @@ export default class GenotypeCanvas {
     this.lineNames = [];
     this.lineData = [];
     this.redraw = true;
-    this.colorStamps = [];
+    this.colorScheme = undefined;
 
     this.markerUnderMouse = undefined;
     this.lineUnderMouse = undefined;
@@ -44,13 +45,15 @@ export default class GenotypeCanvas {
     this.dataSet = undefined;
   }
 
-  init(dataSet, colorStamps) {
+  init(dataSet, colorScheme) {
     this.dataSet = dataSet;
+    this.colorScheme = colorScheme;
+    this.font = this.updateFontSize();
+    this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
+    this.colorStamps = this.colorScheme.colorStamps;
 
     this.maxCanvasWidth = this.dataSet.markerCount() * this.boxSize;
     this.maxCanvasHeight = this.dataSet.lineCount() * this.boxSize;
-
-    this.colorStamps = colorStamps;
   }
 
   prerender() {
@@ -166,10 +169,11 @@ export default class GenotypeCanvas {
     this.backContext.save();
     const lineNames = genotypeData.map(germplasm => germplasm.name);
     this.backContext.fillStyle = '#333';
+    this.backContext.font = this.font;
     this.backContext.translate(0, this.mapCanvasHeight);
 
     lineNames.forEach((name, idx) => {
-      this.backContext.fillText(name, 0, idx * this.boxSize);
+      this.backContext.fillText(name, 0, (idx * this.boxSize) + (this.boxSize - (this.fontSize / 2)));
     });
     this.backContext.restore();
   }
@@ -177,6 +181,7 @@ export default class GenotypeCanvas {
   renderGermplasm(genotypeData, dataWidth) {
     this.backContext.save();
     this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
+    const { colorStamps } = this.colorScheme;
 
     for (let germplasm = 0; germplasm < genotypeData.length; germplasm += 1) {
       const { data } = genotypeData[germplasm];
@@ -192,7 +197,7 @@ export default class GenotypeCanvas {
             mapWidth = canvasW - cumulativeTranslation;
           }
           for (let genotype = 0; genotype < genotypes.length; genotype += 1) {
-            this.backContext.drawImage(this.colorStamps[genotypes[genotype]], (genotype * this.boxSize), (germplasm * this.boxSize));
+            this.backContext.drawImage(colorStamps[genotypes[genotype]], (genotype * this.boxSize), (germplasm * this.boxSize));
           }
           cumulativeTranslation += mapWidth + 50;
           this.backContext.translate(mapWidth + 50, 0);
@@ -270,9 +275,34 @@ export default class GenotypeCanvas {
     this.prerender();
   }
 
-  zoom(size, colorStamps) {
+  updateFontSize() {
+    // TODO: need some code to iteratively find the "widest" text, currently
+    // testing indicated C/G was the widest for standard diploid genotypes.
+    const text = 'C/G';
+    const fontface = 'sans-serif';
+    const fontCanvas = document.createElement('canvas');
+    fontCanvas.width = this.boxSize;
+    fontCanvas.height = this.boxSize;
+    const fontContext = fontCanvas.getContext('2d');
+
+    this.fontSize = 100;
+    fontContext.font = `${this.fontSize}px ${fontface}`;
+
+    // Iteratrively reduce the font size until the sample text fits in the
+    // canvas width
+    while (fontContext.measureText(text).width > fontCanvas.width) {
+      this.fontSize -= 1;
+      fontContext.font = `${this.fontSize}px ${fontface}`;
+    }
+
+    return fontContext.font;
+  }
+
+  zoom(size) {
     this.boxSize = size;
-    this.colorStamps = colorStamps;
+    this.font = this.updateFontSize();
+    this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
+    this.colorStamps = this.colorScheme.colorStamps;
     this.maxCanvasWidth = Math.max(this.dataSet.markerCount() * this.boxSize, this.canvas.width);
     this.maxCanvasHeight = Math.max(this.dataSet.lineCount() * this.boxSize, this.canvas.height);
 

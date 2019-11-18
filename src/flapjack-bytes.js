@@ -17,7 +17,6 @@ export default function GenotypeRenderer() {
   let canvasController;
 
   const boxSize = 16;
-  let fontSize = 100;
 
   let colorScheme;
 
@@ -158,11 +157,10 @@ export default function GenotypeRenderer() {
       const { stateTable } = genotypeImporter;
 
       colorScheme = new NucleotideColorScheme(stateTable, document);
-      colorScheme.setupColorStamps(boxSize);
 
       dataSet = new DataSet(genomeMap, germplasmData);
 
-      genotypeCanvas.init(dataSet, colorScheme.colorStamps);
+      genotypeCanvas.init(dataSet, colorScheme);
       genotypeCanvas.prerender();
     });
 
@@ -172,7 +170,7 @@ export default function GenotypeRenderer() {
   function createRendererComponents(domParent, width, height) {
     const canvasHolder = document.getElementById(domParent.slice(1));
 
-    genotypeCanvas = new GenotypeCanvas(width, height, boxSize, fontSize);
+    genotypeCanvas = new GenotypeCanvas(width, height, boxSize);
     canvasHolder.append(genotypeCanvas.canvas);
 
     const zoomDiv = document.createElement('div');
@@ -204,8 +202,7 @@ export default function GenotypeRenderer() {
   }
 
   function zoom(size) {
-    colorScheme.setupColorStamps(size);
-    genotypeCanvas.zoom(size, colorScheme.colorStamps);
+    genotypeCanvas.zoom(size, colorScheme);
   }
 
   function sendEvent(eventName, domParent) {

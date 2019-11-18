@@ -21,49 +21,23 @@ export default class NucleotideColorScheme {
     this.colorMap.set('', { light: this.colors.white, dark: this.colors.white });
 
     this.colorStamps = [];
-
-    this.fontSize = 100;
   }
 
   // Generates a set of homozygous and heterozygous color stamps from the stateTable
-  setupColorStamps(size) {
+  setupColorStamps(size, font, fontSize) {
     this.colorStamps = [];
     this.stateTable.forEach((value, genotype) => {
       let stamp;
       if (genotype.isHomozygous) {
-        stamp = this.drawGradientSquare(size, genotype);
+        stamp = this.drawGradientSquare(size, genotype, font, fontSize);
       } else {
-        stamp = this.drawHetSquare(size, genotype);
+        stamp = this.drawHetSquare(size, genotype, font, fontSize);
       }
       this.colorStamps.push(stamp);
     });
   }
 
-  calculateFontSize(text, fontface, size) {
-    const fontCanvas = document.createElement('canvas');
-    fontCanvas.width = size;
-    fontCanvas.height = size;
-    const fontContext = fontCanvas.getContext('2d');
-
-    this.fontSize = 100;
-    fontContext.font = `${this.fontSize}px ${fontface}`;
-
-    while (fontContext.measureText(text).width > fontCanvas.width) {
-      this.fontSize -= 1;
-      fontContext.font = `${this.fontSize}px ${fontface}`;
-    }
-
-    // TODO: this was in the original code, I think it has to do with passing
-    // the font size change to the line name drawing code
-    // const { backContext } = genotypeCanvas;
-
-    // backContext.font = fontContext.font;
-    // genotypeCanvas.fontSize = this.fontSize;
-
-    return fontContext.font;
-  }
-
-  drawGradientSquare(size, genotype) {
+  drawGradientSquare(size, genotype, font, fontSize) {
     const color = this.colorMap.get(genotype.allele1);
     const gradCanvas = document.createElement('canvas');
     gradCanvas.width = size;
@@ -76,17 +50,17 @@ export default class NucleotideColorScheme {
     gradientCtx.fillStyle = lingrad;
     gradientCtx.fillRect(0, 0, size, size);
 
+    gradientCtx.fillStyle = 'rgb(0,0,0)';
+    gradientCtx.font = font;
     if (size >= 10) {
-      gradientCtx.fillStyle = 'rgb(0,0,0)';
-      gradientCtx.font = this.calculateFontSize('C/G', 'sans-serif', size);
       const textWidth = gradientCtx.measureText(genotype.allele1).width;
-      gradientCtx.fillText(genotype.getText(), (size - textWidth) / 2, (size - (this.fontSize / 2)));
+      gradientCtx.fillText(genotype.getText(), (size - textWidth) / 2, (size - (fontSize / 2)));
     }
 
     return gradCanvas;
   }
 
-  drawHetSquare(size, genotype) {
+  drawHetSquare(size, genotype, font, fontSize) {
     const color1 = this.colorMap.get(genotype.allele1);
     const color2 = this.colorMap.get(genotype.allele2);
     const gradCanvas = document.createElement('canvas');
@@ -115,13 +89,13 @@ export default class NucleotideColorScheme {
     gradientCtx.lineTo(size, 0);
     gradientCtx.fill();
 
+    gradientCtx.fillStyle = 'rgb(0,0,0)';
+    gradientCtx.font = font;
     if (size >= 10) {
-      gradientCtx.fillStyle = 'rgb(0,0,0)';
-      gradientCtx.font = this.calculateFontSize('C/G', 'sans-serif', size);
       const allele1Width = gradientCtx.measureText(genotype.allele1).width;
-      gradientCtx.fillText(genotype.allele1, ((size / 2) - allele1Width) / 2, this.fontSize);
+      gradientCtx.fillText(genotype.allele1, ((size / 2) - allele1Width) / 2, fontSize);
       const allele2Width = gradientCtx.measureText(genotype.allele2).width;
-      gradientCtx.fillText(genotype.allele2, size - ((size / 2) + allele2Width) / 2, size - (this.fontSize / 4));
+      gradientCtx.fillText(genotype.allele2, size - ((size / 2) + allele2Width) / 2, size - (fontSize / 4));
     }
 
     return gradCanvas;
