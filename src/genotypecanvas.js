@@ -12,12 +12,12 @@ export default class GenotypeCanvas {
     this.backBuffer.height = height;
     this.backContext = this.backBuffer.getContext('2d');
     this.mapCanvasHeight = 40;
-    this.lineNamesWidth = 100;
+    this.nameCanvasWidth = 100;
 
     this.scrollbarWidth = 10;
     this.scrollbarHeight = 10;
 
-    this.alleleCanvasWidth = width - this.lineNamesWidth - this.scrollbarWidth;
+    this.alleleCanvasWidth = width - this.nameCanvasWidth - this.scrollbarWidth;
     this.alleleCanvasHeight = height - this.mapCanvasHeight - this.scrollbarHeight;
     this.backContext.lineWidth = 1;
 
@@ -27,8 +27,8 @@ export default class GenotypeCanvas {
 
     this.verticalScrollbar = new ScrollBar(width, this.alleleCanvasHeight + this.scrollbarHeight,
       this.scrollbarWidth, this.alleleCanvasHeight, true);
-    this.horizontalScrollbar = new ScrollBar(width - this.lineNamesWidth + this.scrollbarWidth - 1,
-      height, width - this.lineNamesWidth - 1, this.scrollbarHeight, false);
+    this.horizontalScrollbar = new ScrollBar(width - this.nameCanvasWidth + this.scrollbarWidth - 1,
+      height, width - this.nameCanvasWidth - 1, this.scrollbarHeight, false);
 
     this.translatedX = 0;
     this.translatedY = 0;
@@ -139,7 +139,7 @@ export default class GenotypeCanvas {
     this.backContext.strokeStyle = 'gray';
 
     // Translate to the correct position to draw the map
-    this.backContext.translate(this.lineNamesWidth, 0);
+    this.backContext.translate(this.nameCanvasWidth, 0);
 
     // We need to count the total translation for multiple chromosome rendering
     let cumulativeTranslation = 0;
@@ -180,7 +180,7 @@ export default class GenotypeCanvas {
 
   renderGermplasm(genotypeData, dataWidth) {
     this.backContext.save();
-    this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
+    this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
     const { colorStamps } = this.colorScheme;
 
     for (let germplasm = 0; germplasm < genotypeData.length; germplasm += 1) {
@@ -189,7 +189,7 @@ export default class GenotypeCanvas {
       let cumulativeTranslation = 0;
       for (let chromosome = 0; chromosome < data.length; chromosome += 1) {
         const { genotypes } = data[chromosome];
-         // Draw a rectangle outline for the map
+        // Draw a rectangle outline for the map
         const canvasW = this.alleleCanvasWidth;
         if (cumulativeTranslation < canvasW) {
           let mapWidth = Math.floor(canvasW * (genotypes.length / dataWidth));
@@ -215,12 +215,12 @@ export default class GenotypeCanvas {
     this.verticalScrollbar.render(this.backContext);
     this.backContext.restore();
     this.backContext.save();
-    this.backContext.translate(this.lineNamesWidth, 0);
+    this.backContext.translate(this.nameCanvasWidth, 0);
     this.horizontalScrollbar.render(this.backContext);
     this.backContext.restore();
 
     this.backContext.save();
-    this.backContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
+    this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
     this.backContext.fillStyle = '#aaa';
     this.backContext.strokeRect(this.alleleCanvasWidth, this.alleleCanvasHeight - this.scrollbarHeight, this.scrollbarWidth, this.scrollbarHeight);
     this.backContext.fillRect(this.alleleCanvasWidth, this.alleleCanvasHeight - this.scrollbarHeight, this.scrollbarWidth, this.scrollbarHeight);
@@ -264,8 +264,8 @@ export default class GenotypeCanvas {
   }
 
   mouseOver(x, y) {
-    if (x >= this.lineNamesWidth && x < this.backBuffer.width && y >= this.mapCanvasHeight && y < this.backBuffer.height) {
-      this.markerUnderMouse = Math.floor((x - this.lineNamesWidth) / this.boxSize);
+    if (x >= this.nameCanvasWidth && x < this.backBuffer.width && y >= this.mapCanvasHeight && y < this.backBuffer.height) {
+      this.markerUnderMouse = Math.floor((x - this.nameCanvasWidth) / this.boxSize);
       this.lineUnderMouse = Math.floor((y - this.mapCanvasHeight) / this.boxSize);
     } else {
       this.lineUnderMouse = undefined;
@@ -295,17 +295,27 @@ export default class GenotypeCanvas {
       fontContext.font = `${this.fontSize}px ${fontface}`;
     }
 
-    return fontContext.font;
+    this.font = fontContext.font;
+    this.backContext.font = this.font;
+  }
+
+  updateCanvasWidths() {
+    this.maxCanvasWidth = Math.max(this.dataSet.markerCount() * this.boxSize, this.canvas.width);
+    this.maxCanvasHeight = Math.max(this.dataSet.lineCount() * this.boxSize, this.canvas.height);
+
+    // Find the longest germplasm name and adjust the width of the germplasm name
+    // rendering area accordingly
+    const germplasm = this.dataSet.germplasmList;
+    const longestName = Math.max(...germplasm.map(g => this.backContext.measureText(g.name).width));
+    this.nameCanvasWidth = longestName;
   }
 
   zoom(size) {
     this.boxSize = size;
-    this.font = this.updateFontSize();
+    this.updateFontSize();
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
-    this.colorStamps = this.colorScheme.colorStamps;
-    this.maxCanvasWidth = Math.max(this.dataSet.markerCount() * this.boxSize, this.canvas.width);
-    this.maxCanvasHeight = Math.max(this.dataSet.lineCount() * this.boxSize, this.canvas.height);
-
+    this.updateCanvasWidths();
+  
     this.redraw = true;
     this.prerender();
   }
