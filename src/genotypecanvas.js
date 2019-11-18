@@ -30,8 +30,6 @@ export default class GenotypeCanvas {
 
     this.translatedX = 0;
     this.translatedY = 0;
-    this.maxCanvasWidth = 0;
-    this.maxCanvasHeight = 0;
     this.redraw = true;
     this.colorScheme = undefined;
 
@@ -39,6 +37,14 @@ export default class GenotypeCanvas {
     this.lineUnderMouse = undefined;
 
     this.dataSet = undefined;
+  }
+
+  maxCanvasWidth() {
+    return Math.max(this.dataSet.markerCount() * this.boxSize, this.canvas.width);
+  }
+
+  maxCanvasHeight() {
+    return Math.max(this.dataSet.lineCount() * this.boxSize, this.canvas.height);
   }
 
   alleleCanvasWidth() {
@@ -55,9 +61,6 @@ export default class GenotypeCanvas {
     this.font = this.updateFontSize();
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
     this.colorStamps = this.colorScheme.colorStamps;
-
-    this.maxCanvasWidth = this.dataSet.markerCount() * this.boxSize;
-    this.maxCanvasHeight = this.dataSet.lineCount() * this.boxSize;
   }
 
   prerender() {
@@ -234,33 +237,57 @@ export default class GenotypeCanvas {
     return (num - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
   };
 
-  move(diffX, diffY) {
-    if (this.maxCanvasWidth > this.canvas.width) {
+  // We can only scroll horizontally if the render size of our data horizontally
+  // is wider than the canvas itself
+  canScrollX() {
+    return this.maxCanvasWidth() > this.canvas.width;
+  }
+
+  canScrollY() {
+    return this.maxCanvasHeight() > this.canvas.height;
+  }
+
+  moveX(diffX) {
+    const xScrollMax = this.maxCanvasWidth() - this.alleleCanvasWidth();
+
+    if (this.canScrollX()) {
       this.translatedX -= diffX;
-      if (this.translatedX < 0) { this.translatedX = 0; }
-      if ((this.translatedX / this.boxSize) >= ((this.maxCanvasWidth / this.boxSize) - (this.alleleCanvasWidth() / this.boxSize))) {
-        this.translatedX = this.maxCanvasWidth - this.alleleCanvasWidth();
+
+      // Prevent scrolling beyond start or end of data
+      if (this.translatedX < 0) {
+        this.translatedX = 0;
+      } else if (this.translatedX >= xScrollMax) {
+        this.translatedX = xScrollMax;
       }
 
-      // console.log(this.translatedX, Math.floor(this.translatedX / this.boxSize), (this.translatedX + this.alleleCanvasWidth), Math.floor((this.translatedX + this.alleleCanvasWidth) / this.boxSize), this.boxSize);
-      
-      // let foundChroms = this.genomeMap.markersFor(Math.floor(this.translatedX / this.boxSize), Math.floor((this.translatedX + this.alleleCanvasWidth) / this.boxSize));
-      // console.log(foundChroms);
-
       const scrollWidth = this.alleleCanvasWidth() - 10 - 20;
-      const scrollX = Math.floor(this.mapToRange(this.translatedX, 0, this.maxCanvasWidth - this.alleleCanvasWidth(), 0, scrollWidth));
+      const scrollX = Math.floor(this.mapToRange(this.translatedX, 0, xScrollMax, 0, scrollWidth));
       this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
     }
+  }
 
-    if (this.maxCanvasHeight > this.canvas.height) {
+  moveY(diffY) {
+    const yScrollMax = this.maxCanvasHeight() - this.alleleCanvasHeight();
+
+    if (this.canScrollY()) {
       this.translatedY -= diffY;
-      if (this.translatedY < 0) { this.translatedY = 0; }
-      if ((this.translatedY / this.boxSize) >= ((this.maxCanvasHeight / this.boxSize) - (this.alleleCanvasHeight() / this.boxSize))) { this.translatedY = this.maxCanvasHeight - this.alleleCanvasHeight(); }
+
+      // Prevent scrolling beyond start or end of data
+      if (this.translatedY < 0) {
+        this.translatedY = 0;
+      } else if (this.translatedY >= yScrollMax) {
+        this.translatedY = yScrollMax;
+      }
 
       const scrollHeight = this.alleleCanvasHeight() - 10 - 20;
-      const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, this.maxCanvasHeight - this.alleleCanvasHeight(), 0, scrollHeight));
+      const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, yScrollMax, 0, scrollHeight));
       this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
     }
+  }
+
+  move(diffX, diffY) {
+    this.moveX(diffX);
+    this.moveY(diffY);
 
     this.redraw = true;
     this.prerender();
@@ -303,9 +330,6 @@ export default class GenotypeCanvas {
   }
 
   updateCanvasWidths() {
-    this.maxCanvasWidth = Math.max(this.dataSet.markerCount() * this.boxSize, this.canvas.width);
-    this.maxCanvasHeight = Math.max(this.dataSet.lineCount() * this.boxSize, this.canvas.height);
-
     // Find the longest germplasm name and adjust the width of the germplasm name
     // rendering area accordingly
     const germplasm = this.dataSet.germplasmList;
