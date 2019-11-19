@@ -1,5 +1,8 @@
 import Genotype from './Genotype';
 import Germplasm from './Germplasm';
+import Marker from './Marker';
+import GenomeMap from './GenomeMap';
+import Chromosome from './Chromosome';
 
 export default class GenotypeImporter {
   constructor(genomeMap) {
@@ -52,6 +55,7 @@ export default class GenotypeImporter {
 
     if (line.startsWith('Accession') || line.startsWith('\t')) {
       const markerNames = line.split('\t');
+
       markerNames.slice(1).forEach((name, idx) => {
         const indices = this.genomeMap.markerByName(name);
         if (indices !== -1) {
@@ -84,5 +88,36 @@ export default class GenotypeImporter {
     }
 
     return this.germplasmList;
+  }
+
+  // In situations where a map hasn't been provided, we want to create a fake or
+  // dummy map one chromosome and evenly spaced markers
+  createFakeMap(fileContents) {
+    const lines = fileContents.split(/\r?\n/);
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+      const line = lines[lineIndex];
+
+      if (!line.startsWith('#')) {
+        if (line.startsWith('Accession') || line.startsWith('\t')) {
+          const markers = [];
+          const markerNames = line.split('\t');
+
+          // Use the genotype data format's header line to map marker names to
+          // a 0 to length range of indices which double up as marker positions
+          // for mapless loading
+          markerNames.slice(1).forEach((name, idx) => {
+            const marker = new Marker(name, 'unmapped', idx);
+            markers.push(marker);
+          });
+
+          const chromosomes = [];
+          chromosomes.push(new Chromosome('unmapped', markers.length, markers));
+          this.genomeMap = new GenomeMap(chromosomes);
+
+          return this.genomeMap;
+        }
+      }
+    }
+    return this.genomeMap;
   }
 }

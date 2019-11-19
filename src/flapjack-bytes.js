@@ -153,6 +153,11 @@ export default function GenotypeRenderer() {
     // Then genotype data
     genotypePromise.then((result) => {
       const genotypeImporter = new GenotypeImporter(genomeMap);
+
+      if (genomeMap === undefined) {
+        genomeMap = genotypeImporter.createFakeMap(result);
+      }
+
       germplasmData = genotypeImporter.parseFile(result);
       const { stateTable } = genotypeImporter;
 
