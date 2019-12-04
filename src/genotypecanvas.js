@@ -67,7 +67,7 @@ export default class GenotypeCanvas {
     this.drawingContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (this.redraw) {
-      const dataWidth = Math.floor(this.alleleCanvasWidth() / this.boxSize);
+      const dataWidth = Math.ceil(this.alleleCanvasWidth() / this.boxSize);
 
       const markerStart = Math.floor(this.translatedX / this.boxSize);
       const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCount());
@@ -77,7 +77,6 @@ export default class GenotypeCanvas {
       const germplasmEnd = Math.min(germplasmStart + Math.floor(this.canvas.height / this.boxSize), this.dataSet.lineCount());
       const genotypeData = this.dataSet.genotypeDataFor(germplasmStart, germplasmEnd, markerStart, markerEnd);
 
-      this.mapCanvasHeight = typeof markerData[0] === 'undefined' ? 0 : this.mapCanvasHeight;
       this.verticalScrollbar = new ScrollBar(this.canvas.width, this.alleleCanvasHeight(),
         10, this.alleleCanvasHeight(), true);
 
