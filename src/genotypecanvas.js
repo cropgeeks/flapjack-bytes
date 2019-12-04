@@ -1,4 +1,4 @@
-import ScrollBar from './scrollbar';
+import ScrollBar from './ScrollBar';
 
 export default class GenotypeCanvas {
   constructor(width, height, boxSize) {
@@ -76,9 +76,6 @@ export default class GenotypeCanvas {
       const germplasmStart = Math.floor(this.translatedY / this.boxSize);
       const germplasmEnd = Math.min(germplasmStart + Math.floor(this.canvas.height / this.boxSize), this.dataSet.lineCount());
       const genotypeData = this.dataSet.genotypeDataFor(germplasmStart, germplasmEnd, markerStart, markerEnd);
-
-      this.verticalScrollbar = new ScrollBar(this.canvas.width, this.alleleCanvasHeight(),
-        10, this.alleleCanvasHeight(), true);
 
       this.render(markerData, genotypeData, dataWidth);
     }
@@ -259,7 +256,7 @@ export default class GenotypeCanvas {
         this.translatedX = xScrollMax;
       }
 
-      const scrollWidth = this.alleleCanvasWidth() - 10 - 20;
+      const scrollWidth = this.alleleCanvasWidth() - 20;
       const scrollX = Math.floor(this.mapToRange(this.translatedX, 0, xScrollMax, 0, scrollWidth));
       this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
     }
@@ -278,7 +275,7 @@ export default class GenotypeCanvas {
         this.translatedY = yScrollMax;
       }
 
-      const scrollHeight = this.alleleCanvasHeight() - 10 - 20;
+      const scrollHeight = this.alleleCanvasHeight() - 20;
       const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, yScrollMax, 0, scrollHeight));
       this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
     }
