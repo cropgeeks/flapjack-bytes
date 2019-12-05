@@ -77,7 +77,10 @@ export default class GenotypeCanvas {
       const germplasmEnd = Math.min(germplasmStart + Math.floor(this.canvas.height / this.boxSize), this.dataSet.lineCount());
       const genotypeData = this.dataSet.genotypeDataFor(germplasmStart, germplasmEnd, markerStart, markerEnd);
 
-      this.render(markerData, genotypeData, dataWidth);
+      const xWiggle = this.translatedX - (markerStart * this.boxSize);
+      const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
+
+      this.render(markerData, genotypeData, dataWidth, xWiggle, yWiggle);
     }
 
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
@@ -96,11 +99,11 @@ export default class GenotypeCanvas {
     this.redraw = false;
   }
 
-  render(markerData, genotypeData, dataWidth) {
+  render(markerData, genotypeData, dataWidth, xWiggle, yWiggle) {
     this.backContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.renderMap(markerData, dataWidth);
-    this.renderGermplasmNames(genotypeData);
-    this.renderGermplasm(genotypeData, dataWidth);
+    this.renderGermplasmNames(genotypeData, yWiggle);
+    this.renderGermplasm(genotypeData, dataWidth, xWiggle, yWiggle);
     this.renderScrollbars();
   }
 
@@ -167,28 +170,47 @@ export default class GenotypeCanvas {
     this.backContext.restore();
   }
 
-  renderGermplasmNames(genotypeData) {
+  renderGermplasmNames(genotypeData, yWiggle) {
     this.backContext.save();
+
+    // Create a clipping region so that lineNames can't creep up above the line
+    // name canvas
+    const region = new Path2D();
+    region.rect(0, this.mapCanvasHeight, this.nameCanvasWidth, this.canvas.height);
+    this.backContext.clip(region);
+
     const lineNames = genotypeData.map(germplasm => germplasm.name);
     this.backContext.fillStyle = '#333';
     this.backContext.font = this.font;
     this.backContext.translate(0, this.mapCanvasHeight);
 
     lineNames.forEach((name, idx) => {
-      this.backContext.fillText(name, 0, (idx * this.boxSize) + (this.boxSize - (this.fontSize / 2)));
+      const y = (idx * this.boxSize) - yWiggle + (this.boxSize - (this.fontSize / 2));
+      this.backContext.fillText(name, 0, y);
     });
     this.backContext.restore();
   }
 
-  renderGermplasm(genotypeData, dataWidth) {
+  renderGermplasm(genotypeData, dataWidth, xWiggle, yWiggle) {
     this.backContext.save();
+
+    // Clip so that we can only draw into the region that is intended to be the
+    // genotype canvas
+    const region = new Path2D();
+    region.rect(this.nameCanvasWidth, this.mapCanvasHeight, this.canvas.width, this.canvas.height);
+    this.backContext.clip(region);
+
     this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
     const { colorStamps } = this.colorScheme;
 
+    // TODO: This code is dense... describe it more clearly
     for (let germplasm = 0; germplasm < genotypeData.length; germplasm += 1) {
       const { data } = genotypeData[germplasm];
       this.backContext.save();
       let cumulativeTranslation = 0;
+
+      const yPos = germplasm * this.boxSize - yWiggle;
+
       for (let chromosome = 0; chromosome < data.length; chromosome += 1) {
         const { genotypes } = data[chromosome];
         // Draw a rectangle outline for the map
@@ -199,7 +221,8 @@ export default class GenotypeCanvas {
             mapWidth = canvasW - cumulativeTranslation;
           }
           for (let genotype = 0; genotype < genotypes.length && (genotype * this.boxSize) < mapWidth; genotype += 1) {
-            this.backContext.drawImage(colorStamps[genotypes[genotype]], (genotype * this.boxSize), (germplasm * this.boxSize));
+            const xPos = genotype * this.boxSize - xWiggle;
+            this.backContext.drawImage(colorStamps[genotypes[genotype]], xPos, yPos);
           }
           cumulativeTranslation += mapWidth + 50;
           this.backContext.translate(mapWidth + 50, 0);
