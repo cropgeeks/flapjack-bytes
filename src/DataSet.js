@@ -41,6 +41,10 @@ export default class DataSet {
     return genotypeData;
   }
 
+  genotypeFor(germplasm, chromosome, marker) {
+    return this.germplasmList[germplasm].genotypeData[chromosome][marker];
+  }
+
   markersToRender(markerStart, markerEnd) {
     return this.genomeMap.chromosomePositionsFor(markerStart, markerEnd);
   }

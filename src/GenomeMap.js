@@ -6,6 +6,7 @@ export default class GenomeMap {
     // TODO: initialise this value
     this.intervalTree = this.createIntervalTree();
     this.chromosomeStarts = this.calculateChromosomeStarts();
+    this.markerIndices = this.calculateMarkerIndices();
   }
 
   // Creates an interval tree where the key is the range of the start and end of
@@ -31,6 +32,17 @@ export default class GenomeMap {
     });
 
     return starts;
+  }
+
+  calculateMarkerIndices() {
+    const indices = [];
+    this.chromosomes.forEach((chr) => {
+      chr.markers.forEach((m, idx) => {
+        indices.push(idx);
+      });
+    });
+
+    return indices;
   }
 
   markersFor(dataStart, dataEnd) {
