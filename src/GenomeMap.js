@@ -64,7 +64,7 @@ export default class GenomeMap {
     foundChromosomes.forEach((chromosome) => {
       const chromStart = this.chromosomeStarts.get(chromosome);
       const firstMarker = Math.max(dataStart - chromStart, 0);
-      const lastMarker = Math.min(chromosome.markerCount(), dataEnd - chromStart);
+      const lastMarker = Math.min(chromosome.markerCount() - 1, dataEnd - chromStart);
       positions.push({ chromosomeIndex: this.chromosomes.indexOf(chromosome), firstMarker, lastMarker });
     });
 

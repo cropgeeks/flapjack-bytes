@@ -1,5 +1,3 @@
-import IntervalTree from 'node-interval-tree';
-
 import ScrollBar from './ScrollBar';
 
 export default class GenotypeCanvas {
@@ -43,10 +41,16 @@ export default class GenotypeCanvas {
     // Visual start and end points for each chromosome
     this.chromosomeStarts = [];
     this.chromosomeEnds = [];
+
+    this.chromosomeGapSize = 50;
+  }
+
+  totalChromosomeGap() {
+    return (this.dataSet.genomeMap.chromosomes.length - 1) * this.chromosomeGapSize;
   }
 
   maxCanvasWidth() {
-    return Math.max(this.dataSet.markerCount() * this.boxSize, this.canvas.width);
+    return Math.max((this.dataSet.markerCount() * this.boxSize) + this.totalChromosomeGap(), this.canvas.width);
   }
 
   maxCanvasHeight() {
@@ -76,17 +80,26 @@ export default class GenotypeCanvas {
     if (this.redraw) {
       const dataWidth = Math.ceil(this.alleleCanvasWidth() / this.boxSize);
 
-      const markerStart = Math.floor(this.translatedX / this.boxSize);
+      // We need to calculate an offset because the gaps between chromosomes
+      // aren't part of the data model
+      let offset = 0;
+      this.chromosomeStarts.forEach((start, index) => {
+        if ((this.translatedX >= start && this.translatedX < this.chromosomeEnds[index])
+          || (index > 0 && this.translatedX >= this.chromosomeEnds[index - 1] && this.translatedX <= this.chromosomeStarts[index])) {
+          offset = index * this.chromosomeGapSize;
+        }
+      });
+
+      const markerStart = Math.floor((this.translatedX - offset) / this.boxSize);
       const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCount());
       const markerData = this.dataSet.mapDataFor(markerStart, markerEnd);
 
       const germplasmStart = Math.floor(this.translatedY / this.boxSize);
       const germplasmEnd = Math.min(germplasmStart + Math.floor(this.canvas.height / this.boxSize), this.dataSet.lineCount());
 
-      const xWiggle = this.translatedX - (markerStart * this.boxSize);
       const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
 
-      this.render(markerData, germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, xWiggle, yWiggle);
+      this.render(markerData, germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, yWiggle);
     }
 
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
@@ -105,16 +118,16 @@ export default class GenotypeCanvas {
     this.redraw = false;
   }
 
-  render(markerData, germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, xWiggle, yWiggle) {
+  render(markerData, germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, yWiggle) {
     this.backContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.renderMap(markerData, dataWidth);
+    this.renderMap(markerData, dataWidth, markerStart, markerEnd);
     this.renderGermplasmNames(germplasmStart, germplasmEnd, yWiggle);
-    this.renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, xWiggle, yWiggle);
+    this.renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, yWiggle);
     this.renderScrollbars();
   }
 
-  renderMarker(marker, genoMarkerPos, firstMarkerPos, mapScaleFactor) {
-    const mapMarkerPos = ((marker.position - firstMarkerPos) * (mapScaleFactor));
+  renderMarker(marker, genoMarkerPos, firstMarkerPos, mapScaleFactor, drawStart) {
+    const mapMarkerPos = drawStart + ((marker.position - firstMarkerPos) * (mapScaleFactor));
     this.backContext.beginPath();
     // Draw vertical line on top of map rectangle
     this.backContext.moveTo(mapMarkerPos, 0);
@@ -126,52 +139,55 @@ export default class GenotypeCanvas {
     this.backContext.stroke();
   }
 
-  renderMarkers(markers, mapWidth) {
-    const firstMarkerPos = markers[0].position;
-    const lastMarkerPos = markers[markers.length - 1].position;
-    const dist = lastMarkerPos - firstMarkerPos;
-    const scaleFactor = mapWidth / dist;
+  renderMarkers(renderData) {
+    renderData.forEach((chr) => {
+      const chrStart = this.chromosomeStarts[chr.chromosomeIndex];
+      const chrEnd = this.chromosomeEnds[chr.chromosomeIndex];
+      const drawStart = chrStart - this.translatedX;
 
-    for (let i = 0; i < markers.length; i += 1) {
-      // Calculate the marker position above the genotype canvas
-      let pos = i * this.boxSize;
-      pos += (this.boxSize / 2);
-      // If we've gone past the mapWidth don't render the marker
-      if (pos < mapWidth) {
-        this.renderMarker(markers[i], pos, firstMarkerPos, scaleFactor);
+      const chromosome = this.dataSet.genomeMap.chromosomes[chr.chromosomeIndex];
+
+      let chromosomeWidth = Math.min(chrEnd - chrStart, this.alleleCanvasWidth() - drawStart);
+
+      const firstMarkerPos = chromosome.markers[chr.firstMarker].position;
+      const lastMarkerPos = chromosome.markers[chr.lastMarker].position;
+      const dist = lastMarkerPos - firstMarkerPos;
+      const scaleFactor = chromosomeWidth / dist;
+
+      for (let markerIndex = chr.firstMarker; markerIndex <= chr.lastMarker; markerIndex += 1) {
+        const marker = this.dataSet.genomeMap.chromosomes[chr.chromosomeIndex].markers[markerIndex];
+        let xPos = drawStart + (markerIndex * this.boxSize);
+        xPos += (this.boxSize / 2);
+        this.renderMarker(marker, xPos, firstMarkerPos, scaleFactor, drawStart);
       }
-    }
+    });
   }
 
-  renderMap(markerData, dataWidth) {
+  renderMap(markerData, dataWidth, markerStart, markerEnd) {
     this.backContext.save();
     // Set the line style for drawing the map and markers
     this.backContext.lineWidth = 1;
     this.backContext.strokeStyle = 'gray';
 
+    // Create a clipping region so that lineNames can't creep up above the line
+    // name canvas
+    const region = new Path2D();
+    region.rect(this.nameCanvasWidth, 0, this.alleleCanvasWidth(), this.mapCanvasHeight);
+    this.backContext.clip(region);
+
     // Translate to the correct position to draw the map
     this.backContext.translate(this.nameCanvasWidth, 0);
 
-    // We need to count the total translation for multiple chromosome rendering
-    let cumulativeTranslation = 0;
+    const renderData = this.dataSet.markersToRender(markerStart, markerEnd);
 
-    markerData.forEach((chromosome) => {
-      const { markers } = chromosome;
-      // Draw a rectangle outline for the map
-      const canvasW = this.alleleCanvasWidth();
-      if (cumulativeTranslation < canvasW) {
-        let mapWidth = Math.floor(canvasW * (markers.length / dataWidth));
-        if (cumulativeTranslation + mapWidth > canvasW) {
-          mapWidth = canvasW - cumulativeTranslation;
-        }
-        this.backContext.strokeRect(0, 1, mapWidth, 10);
-
-        this.renderMarkers(markers, mapWidth);
-
-        cumulativeTranslation += mapWidth + 50;
-        this.backContext.translate(mapWidth + 50, 0);
-      }
+    renderData.forEach((chr) => {
+      const chrStart = this.chromosomeStarts[chr.chromosomeIndex];
+      const chrEnd = this.chromosomeEnds[chr.chromosomeIndex];
+      const drawStart = chrStart - this.translatedX;
+      this.backContext.strokeRect(drawStart, 1, chrEnd - chrStart, 10);
     });
+
+    this.renderMarkers(renderData);
 
     this.backContext.restore();
   }
@@ -197,24 +213,10 @@ export default class GenotypeCanvas {
     this.backContext.restore();
   }
 
-  renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, xWiggle, yWiggle) {
+  renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, yWiggle) {
     this.backContext.save();
 
-    const indices = this.dataSet.genomeMap.markerIndices;
-
-    const chrIndices = [];
-    for (let i = markerStart; i < markerEnd; i += 1) {
-      let chrIndex = -1;
-      let xPos = i * this.boxSize;
-      this.chromosomeStarts.forEach((start, index) => {
-        if (xPos >= start && xPos < this.chromosomeEnds[index]) {
-          chrIndex = index;
-        }
-      });
-      chrIndices.push(chrIndex);
-    }
-
-    // const dataToRender = this.dataSet.markersToRender(markerStart, markerEnd);
+    const renderData = this.dataSet.markersToRender(markerStart, markerEnd);
 
     // Clip so that we can only draw into the region that is intended to be the
     // genotype canvas
@@ -226,71 +228,17 @@ export default class GenotypeCanvas {
     const { colorStamps } = this.colorScheme;
 
     for (let germplasm = germplasmStart, line = 0; germplasm < germplasmEnd; germplasm += 1, line += 1) {
-      let yPos = (line * this.boxSize) - yWiggle;
-      let genoData = this.dataSet.germplasmList[germplasm].genotypeData;
+      const yPos = (line * this.boxSize) - yWiggle;
+      const genoData = this.dataSet.germplasmList[germplasm].genotypeData;
 
-      
-      for (let box = markerStart, currentMarker = markerStart, idx = 0; box < markerEnd; box += 1, idx += 1) {
-        let chrIndex = chrIndices[idx];
-        let marker = indices[currentMarker];
-        const xPos = idx * this.boxSize - xWiggle;
-        if (chrIndex !== -1) {
-          this.backContext.drawImage(colorStamps[genoData[chrIndex][marker]], xPos, yPos);
-          currentMarker += 1;
+      renderData.forEach((chr) => {
+        const chrStart = this.chromosomeStarts[chr.chromosomeIndex] - this.translatedX;
+        for (let marker = chr.firstMarker; marker <= chr.lastMarker; marker += 1) {
+          const xPos = chrStart + (marker * this.boxSize);
+          this.backContext.drawImage(colorStamps[genoData[chr.chromosomeIndex][marker]], xPos, yPos);
         }
-      }
+      });
     }
-
-    // for (let germplasm = germplasmStart, line = 0; germplasm <= germplasmEnd; germplasm += 1, line += 1) {
-    //   let yPos = (line * this.boxSize) - yWiggle;
-    //   let genoData = this.dataSet.germplasmList[germplasm].genotypeData;
-
-    //   let chrIndex = chrIndices[0];
-    //   let wibble = 0;
-    //   for (let geno = markerStart, drawn = 0; drawn < dataWidth; geno += 1, drawn += 1) {
-    //     let xPos = drawn * this.boxSize - xWiggle;
-    //     chrIndex = chrIndices[drawn];
-    //     console.log(geno);
-    //     if (chrIndex !== -1 && genoData[chrIndex][indices[geno]] !== undefined) {
-    //       this.backContext.drawImage(colorStamps[genoData[chrIndex][indices[geno]]], xPos, yPos);
-    //     } else {
-    //       geno -= 1;
-    //     }
-    //   }
-    // }
-
-    // TODO: This code is dense... describe it more clearly
-    // for (let germplasm = 0; germplasm < genotypeData.length; germplasm += 1) {
-    //   const { data } = genotypeData[germplasm];
-    //   this.backContext.save();
-    //   let cumulativeTranslation = 0;
-
-    //   const yPos = germplasm * this.boxSize - yWiggle;
-
-    //   for (let chromosome = 0; chromosome < data.length; chromosome += 1) {
-    //     const { genotypes } = data[chromosome];
-    //     // Draw a rectangle outline for the map
-    //     const canvasW = this.alleleCanvasWidth();
-
-    //     // if (chromosome === 1) {
-    //       console.log("do something clever: ", cumulativeTranslation, " translatedX: ", this.translatedX);
-    //     // }
-    //     if (cumulativeTranslation < canvasW) {
-    //       let mapWidth = Math.floor(canvasW * (genotypes.length / dataWidth));
-    //       if (cumulativeTranslation + mapWidth > canvasW) {
-    //         mapWidth = canvasW - cumulativeTranslation;
-    //       }
-    //       for (let genotype = 0; genotype < genotypes.length && (genotype * this.boxSize) < mapWidth; genotype += 1) {
-    //         const xPos = genotype * this.boxSize - xWiggle;
-    //         this.backContext.drawImage(colorStamps[genotypes[genotype]], xPos, yPos);
-    //       }
-    //       cumulativeTranslation += mapWidth + 50;
-    //       this.backContext.translate(mapWidth + 50, 0);
-    //     }
-    //   }
-    //   this.backContext.restore();
-    // }
-
     this.backContext.restore();
   }
 
@@ -419,7 +367,7 @@ export default class GenotypeCanvas {
   }
 
   updateVisualPositions() {
-    this.chromosomeStarts = Array.from(this.dataSet.genomeMap.chromosomeStarts.values()).map((v, idx) => v * this.boxSize + (idx * 50));
+    this.chromosomeStarts = Array.from(this.dataSet.genomeMap.chromosomeStarts.values()).map((v, idx) => v * this.boxSize + (idx * this.chromosomeGapSize));
     this.chromosomeEnds = [];
     this.dataSet.genomeMap.chromosomes.forEach((chr, idx) => {
       this.chromosomeEnds.push(this.chromosomeStarts[idx] + (chr.markerCount() * this.boxSize));
