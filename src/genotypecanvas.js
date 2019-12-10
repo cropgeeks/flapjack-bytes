@@ -92,14 +92,13 @@ export default class GenotypeCanvas {
 
       const markerStart = Math.floor((this.translatedX - offset) / this.boxSize);
       const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCount());
-      const markerData = this.dataSet.mapDataFor(markerStart, markerEnd);
 
       const germplasmStart = Math.floor(this.translatedY / this.boxSize);
       const germplasmEnd = Math.min(germplasmStart + Math.floor(this.canvas.height / this.boxSize), this.dataSet.lineCount());
 
       const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
 
-      this.render(markerData, germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, yWiggle);
+      this.render(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle);
     }
 
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
@@ -118,11 +117,11 @@ export default class GenotypeCanvas {
     this.redraw = false;
   }
 
-  render(markerData, germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, yWiggle) {
+  render(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle) {
     this.backContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.renderMap(markerData, dataWidth, markerStart, markerEnd);
+    this.renderMap(markerStart, markerEnd);
     this.renderGermplasmNames(germplasmStart, germplasmEnd, yWiggle);
-    this.renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, yWiggle);
+    this.renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle);
     this.renderScrollbars();
   }
 
@@ -163,7 +162,7 @@ export default class GenotypeCanvas {
     });
   }
 
-  renderMap(markerData, dataWidth, markerStart, markerEnd) {
+  renderMap(markerStart, markerEnd) {
     this.backContext.save();
     // Set the line style for drawing the map and markers
     this.backContext.lineWidth = 1;
@@ -213,7 +212,7 @@ export default class GenotypeCanvas {
     this.backContext.restore();
   }
 
-  renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, dataWidth, yWiggle) {
+  renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle) {
     this.backContext.save();
 
     const renderData = this.dataSet.markersToRender(markerStart, markerEnd);
