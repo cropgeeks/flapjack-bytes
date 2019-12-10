@@ -228,13 +228,13 @@ export default class GenotypeCanvas {
 
     for (let germplasm = germplasmStart, line = 0; germplasm < germplasmEnd; germplasm += 1, line += 1) {
       const yPos = (line * this.boxSize) - yWiggle;
-      const genoData = this.dataSet.germplasmList[germplasm].genotypeData;
 
       renderData.forEach((chr) => {
         const chrStart = this.chromosomeStarts[chr.chromosomeIndex] - this.translatedX;
         for (let marker = chr.firstMarker; marker <= chr.lastMarker; marker += 1) {
           const xPos = chrStart + (marker * this.boxSize);
-          this.backContext.drawImage(colorStamps[genoData[chr.chromosomeIndex][marker]], xPos, yPos);
+          const geno = this.dataSet.genotypeFor(germplasm, chr.chromosomeIndex, marker);
+          this.backContext.drawImage(colorStamps[geno], xPos, yPos);
         }
       });
     }
