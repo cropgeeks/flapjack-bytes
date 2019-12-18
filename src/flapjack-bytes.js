@@ -43,7 +43,7 @@ export default function GenotypeRenderer() {
         genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantsets);
       }
 
-      germplasmData = genotypeImporter.parseVariantsets(variantsets);
+      germplasmData = genotypeImporter.parseVariantSetCalls(variantsets);
       const { stateTable } = genotypeImporter;
 
       colorScheme = new NucleotideColorScheme(stateTable, document);
