@@ -50,7 +50,8 @@ export default class GenotypeCanvas {
   }
 
   maxCanvasWidth() {
-    return Math.max((this.dataSet.markerCount() * this.boxSize) + this.totalChromosomeGap(), this.canvas.width);
+    return Math.max((this.dataSet.markerCount() * this.boxSize)
+      + this.totalChromosomeGap(), this.canvas.width);
   }
 
   maxCanvasHeight() {
@@ -85,7 +86,8 @@ export default class GenotypeCanvas {
       let offset = 0;
       this.chromosomeStarts.forEach((start, index) => {
         if ((this.translatedX >= start && this.translatedX < this.chromosomeEnds[index])
-          || (index > 0 && this.translatedX >= this.chromosomeEnds[index - 1] && this.translatedX <= this.chromosomeStarts[index])) {
+          || (index > 0 && this.translatedX >= this.chromosomeEnds[index - 1]
+          && this.translatedX <= this.chromosomeStarts[index])) {
           offset = index * this.chromosomeGapSize;
         }
       });
@@ -94,7 +96,8 @@ export default class GenotypeCanvas {
       const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCount());
 
       const germplasmStart = Math.floor(this.translatedY / this.boxSize);
-      const germplasmEnd = Math.min(germplasmStart + Math.floor(this.canvas.height / this.boxSize), this.dataSet.lineCount());
+      const germplasmEnd = Math.min(germplasmStart
+        + Math.floor(this.canvas.height / this.boxSize), this.dataSet.lineCount());
 
       const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
 
@@ -146,7 +149,7 @@ export default class GenotypeCanvas {
 
       const chromosome = this.dataSet.genomeMap.chromosomes[chr.chromosomeIndex];
 
-      let chromosomeWidth = Math.min(chrEnd - chrStart, this.alleleCanvasWidth() - drawStart);
+      const chromosomeWidth = Math.min(chrEnd - chrStart, this.alleleCanvasWidth() - drawStart);
 
       const firstMarkerPos = chromosome.markers[chr.firstMarker].position;
       const lastMarkerPos = chromosome.markers[chr.lastMarker].position;
@@ -197,10 +200,13 @@ export default class GenotypeCanvas {
     // Create a clipping region so that lineNames can't creep up above the line
     // name canvas
     const region = new Path2D();
-    region.rect(0, this.mapCanvasHeight, this.nameCanvasWidth, this.canvas.height - this.scrollbarHeight - this.mapCanvasHeight);
+    region.rect(0, this.mapCanvasHeight, this.nameCanvasWidth,
+      this.canvas.height - this.scrollbarHeight - this.mapCanvasHeight);
     this.backContext.clip(region);
 
-    const lineNames = this.dataSet.germplasmFor(germplasmStart, germplasmEnd).map(germplasm => germplasm.name);
+    const lineNames = this.dataSet.germplasmFor(germplasmStart, germplasmEnd)
+      .map(germplasm => germplasm.name);
+
     this.backContext.fillStyle = '#333';
     this.backContext.font = this.font;
     this.backContext.translate(0, this.mapCanvasHeight);
@@ -379,6 +385,20 @@ export default class GenotypeCanvas {
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
     this.updateCanvasWidths();
     this.updateVisualPositions();
+
+    // If zooming out means the genotypes don't take up the full canvas, return
+    // the display to its horizontal origin
+    if (!this.canScrollX()) {
+      this.translatedX = 0;
+      this.horizontalScrollbar.move(0, this.horizontalScrollbar.y);
+    }
+
+    // If zooming out means the genotypes don't take up the full canvas, return
+    // the display to its vertical origin
+    if (!this.canScrollY()) {
+      this.translatedY = 0;
+      this.verticalScrollbar.move(this.verticalScrollbar.x, 0);
+    }
 
     this.redraw = true;
     this.prerender();
