@@ -39,12 +39,16 @@ export default function GenotypeRenderer() {
       .then(() => {
       const genotypeImporter = new GenotypeImporter(genomeMap);
 
+      console.log(variantsets);
+
       if (genomeMap === undefined) {
         genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantsets);
       }
 
       germplasmData = genotypeImporter.parseVariantSetCalls(variantsets);
       const { stateTable } = genotypeImporter;
+
+      console.log(stateTable);
 
       colorScheme = new NucleotideColorScheme(stateTable, document);
 
@@ -56,6 +60,9 @@ export default function GenotypeRenderer() {
       // Tells the dom parent that Flapjack has finished loading. Allows spinners
       // or similar to be disabled
       sendEvent("FlapjackFinished", domParent);
+    })
+    .catch((error) => {
+      sendEvent("FlapjackError", domParent);
     });
 
     return genotypeRenderer;
@@ -181,22 +188,6 @@ export default function GenotypeRenderer() {
         }
         return;
       });
-    // variantsets.push(...response.result.data);
-
-    // const { nextPageToken } = response.metadata.pagination;
-    // console.log(nextPageToken);
-    // if (nextPageToken) {
-    //   return client.get("/variantsets/"+matrixId+"/calls?pageToken="+nextPageToken, {}, 
-    //   {
-    //     headers: { "Content-Type": "application/json" }
-    //   }).then(response => {
-    //     const resp = response.data
-    //     console.log(resp)
-    //     processVariantSetCall(client, resp, matrixId)
-    //   })
-    // }
-
-    // return variantsets;
   }
 
   function createRendererComponents(domParent, width, height) {

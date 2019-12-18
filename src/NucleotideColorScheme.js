@@ -22,6 +22,7 @@ export default class NucleotideColorScheme {
     this.colorMap.set('T', { light: this.colors.blueLight, dark: this.colors.blueDark });
     this.colorMap.set('', { light: this.colors.white, dark: this.colors.white });
     this.colorMap.set('-', { light: this.colors.greyLight, dark: this.colors.greyDark });
+    this.colorMap.set('+', { light: this.colors.greyLight, dark: this.colors.greyDark });
 
     this.colorStamps = [];
   }
