@@ -51,7 +51,7 @@ export default class GenotypeCanvas {
 
   maxCanvasWidth() {
     return Math.max((this.dataSet.markerCount() * this.boxSize)
-      + this.totalChromosomeGap(), this.canvas.width);
+      + this.totalChromosomeGap(), this.alleleCanvasWidth());
   }
 
   maxCanvasHeight() {
@@ -272,11 +272,11 @@ export default class GenotypeCanvas {
   // We can only scroll horizontally if the render size of our data horizontally
   // is wider than the canvas itself
   canScrollX() {
-    return this.maxCanvasWidth() > this.canvas.width;
+    return this.maxCanvasWidth() > this.alleleCanvasWidth();
   }
 
   canScrollY() {
-    return this.maxCanvasHeight() > this.canvas.height;
+    return this.maxCanvasHeight() > this.alleleCanvasHeight();
   }
 
   moveX(diffX) {
