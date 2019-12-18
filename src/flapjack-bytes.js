@@ -1,16 +1,14 @@
+import axios from 'axios';
 import Marker from './Marker';
 import GenotypeCanvas from './genotypecanvas';
 import CanvasController from './canvascontroller';
-import Qtl from './Qtl';
 import GenotypeImporter from './GenotypeImporter';
 import NucleotideColorScheme from './NucleotideColorScheme';
 import MapImporter from './MapImporter';
-import QtlImporter from './QtlImporter';
 import DataSet from './DataSet';
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
-  let brapiJs;
 
   // Variables for referring to the genotype canvas
   let genotypeCanvas;
@@ -23,43 +21,42 @@ export default function GenotypeRenderer() {
   let genomeMap;
   let dataSet;
 
+  let variantsets = [];
+
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
-    console.log(mapId);
+    createRendererComponents(domParent, width, height);
+    let germplasmData;
 
-    var brapiJs = BrAPI(server, '1.2', authToken);
+    const client = axios.create({ baseURL: server})
+    client.defaults.headers.common['Authorization'] = 'Bearer ' + authToken
 
-    let params = {
-      'mapsDbId': mapId,
-    };
+    // TODO: GOBii don't have the markerpositions call implemented yet so I 
+    // can't load map data
 
-    // let positions = [];
+    // This will recursively call the given variant set until it has consumed
+    // all pages of data for the variant set
+    processVariantSetCall(client, '/variantsets/'+matrixId+'/calls')
+      .then(() => {
+      const genotypeImporter = new GenotypeImporter(genomeMap);
 
-    sendEvent("LoadingMap", domParent)
+      if (genomeMap === undefined) {
+        genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantsets);
+      }
 
-    brapiJs.maps_positions(params)
-      .each((marker) => {
+      germplasmData = genotypeImporter.parseVariantsets(variantsets);
+      const { stateTable } = genotypeImporter;
 
-        markerNames.push(marker.markerName);
-        const m = new Marker(marker.markerName, marker.linkageGroupName, parseInt(marker.location));
-        markerData.push(m);
-    
-        chromosomes.add(marker.linkageGroupName);
-      });
+      colorScheme = new NucleotideColorScheme(stateTable, document);
 
-    sendEvent("PollingMatrix", domParent)
+      dataSet = new DataSet(genomeMap, germplasmData);
 
-    let matrixParams = {
-      'matrixDbId': [matrixId],
-      'format': 'flapjack',
-    };
+      genotypeCanvas.init(dataSet, colorScheme);
+      genotypeCanvas.prerender();
 
-    brapiJs.allelematrices_search(matrixParams)
-      .each((matrixObject) => {
-
-        console.log('wotsit');
-
-        genotypeRenderer.renderGenotypesUrl(domParent, width, height, undefined, matrixObject.__response.metadata.datafiles[0], authToken);
-      });
+      // Tells the dom parent that Flapjack has finished loading. Allows spinners
+      // or similar to be disabled
+      sendEvent("FlapjackFinished", domParent);
+    });
 
     return genotypeRenderer;
   };
@@ -171,6 +168,36 @@ export default function GenotypeRenderer() {
 
     return genotypeRenderer;
   };
+
+  function processVariantSetCall(client, url, params) {
+    return client.get(url, params)
+      .then((response) => {
+        const { nextPageToken } = response.data.metadata.pagination;
+        if (nextPageToken) {
+          const newData = response.data.result.data;
+          variantsets.push(...newData);
+          const newParams = { params: { pageToken: nextPageToken } };
+          return processVariantSetCall(client, url, newParams);
+        }
+        return;
+      });
+    // variantsets.push(...response.result.data);
+
+    // const { nextPageToken } = response.metadata.pagination;
+    // console.log(nextPageToken);
+    // if (nextPageToken) {
+    //   return client.get("/variantsets/"+matrixId+"/calls?pageToken="+nextPageToken, {}, 
+    //   {
+    //     headers: { "Content-Type": "application/json" }
+    //   }).then(response => {
+    //     const resp = response.data
+    //     console.log(resp)
+    //     processVariantSetCall(client, resp, matrixId)
+    //   })
+    // }
+
+    // return variantsets;
+  }
 
   function createRendererComponents(domParent, width, height) {
     const canvasHolder = document.getElementById(domParent.slice(1));

@@ -23,7 +23,7 @@ export default class Genotype {
       throw Error('Encounctered a string which could not be converted into a Genotype');
     }
 
-    if (upperCased === '-' || upperCased === 'NN' || (!upperCased || upperCased.length === 0)) {
+    if (upperCased === '-' || upperCased === 'NN' || upperCased === 'N/N' || (!upperCased || upperCased.length === 0)) {
       geno = new Genotype('', '', true);
     } else if (upperCased.length === 1) {
       geno = new Genotype(upperCased, upperCased, true);

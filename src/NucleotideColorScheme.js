@@ -11,6 +11,8 @@ export default class NucleotideColorScheme {
       orangeLight: 'rgb(255,228,171)',
       orangeDark: 'rgb(179,114,86)',
       white: 'rgb(255,255,255)',
+      greyLight: 'rgb(210,210,210)',
+      greyDark: 'rgb(192,192,192)',
     };
 
     this.colorMap = new Map();
@@ -19,6 +21,7 @@ export default class NucleotideColorScheme {
     this.colorMap.set('G', { light: this.colors.redLight, dark: this.colors.redDark });
     this.colorMap.set('T', { light: this.colors.blueLight, dark: this.colors.blueDark });
     this.colorMap.set('', { light: this.colors.white, dark: this.colors.white });
+    this.colorMap.set('-', { light: this.colors.greyLight, dark: this.colors.greyDark });
 
     this.colorStamps = [];
   }

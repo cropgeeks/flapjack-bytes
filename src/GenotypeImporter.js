@@ -120,4 +120,54 @@ export default class GenotypeImporter {
     }
     return this.genomeMap;
   }
+
+  // A method to create a fake map from BrAPI variantset calls
+  createFakeMapFromVariantSets(variantSetCalls) {
+    const firstGenoName = variantSetCalls[0].callSetName;
+    const markerNames = variantSetCalls.filter(v => v.callSetName === firstGenoName).map(v => v.variantName);
+
+    const markers = [];
+    markerNames.forEach((name, idx) => {
+      const marker = new Marker(name, 'unmapped', idx);
+      markers.push(marker);
+    });
+
+    const chromosomes = [];
+    chromosomes.push(new Chromosome('unmapped', markers.length, markers));
+    this.genomeMap = new GenomeMap(chromosomes);
+
+    return this.genomeMap;
+  }
+
+  // A method which converts BrAPI variantSetsCalls into Flapjack genotypes for
+  // rendering
+  parseVariantSetCalls(variantSetsCalls) {
+    const genoNames = [...new Set(variantSetsCalls.map(v => v.callSetName))];
+
+    genoNames.forEach((name) => {
+      const genoCalls = variantSetsCalls.filter(v => v.callSetName === name);
+
+      if (this.markerIndices.size === 0) {
+        genoCalls.forEach((call, idx) => {
+          const indices = this.genomeMap.markerByName(call.variantName);
+          if (indices !== -1) {
+            this.markerIndices.set(idx, indices);
+          }
+        });
+      }
+
+      const genotypeData = this.initGenotypeData();
+      genoCalls.forEach((call, idx) => {
+        const indices = this.markerIndices.get(idx);
+        // console.log(indices);
+        if (indices !== undefined && indices !== -1) {
+          genotypeData[indices.chromosome][indices.markerIndex] = this.getState(call.genotype.values[0]);
+        }
+      });
+      const germplasm = new Germplasm(name, genotypeData);
+      this.germplasmList.push(germplasm);
+    });
+
+    return this.germplasmList;
+  }
 }
