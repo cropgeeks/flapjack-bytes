@@ -39,16 +39,12 @@ export default function GenotypeRenderer() {
       .then(() => {
       const genotypeImporter = new GenotypeImporter(genomeMap);
 
-      console.log(variantsets);
-
       if (genomeMap === undefined) {
         genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantsets);
       }
 
       germplasmData = genotypeImporter.parseVariantSetCalls(variantsets);
       const { stateTable } = genotypeImporter;
-
-      console.log(stateTable);
 
       colorScheme = new NucleotideColorScheme(stateTable, document);
 
