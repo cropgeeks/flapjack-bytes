@@ -176,9 +176,9 @@ export default function GenotypeRenderer() {
     return client.get(url, params)
       .then((response) => {
         const { nextPageToken } = response.data.metadata.pagination;
+        const newData = response.data.result.data;
+        variantsets.push(...newData);
         if (nextPageToken) {
-          const newData = response.data.result.data;
-          variantsets.push(...newData);
           const newParams = { params: { pageToken: nextPageToken } };
           return processVariantSetCall(client, url, newParams);
         }
