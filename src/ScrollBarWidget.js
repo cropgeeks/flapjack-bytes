@@ -26,4 +26,12 @@ export default class ScrollBarWidget {
     this.widgetX = newX;
     this.widgetY = newY;
   }
+
+  resizeWidth(newWidth) {
+    this.width = newWidth > 20 ? newWidth : 20;
+  }
+
+  resizeHeight(newHeight) {
+    this.height = newHeight > 20 ? newHeight : 20;
+  }
 }

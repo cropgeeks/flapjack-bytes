@@ -55,7 +55,7 @@ export default class GenotypeCanvas {
   }
 
   maxCanvasHeight() {
-    return Math.max(this.dataSet.lineCount() * this.boxSize, this.canvas.height);
+    return Math.max(this.dataSet.lineCount() * this.boxSize, this.alleleCanvasHeight());
   }
 
   alleleCanvasWidth() {
@@ -73,6 +73,7 @@ export default class GenotypeCanvas {
     this.updateVisualPositions();
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
     this.colorStamps = this.colorScheme.colorStamps;
+    this.zoom(this.boxSize);
   }
 
   prerender() {
@@ -249,19 +250,25 @@ export default class GenotypeCanvas {
 
   renderScrollbars() {
     this.backContext.save();
-    this.backContext.translate(0, this.mapCanvasHeight);
-    this.verticalScrollbar.render(this.backContext);
+    if (this.canScrollY()) {
+      this.backContext.translate(0, this.mapCanvasHeight);
+      this.verticalScrollbar.render(this.backContext);
+    }
     this.backContext.restore();
     this.backContext.save();
-    this.backContext.translate(this.nameCanvasWidth, 0);
-    this.horizontalScrollbar.render(this.backContext);
+    if (this.canScrollX()) {
+      this.backContext.translate(this.nameCanvasWidth, 0);
+      this.horizontalScrollbar.render(this.backContext);
+    }
     this.backContext.restore();
 
     this.backContext.save();
-    this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
-    this.backContext.fillStyle = '#aaa';
-    this.backContext.strokeRect(this.alleleCanvasWidth(), this.alleleCanvasHeight(), this.scrollbarWidth, this.scrollbarHeight);
-    this.backContext.fillRect(this.alleleCanvasWidth(), this.alleleCanvasHeight(), this.scrollbarWidth, this.scrollbarHeight);
+    if (this.canScrollX() || this.canScrollY()) {
+      this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
+      this.backContext.fillStyle = '#aaa';
+      this.backContext.strokeRect(this.alleleCanvasWidth(), this.alleleCanvasHeight(), this.scrollbarWidth, this.scrollbarHeight);
+      this.backContext.fillRect(this.alleleCanvasWidth(), this.alleleCanvasHeight(), this.scrollbarWidth, this.scrollbarHeight);
+    }
     this.backContext.restore();
   }
 
@@ -292,7 +299,7 @@ export default class GenotypeCanvas {
         this.translatedX = xScrollMax;
       }
 
-      const scrollWidth = this.alleleCanvasWidth() - 20;
+      const scrollWidth = this.alleleCanvasWidth() - this.horizontalScrollbar.widget.width;
       const scrollX = Math.floor(this.mapToRange(this.translatedX, 0, xScrollMax, 0, scrollWidth));
       this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
     }
@@ -311,7 +318,7 @@ export default class GenotypeCanvas {
         this.translatedY = yScrollMax;
       }
 
-      const scrollHeight = this.alleleCanvasHeight() - 20;
+      const scrollHeight = this.alleleCanvasHeight() - this.verticalScrollbar.widget.height;
       const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, yScrollMax, 0, scrollHeight));
       this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
     }
@@ -379,12 +386,23 @@ export default class GenotypeCanvas {
     });
   }
 
+  updateScrollBarSizes() {
+    const screenWidthPerc = this.alleleCanvasWidth() / this.maxCanvasWidth();
+    const hScrollWidgetWidth = Math.ceil(this.alleleCanvasWidth() * screenWidthPerc);
+    this.horizontalScrollbar.resizeWidgetWidth(hScrollWidgetWidth);
+
+    const screenHeightPerc = this.alleleCanvasHeight() / this.maxCanvasHeight();
+    const vScrollWidgetHeight = Math.ceil(this.alleleCanvasHeight() * screenHeightPerc);
+    this.verticalScrollbar.resizeWidgetHeight(vScrollWidgetHeight);
+  }
+
   zoom(size) {
     this.boxSize = size;
     this.updateFontSize();
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
     this.updateCanvasWidths();
     this.updateVisualPositions();
+    this.updateScrollBarSizes();
 
     // If zooming out means the genotypes don't take up the full canvas, return
     // the display to its horizontal origin

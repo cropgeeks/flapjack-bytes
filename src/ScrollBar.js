@@ -34,4 +34,16 @@ export default class ScrollBar {
       this.width = newWidth;
     }
   }
+
+  resizeWidgetWidth(newWidth) {
+    if (!this.vertical) {
+      this.widget.resizeWidth(newWidth);
+    }
+  }
+
+  resizeWidgetHeight(newHeight) {
+    if (this.vertical) {
+      this.widget.resizeHeight(newHeight);
+    }
+  }
 }
