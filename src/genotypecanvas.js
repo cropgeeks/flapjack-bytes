@@ -324,6 +324,50 @@ export default class GenotypeCanvas {
     }
   }
 
+  dragVerticalScrollbar(y) {
+    if (this.canScrollY()) {
+      const yScrollMax = this.maxCanvasHeight() - this.alleleCanvasHeight();
+
+      this.translatedY = (y / this.verticalScrollbar.height) * yScrollMax;
+
+      // Prevent scrolling beyond start or end of data
+      if (this.translatedY < 0) {
+        this.translatedY = 0;
+      } else if (this.translatedY >= yScrollMax) {
+        this.translatedY = yScrollMax;
+      }
+
+      const scrollHeight = this.alleleCanvasHeight() - this.verticalScrollbar.widget.height;
+      const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, yScrollMax, 0, scrollHeight));
+      this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
+    }
+
+    this.redraw = true;
+    this.prerender();
+  }
+
+  dragHorizontalScrollbar(x) {
+    if (this.canScrollX()) {
+      const xScrollMax = this.maxCanvasWidth() - this.alleleCanvasWidth();
+
+      this.translatedX = (x / this.horizontalScrollbar.width) * xScrollMax;
+
+      // Prevent scrolling beyond start or end of data
+      if (this.translatedX < 0) {
+        this.translatedX = 0;
+      } else if (this.translatedX >= xScrollMax) {
+        this.translatedX = xScrollMax;
+      }
+
+      const scrollWidth = this.alleleCanvasWidth() - this.horizontalScrollbar.widget.width;
+      const scrollX = Math.floor(this.mapToRange(this.translatedX, 0, xScrollMax, 0, scrollWidth));
+      this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
+    }
+
+    this.redraw = true;
+    this.prerender();
+  }
+
   move(diffX, diffY) {
     this.moveX(diffX);
     this.moveY(diffY);
