@@ -21,9 +21,6 @@ export default function GenotypeRenderer() {
   let genomeMap;
   let dataSet;
 
-  let variantsets = [];
-  let markerpositions = [];
-
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
     createRendererComponents(domParent, width, height);
     let germplasmData;
@@ -34,43 +31,42 @@ export default function GenotypeRenderer() {
     const client = axios.create({ baseURL: server})
     client.defaults.headers.common['Authorization'] = 'Bearer ' + authToken
 
-    const newParams = { params: { pageToken: '90' } };
+    // const newParams = { params: { pageToken: '95' } };
 
     // TODO: GOBii don't have the markerpositions call implemented yet so I 
     // can't load map data
     processMarkerPositionsCall(client, '/markerpositions?mapDbId='+mapId)
-      .then(() => {
+      .then((markerpositions) => {
         const mapImporter = new MapImporter();
         genomeMap = mapImporter.parseMarkerpositions(markerpositions);
 
-        // This will recursively call the given variant set until it has consumed
-        // all pages of data for the variant set
-        processVariantSetCall(client, '/variantsets/'+matrixId+'/calls?pageSize=100000', newParams)
-          .then(() => {
-          const genotypeImporter = new GenotypeImporter(genomeMap);
+        // processVariantSetCall(client, '/variantsets/'+matrixId+'/calls?pageSize=100000', newParams)
+        processVariantSetCall(client, '/variantsets/'+matrixId+'/calls')
+          .then((variantSetCalls) => {
+            const genotypeImporter = new GenotypeImporter(genomeMap);
 
-          if (genomeMap === undefined) {
-            genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantsets);
-          }
+            if (genomeMap === undefined) {
+              genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantSetCalls);
+            }
 
-          germplasmData = genotypeImporter.parseVariantSetCalls(variantsets);
-          const { stateTable } = genotypeImporter;
+            germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
+            const { stateTable } = genotypeImporter;
 
-          colorScheme = new NucleotideColorScheme(stateTable, document);
+            colorScheme = new NucleotideColorScheme(stateTable, document);
 
-          dataSet = new DataSet(genomeMap, germplasmData);
+            dataSet = new DataSet(genomeMap, germplasmData);
 
-          genotypeCanvas.init(dataSet, colorScheme);
-          genotypeCanvas.prerender();
+            genotypeCanvas.init(dataSet, colorScheme);
+            genotypeCanvas.prerender();
 
-          // Tells the dom parent that Flapjack has finished loading. Allows spinners
-          // or similar to be disabled
-          sendEvent("FlapjackFinished", domParent);
-        })
-        .catch((error) => {
-          sendEvent("FlapjackError", domParent);
-          console.log(error);
-        });
+            // Tells the dom parent that Flapjack has finished loading. Allows spinners
+            // or similar to be disabled
+            sendEvent("FlapjackFinished", domParent);
+          })
+          .catch((error) => {
+            sendEvent("FlapjackError", domParent);
+            console.log(error);
+          });
 
       })
       .catch((error) => {
@@ -189,39 +185,38 @@ export default function GenotypeRenderer() {
     return genotypeRenderer;
   };
 
-  function processMarkerPositionsCall(client, url, params) {
+  function processMarkerPositionsCall(client, url, params, markerpositions = []) {
     return client.get(url, params)
       .then((response) => {
         const { currentPage, totalPages } = response.data.metadata.pagination;
-        console.log("markerpositions page: ", currentPage, " totalPages: ", totalPages);
 
         const newData = response.data.result.data;
-        console.log(newData);
-        markerpositions.push(...newData);
+        markerpositions.push(...newData.map(m => ({ name: m.markerName, chromosome: m.linkageGroupName, position: m.position })));
 
         if (currentPage < totalPages - 1) {
           const nextPage = currentPage + 1;
           const newParams = { params: { page: nextPage } };
-          return processMarkerPositionsCall(client, url, newParams);
+          return processMarkerPositionsCall(client, url, newParams, markerpositions);
         }
+        return markerpositions;
       })
       .catch((error) => {
         console.log(error);
       });
   }
 
-  function processVariantSetCall(client, url, params) {
+  function processVariantSetCall(client, url, params, variantSetCalls = []) {
     return client.get(url, params)
       .then((response) => {
         const { nextPageToken } = response.data.metadata.pagination;
         console.log(nextPageToken);
         const newData = response.data.result.data;
-        variantsets.push(...newData);
+        variantSetCalls.push(...newData.map(calls => ({ lineName: calls.callSetName, markerName: calls.variantName, allele: calls.genotype.values[0] })));
         if (nextPageToken) {
           const newParams = { params: { pageToken: nextPageToken } };
-          return processVariantSetCall(client, url, newParams);
+          return processVariantSetCall(client, url, newParams, variantSetCalls);
         }
-        return;
+        return variantSetCalls;
       }).catch((error) => {
         console.log(error);
       });

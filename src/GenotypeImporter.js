@@ -142,14 +142,14 @@ export default class GenotypeImporter {
   // A method which converts BrAPI variantSetsCalls into Flapjack genotypes for
   // rendering
   parseVariantSetCalls(variantSetsCalls) {
-    const genoNames = [...new Set(variantSetsCalls.map(v => v.callSetName))];
+    const genoNames = new Set(variantSetsCalls.map(v => v.lineName));
 
     genoNames.forEach((name) => {
-      const genoCalls = variantSetsCalls.filter(v => v.callSetName === name);
+      const genoCalls = variantSetsCalls.filter(v => v.lineName === name);
 
       if (this.markerIndices.size === 0) {
         genoCalls.forEach((call, idx) => {
-          const indices = this.genomeMap.markerByName(call.variantName);
+          const indices = this.genomeMap.markerByName(call.markerName);
           if (indices !== -1) {
             this.markerIndices.set(idx, indices);
           }
@@ -159,9 +159,8 @@ export default class GenotypeImporter {
       const genotypeData = this.initGenotypeData();
       genoCalls.forEach((call, idx) => {
         const indices = this.markerIndices.get(idx);
-        // console.log(indices);
         if (indices !== undefined && indices !== -1) {
-          genotypeData[indices.chromosome][indices.markerIndex] = this.getState(call.genotype.values[0]);
+          genotypeData[indices.chromosome][indices.markerIndex] = this.getState(call.allele);
         }
       });
       const germplasm = new Germplasm(name, genotypeData);

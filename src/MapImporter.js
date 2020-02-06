@@ -69,13 +69,13 @@ export default class MapImporter {
   }
 
   processBrapiMarkerposition(markerposition) {
-    const { markerName, linkageGroupName, position } = markerposition;
+    const { name, chromosome, position } = markerposition;
 
     // Keep track of the chromosomes that we've found
-    this.chromosomeNames.add(linkageGroupName);
+    this.chromosomeNames.add(chromosome);
 
     // Create a marker object and add it to our array of markers
-    const marker = new Marker(markerName, linkageGroupName, parseInt(position.replace(/,/g, ''), 10));
+    const marker = new Marker(name, chromosome, parseInt(position.replace(/,/g, ''), 10));
     this.markerData.push(marker);
   }
 }
