@@ -22,44 +22,61 @@ export default function GenotypeRenderer() {
   let dataSet;
 
   let variantsets = [];
+  let markerpositions = [];
 
   genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
     createRendererComponents(domParent, width, height);
     let germplasmData;
 
+    mapId = 1;
+    console.log(mapId);
+
     const client = axios.create({ baseURL: server})
     client.defaults.headers.common['Authorization'] = 'Bearer ' + authToken
 
+    const newParams = { params: { pageToken: '90' } };
+
     // TODO: GOBii don't have the markerpositions call implemented yet so I 
     // can't load map data
-
-    // This will recursively call the given variant set until it has consumed
-    // all pages of data for the variant set
-    processVariantSetCall(client, '/variantsets/'+matrixId+'/calls')
+    processMarkerPositionsCall(client, '/markerpositions?mapDbId='+mapId)
       .then(() => {
-      const genotypeImporter = new GenotypeImporter(genomeMap);
+        const mapImporter = new MapImporter();
+        genomeMap = mapImporter.parseMarkerpositions(markerpositions);
 
-      if (genomeMap === undefined) {
-        genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantsets);
-      }
+        // This will recursively call the given variant set until it has consumed
+        // all pages of data for the variant set
+        processVariantSetCall(client, '/variantsets/'+matrixId+'/calls?pageSize=100000', newParams)
+          .then(() => {
+          const genotypeImporter = new GenotypeImporter(genomeMap);
 
-      germplasmData = genotypeImporter.parseVariantSetCalls(variantsets);
-      const { stateTable } = genotypeImporter;
+          if (genomeMap === undefined) {
+            genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantsets);
+          }
 
-      colorScheme = new NucleotideColorScheme(stateTable, document);
+          germplasmData = genotypeImporter.parseVariantSetCalls(variantsets);
+          const { stateTable } = genotypeImporter;
 
-      dataSet = new DataSet(genomeMap, germplasmData);
+          colorScheme = new NucleotideColorScheme(stateTable, document);
 
-      genotypeCanvas.init(dataSet, colorScheme);
-      genotypeCanvas.prerender();
+          dataSet = new DataSet(genomeMap, germplasmData);
 
-      // Tells the dom parent that Flapjack has finished loading. Allows spinners
-      // or similar to be disabled
-      sendEvent("FlapjackFinished", domParent);
-    })
-    .catch((error) => {
-      sendEvent("FlapjackError", domParent);
-    });
+          genotypeCanvas.init(dataSet, colorScheme);
+          genotypeCanvas.prerender();
+
+          // Tells the dom parent that Flapjack has finished loading. Allows spinners
+          // or similar to be disabled
+          sendEvent("FlapjackFinished", domParent);
+        })
+        .catch((error) => {
+          sendEvent("FlapjackError", domParent);
+          console.log(error);
+        });
+
+      })
+      .catch((error) => {
+        sendEvent("FlapjackError", domParent);
+        console.log(error);
+      })
 
     return genotypeRenderer;
   };
@@ -172,10 +189,32 @@ export default function GenotypeRenderer() {
     return genotypeRenderer;
   };
 
+  function processMarkerPositionsCall(client, url, params) {
+    return client.get(url, params)
+      .then((response) => {
+        const { currentPage, totalPages } = response.data.metadata.pagination;
+        console.log("markerpositions page: ", currentPage, " totalPages: ", totalPages);
+
+        const newData = response.data.result.data;
+        console.log(newData);
+        markerpositions.push(...newData);
+
+        if (currentPage < totalPages - 1) {
+          const nextPage = currentPage + 1;
+          const newParams = { params: { page: nextPage } };
+          return processMarkerPositionsCall(client, url, newParams);
+        }
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
   function processVariantSetCall(client, url, params) {
     return client.get(url, params)
       .then((response) => {
         const { nextPageToken } = response.data.metadata.pagination;
+        console.log(nextPageToken);
         const newData = response.data.result.data;
         variantsets.push(...newData);
         if (nextPageToken) {
@@ -183,6 +222,8 @@ export default function GenotypeRenderer() {
           return processVariantSetCall(client, url, newParams);
         }
         return;
+      }).catch((error) => {
+        console.log(error);
       });
   }
 

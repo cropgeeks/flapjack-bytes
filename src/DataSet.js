@@ -16,6 +16,10 @@ export default class DataSet {
     return this.genomeMap.chromosomePositionsFor(markerStart, markerEnd);
   }
 
+  markerAt(markerIndex) {
+    return this.genomeMap.chromosomePositionsFor(markerIndex, markerIndex);
+  }
+
   markerCount() {
     return this.genomeMap.markerCount();
   }

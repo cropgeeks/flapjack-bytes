@@ -58,6 +58,13 @@ export default class GenomeMap {
     return positions;
   }
 
+  chromosomeAndMarkerFor(dataIndex) {
+    const foundChromosomes = this.intervalTree.search(dataIndex, dataIndex);
+    const chromosome = this.chromosomes.indexOf(foundChromosomes[0]);
+    const chromStart = this.chromosomeStarts.get(chromosome);
+    const markerIndex = Math.max(dataIndex - chromStart, 0);
+  }
+
   markerByName(markerName) {
     let found = -1;
     this.chromosomes.forEach((chromosome, idx) => {

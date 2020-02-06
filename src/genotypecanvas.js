@@ -66,6 +66,20 @@ export default class GenotypeCanvas {
     return this.canvas.height - this.mapCanvasHeight - this.scrollbarHeight;
   }
 
+  prevChromosomeStart() {
+    let chromStart = 0;
+    const tempX = this.translatedX - this.nameCanvasWidth;
+    this.chromosomeStarts.forEach((start, index) => {
+      if ((tempX >= start && tempX < this.chromosomeEnds[index])
+        || (index > 0 && tempX >= this.chromosomeEnds[index - 1]
+        && tempX <= this.chromosomeStarts[index])) {
+        chromStart = index * this.chromosomeGapSize;
+      }
+    });
+
+    return chromStart;
+  }
+
   init(dataSet, colorScheme) {
     this.dataSet = dataSet;
     this.colorScheme = colorScheme;
@@ -84,14 +98,7 @@ export default class GenotypeCanvas {
 
       // We need to calculate an offset because the gaps between chromosomes
       // aren't part of the data model
-      let offset = 0;
-      this.chromosomeStarts.forEach((start, index) => {
-        if ((this.translatedX >= start && this.translatedX < this.chromosomeEnds[index])
-          || (index > 0 && this.translatedX >= this.chromosomeEnds[index - 1]
-          && this.translatedX <= this.chromosomeStarts[index])) {
-          offset = index * this.chromosomeGapSize;
-        }
-      });
+      const offset = this.prevChromosomeStart();
 
       const markerStart = Math.floor((this.translatedX - offset) / this.boxSize);
       const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCount());
@@ -377,15 +384,23 @@ export default class GenotypeCanvas {
   }
 
   mouseOver(x, y) {
-    if (x >= this.nameCanvasWidth && x < this.backBuffer.width && y >= this.mapCanvasHeight && y < this.backBuffer.height) {
-      this.markerUnderMouse = Math.floor((x - this.nameCanvasWidth) / this.boxSize);
-      this.lineUnderMouse = Math.floor((y - this.mapCanvasHeight) / this.boxSize);
-    } else {
-      this.lineUnderMouse = undefined;
-      this.markerUnderMouse = undefined;
-    }
+    // We need to calculate an offset because the gaps between chromosomes
+    // aren't part of the data model
+    const offset = this.prevChromosomeStart();
 
-    this.prerender();
+    const markerIndex = Math.floor((x - offset - this.nameCanvasWidth) / this.boxSize);
+    const markerUnderMouse = this.dataSet.markerAt(markerIndex);
+    // console.log(this.dataSet.genomeMap.chromosomeAndMarkerFor(markerIndex));
+    // console.log(this.dataSet.genomeMap.chromosomes[markerUnderMouse[0].chromosomeIndex].markers[markerUnderMouse[0].firstMarker].name);
+    // if (x >= this.nameCanvasWidth && x < this.backBuffer.width && y >= this.mapCanvasHeight && y < this.backBuffer.height) {
+    //   this.markerUnderMouse = Math.floor((x - this.nameCanvasWidth) / this.boxSize);
+    //   this.lineUnderMouse = Math.floor((y - this.mapCanvasHeight) / this.boxSize);
+    // } else {
+    //   this.lineUnderMouse = undefined;
+    //   this.markerUnderMouse = undefined;
+    // }
+
+    // this.prerender();
   }
 
   updateFontSize() {

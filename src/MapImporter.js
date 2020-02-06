@@ -55,4 +55,27 @@ export default class MapImporter {
 
     return map;
   }
+
+  // A method which converts BrAPI markerpositions into Flapjack markers for
+  // rendering
+  parseMarkerpositions(markerpositions) {
+    markerpositions.forEach((marker) => {
+      this.processBrapiMarkerposition(marker);
+    });
+
+    const map = this.createMap();
+
+    return map;
+  }
+
+  processBrapiMarkerposition(markerposition) {
+    const { markerName, linkageGroupName, position } = markerposition;
+
+    // Keep track of the chromosomes that we've found
+    this.chromosomeNames.add(linkageGroupName);
+
+    // Create a marker object and add it to our array of markers
+    const marker = new Marker(markerName, linkageGroupName, parseInt(position.replace(/,/g, ''), 10));
+    this.markerData.push(marker);
+  }
 }
