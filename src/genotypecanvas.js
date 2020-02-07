@@ -11,7 +11,7 @@ export default class GenotypeCanvas {
     this.backBuffer.width = width;
     this.backBuffer.height = height;
     this.backContext = this.backBuffer.getContext('2d');
-    this.mapCanvasHeight = 40;
+    this.mapCanvasHeight = 50;
     this.nameCanvasWidth = 100;
 
     this.scrollbarWidth = 10;
@@ -143,9 +143,9 @@ export default class GenotypeCanvas {
     this.backContext.moveTo(mapMarkerPos, 0);
     this.backContext.lineTo(mapMarkerPos, 10);
     // Draw diagonal line to marker position on the genotype canvas
-    this.backContext.lineTo(genoMarkerPos, 20);
-    // Draw a vertical line down to the genotype canvas
     this.backContext.lineTo(genoMarkerPos, 30);
+    // Draw a vertical line down to the genotype canvas
+    this.backContext.lineTo(genoMarkerPos, 40);
     this.backContext.stroke();
   }
 
