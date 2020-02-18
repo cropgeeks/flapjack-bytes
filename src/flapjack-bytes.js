@@ -25,54 +25,82 @@ export default function GenotypeRenderer() {
     createRendererComponents(domParent, width, height);
     let germplasmData;
 
-    mapId = 1;
-    console.log(mapId);
+    console.log('mapId', mapId);
 
-    const client = axios.create({ baseURL: server})
+    const client = axios.create({ baseURL: server })
     client.defaults.headers.common['Authorization'] = 'Bearer ' + authToken
 
-    // const newParams = { params: { pageToken: '95' } };
+    if (mapId) {
+      // TODO: GOBii don't have the markerpositions call implemented yet so I 
+      // can't load map data
+      processMarkerPositionsCall(client, '/markerpositions?mapDbId=' + mapId)
+        .then((markerpositions) => {
+          const mapImporter = new MapImporter();
+          genomeMap = mapImporter.parseMarkerpositions(markerpositions);
 
-    // TODO: GOBii don't have the markerpositions call implemented yet so I 
-    // can't load map data
-    processMarkerPositionsCall(client, '/markerpositions?mapDbId='+mapId)
-      .then((markerpositions) => {
-        const mapImporter = new MapImporter();
-        genomeMap = mapImporter.parseMarkerpositions(markerpositions);
+          processVariantSetCall(client, '/variantsets/' + matrixId + '/calls)
+            .then((variantSetCalls) => {
+              const genotypeImporter = new GenotypeImporter(genomeMap);
 
-        // processVariantSetCall(client, '/variantsets/'+matrixId+'/calls?pageSize=100000', newParams)
-        processVariantSetCall(client, '/variantsets/'+matrixId+'/calls')
-          .then((variantSetCalls) => {
-            const genotypeImporter = new GenotypeImporter(genomeMap);
+              if (genomeMap === undefined) {
+                genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantSetCalls);
+              }
 
-            if (genomeMap === undefined) {
-              genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantSetCalls);
-            }
+              germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
+              const { stateTable } = genotypeImporter;
 
-            germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
-            const { stateTable } = genotypeImporter;
+              colorScheme = new NucleotideColorScheme(stateTable, document);
 
-            colorScheme = new NucleotideColorScheme(stateTable, document);
+              dataSet = new DataSet(genomeMap, germplasmData);
 
-            dataSet = new DataSet(genomeMap, germplasmData);
+              genotypeCanvas.init(dataSet, colorScheme);
+              genotypeCanvas.prerender();
 
-            genotypeCanvas.init(dataSet, colorScheme);
-            genotypeCanvas.prerender();
+              // Tells the dom parent that Flapjack has finished loading. Allows spinners
+              // or similar to be disabled
+              sendEvent("FlapjackFinished", domParent);
+            })
+            .catch((error) => {
+              sendEvent("FlapjackError", domParent);
+              console.log(error);
+            });
 
-            // Tells the dom parent that Flapjack has finished loading. Allows spinners
-            // or similar to be disabled
-            sendEvent("FlapjackFinished", domParent);
-          })
-          .catch((error) => {
-            sendEvent("FlapjackError", domParent);
-            console.log(error);
-          });
+        })
+        .catch((error) => {
+          sendEvent("FlapjackError", domParent);
+          console.log(error);
+        })
+    }
+    else {
+      processVariantSetCall(client, '/variantsets/' + matrixId + '/calls?pageSize=100000', newParams)
+        .then((variantSetCalls) => {
+          const genotypeImporter = new GenotypeImporter(genomeMap);
 
-      })
-      .catch((error) => {
-        sendEvent("FlapjackError", domParent);
-        console.log(error);
-      })
+          if (genomeMap === undefined) {
+            genomeMap = genotypeImporter.createFakeMapFromVariantSets(variantSetCalls);
+          }
+
+          germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
+          const { stateTable } = genotypeImporter;
+
+          colorScheme = new NucleotideColorScheme(stateTable, document);
+
+          dataSet = new DataSet(genomeMap, germplasmData);
+
+          genotypeCanvas.init(dataSet, colorScheme);
+          genotypeCanvas.prerender();
+
+          // Tells the dom parent that Flapjack has finished loading. Allows spinners
+          // or similar to be disabled
+          sendEvent("FlapjackFinished", domParent);
+        })
+        .catch((error) => {
+          sendEvent("FlapjackError", domParent);
+          console.log(error);
+        });
+    }
+
+
 
     return genotypeRenderer;
   };
@@ -81,25 +109,25 @@ export default function GenotypeRenderer() {
     createRendererComponents(domParent, width, height);
 
     if (typeof mapFileURL !== 'undefined') {
-      fetch(mapFileURL, {headers: { "Authorization": "Bearer " + authToken }})
-      .then((response) => {
-        if (response.status !== 200) {
-          console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
-          return;
-        }
-        response.text().then((data) => {
-          const lines = data.split(/\r?\n/);
-          for (let line = 0; line < lines.length; line += 1) {
-            processMapFileLine(lines[line]);
+      fetch(mapFileURL, { headers: { "Authorization": "Bearer " + authToken } })
+        .then((response) => {
+          if (response.status !== 200) {
+            console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
+            return;
           }
+          response.text().then((data) => {
+            const lines = data.split(/\r?\n/);
+            for (let line = 0; line < lines.length; line += 1) {
+              processMapFileLine(lines[line]);
+            }
+          })
         })
-      })
-      .catch((err) => {
-        console.log('Fetch Error :-S', err);
-      });
+        .catch((err) => {
+          console.log('Fetch Error :-S', err);
+        });
     }
-    
-    fetch(genotypeFileURL, {headers: { "Authorization": "Bearer " + authToken }})
+
+    fetch(genotypeFileURL, { headers: { "Authorization": "Bearer " + authToken } })
       .then((response) => {
         if (response.status !== 200) {
           console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
@@ -119,7 +147,7 @@ export default function GenotypeRenderer() {
         console.log('Fetch Error :-S', err);
       });
 
-      sendEvent('FlapjackFinished', domParent);
+    sendEvent('FlapjackFinished', domParent);
 
     return genotypeRenderer;
   };
