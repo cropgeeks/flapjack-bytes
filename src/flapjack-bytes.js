@@ -38,7 +38,7 @@ export default function GenotypeRenderer() {
           const mapImporter = new MapImporter();
           genomeMap = mapImporter.parseMarkerpositions(markerpositions);
 
-          processVariantSetCall(client, '/variantsets/' + matrixId + '/calls)
+          processVariantSetCall(client, '/variantsets/' + matrixId + '/calls')
             .then((variantSetCalls) => {
               const genotypeImporter = new GenotypeImporter(genomeMap);
 
