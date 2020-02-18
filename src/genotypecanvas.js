@@ -30,7 +30,6 @@ export default class GenotypeCanvas {
 
     this.translatedX = 0;
     this.translatedY = 0;
-    this.redraw = true;
     this.colorScheme = undefined;
 
     this.markerUnderMouse = undefined;
@@ -90,10 +89,10 @@ export default class GenotypeCanvas {
     this.zoom(this.boxSize);
   }
 
-  prerender() {
+  prerender(redraw) {
     this.drawingContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    if (this.redraw) {
+    if (redraw) {
       const dataWidth = Math.ceil(this.alleleCanvasWidth() / this.boxSize);
 
       // We need to calculate an offset because the gaps between chromosomes
@@ -124,8 +123,6 @@ export default class GenotypeCanvas {
     //   this.drawingContext.translate(-this.lineNamesWidth, -this.mapCanvasHeight);
     //   this.drawingContext.globalAlpha = 1;
     // }
-
-    this.redraw = false;
   }
 
   render(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle) {
@@ -349,8 +346,7 @@ export default class GenotypeCanvas {
       this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
     }
 
-    this.redraw = true;
-    this.prerender();
+    this.prerender(true);
   }
 
   dragHorizontalScrollbar(x) {
@@ -371,16 +367,14 @@ export default class GenotypeCanvas {
       this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
     }
 
-    this.redraw = true;
-    this.prerender();
+    this.prerender(true);
   }
 
   move(diffX, diffY) {
     this.moveX(diffX);
     this.moveY(diffY);
 
-    this.redraw = true;
-    this.prerender();
+    this.prerender(true);
   }
 
   mouseOver(x, y) {
@@ -477,8 +471,7 @@ export default class GenotypeCanvas {
       this.verticalScrollbar.move(this.verticalScrollbar.x, 0);
     }
 
-    this.redraw = true;
-    this.prerender();
+    this.prerender(true);
   }
 
 //   rainbowColor(numOfSteps, step) {
