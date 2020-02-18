@@ -21,7 +21,7 @@ export default function GenotypeRenderer() {
   let genomeMap;
   let dataSet;
 
-  genotypeRenderer.renderGenotypesBrapi = function (domParent, width, height, server, matrixId, mapId, authToken) {
+  genotypeRenderer.renderGenotypesBrapi = function renderGenotypesBrapi(domParent, width, height, server, matrixId, mapId, authToken) {
     createRendererComponents(domParent, width, height);
     let germplasmData;
 
@@ -72,7 +72,7 @@ export default function GenotypeRenderer() {
         })
     }
     else {
-      processVariantSetCall(client, '/variantsets/' + matrixId + '/calls?pageSize=100000', newParams)
+      processVariantSetCall(client, '/variantsets/' + matrixId + '/calls')
         .then((variantSetCalls) => {
           const genotypeImporter = new GenotypeImporter(genomeMap);
 
@@ -105,7 +105,7 @@ export default function GenotypeRenderer() {
     return genotypeRenderer;
   };
 
-  genotypeRenderer.renderGenotypesUrl = function (domParent, width, height, mapFileURL, genotypeFileURL, authToken) {
+  genotypeRenderer.renderGenotypesUrl = function renderGenotypesUrl(domParent, width, height, mapFileURL, genotypeFileURL, authToken) {
     createRendererComponents(domParent, width, height);
 
     if (typeof mapFileURL !== 'undefined') {
@@ -169,7 +169,7 @@ export default function GenotypeRenderer() {
   }
 
   // eslint-disable-next-line func-names
-  genotypeRenderer.renderGenotypesFile = function (domParent, width, height, mapFileDom, genotypeFileDom, qtlFileDom) {
+  genotypeRenderer.renderGenotypesFile = function renderGenotypesFile(domParent, width, height, mapFileDom, genotypeFileDom, qtlFileDom) {
     createRendererComponents(domParent, width, height);
     // let qtls = [];
     let germplasmData;
