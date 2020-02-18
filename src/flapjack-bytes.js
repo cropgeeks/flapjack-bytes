@@ -27,18 +27,18 @@ export default function GenotypeRenderer() {
 
     console.log('mapId', mapId);
 
-    const client = axios.create({ baseURL: server })
-    client.defaults.headers.common['Authorization'] = 'Bearer ' + authToken
+    const client = axios.create({ baseURL: server });
+    client.defaults.headers.common.Authorization = `Bearer ${authToken}`;
 
     if (mapId) {
-      // TODO: GOBii don't have the markerpositions call implemented yet so I 
+      // TODO: GOBii don't have the markerpositions call implemented yet so I
       // can't load map data
-      processMarkerPositionsCall(client, '/markerpositions?mapDbId=' + mapId)
+      processMarkerPositionsCall(client, `/markerpositions?mapDbId=${mapId}`)
         .then((markerpositions) => {
           const mapImporter = new MapImporter();
           genomeMap = mapImporter.parseMarkerpositions(markerpositions);
 
-          processVariantSetCall(client, '/variantsets/' + matrixId + '/calls')
+          processVariantSetCall(client, `/variantsets/${matrixId}/calls`)
             .then((variantSetCalls) => {
               const genotypeImporter = new GenotypeImporter(genomeMap);
 
@@ -58,21 +58,21 @@ export default function GenotypeRenderer() {
 
               // Tells the dom parent that Flapjack has finished loading. Allows spinners
               // or similar to be disabled
-              sendEvent("FlapjackFinished", domParent);
+              sendEvent('FlapjackFinished', domParent);
             })
             .catch((error) => {
-              sendEvent("FlapjackError", domParent);
+              sendEvent('FlapjackError', domParent);
               console.log(error);
             });
 
         })
         .catch((error) => {
-          sendEvent("FlapjackError", domParent);
+          sendEvent('FlapjackError', domParent);
           console.log(error);
         })
     }
     else {
-      processVariantSetCall(client, '/variantsets/' + matrixId + '/calls')
+      processVariantSetCall(client, `/variantsets/${matrixId}/calls`)
         .then((variantSetCalls) => {
           const genotypeImporter = new GenotypeImporter(genomeMap);
 
@@ -92,16 +92,13 @@ export default function GenotypeRenderer() {
 
           // Tells the dom parent that Flapjack has finished loading. Allows spinners
           // or similar to be disabled
-          sendEvent("FlapjackFinished", domParent);
+          sendEvent('FlapjackFinished', domParent);
         })
         .catch((error) => {
-          sendEvent("FlapjackError", domParent);
+          sendEvent('FlapjackError', domParent);
           console.log(error);
         });
     }
-
-
-
     return genotypeRenderer;
   };
 
@@ -109,10 +106,10 @@ export default function GenotypeRenderer() {
     createRendererComponents(domParent, width, height);
 
     if (typeof mapFileURL !== 'undefined') {
-      fetch(mapFileURL, { headers: { "Authorization": "Bearer " + authToken } })
+      fetch(mapFileURL, { headers: { Authorization: `Bearer ${authToken}` } })
         .then((response) => {
           if (response.status !== 200) {
-            console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
+            console.log(`Couldn't load file: ${mapFileURL}. Status code: ${response.status}`);
             return;
           }
           response.text().then((data) => {
@@ -127,10 +124,10 @@ export default function GenotypeRenderer() {
         });
     }
 
-    fetch(genotypeFileURL, { headers: { "Authorization": "Bearer " + authToken } })
+    fetch(genotypeFileURL, { headers: { Authorization: `Bearer ${authToken}` } })
       .then((response) => {
         if (response.status !== 200) {
-          console.log("Couldn't load file: " + filepath + ". Status code: " + response.status);
+          console.log(`Couldn't load file: ${genotypeFileURL}. Status code: ${response.status}`);
           return;
         }
         response.text().then((data) => {
@@ -167,8 +164,7 @@ export default function GenotypeRenderer() {
       reader.readAsText(file);
     });
   }
-
-  // eslint-disable-next-line func-names
+  
   genotypeRenderer.renderGenotypesFile = function renderGenotypesFile(domParent, width, height, mapFileDom, genotypeFileDom, qtlFileDom) {
     createRendererComponents(domParent, width, height);
     // let qtls = [];
