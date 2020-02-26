@@ -33,6 +33,8 @@ export default class GenotypeCanvas {
     this.colorScheme = undefined;
 
     this.markerUnderMouse = undefined;
+    this.markerIndexUnderMouse = undefined;
+    this.chromosomeUnderMouse = -1;
     this.lineUnderMouse = undefined;
 
     this.dataSet = undefined;
@@ -67,14 +69,25 @@ export default class GenotypeCanvas {
 
   chromosomeOffset(xPos) {
     let chromStart = 0;
-    const tempX = xPos;
     this.chromosomeEnds.forEach((end, index) => {
-      if (tempX > end) {
+      if (xPos > end) {
         chromStart = (index + 1) * this.chromosomeGapSize;
       }
     });
 
     return chromStart;
+  }
+
+  chromosomeIndexFor(xPos) {
+    let chrIndex = -1;
+    this.chromosomeEnds.forEach((end, index) => {
+      const start = this.chromosomeStarts[index];
+      if (xPos >= start && xPos <= end) {
+        chrIndex = index;
+      }
+    });
+
+    return chrIndex;
   }
 
   init(dataSet, colorScheme) {
@@ -111,16 +124,20 @@ export default class GenotypeCanvas {
 
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
 
-    // TODO: bring back in once we have everything else working;
-    // if (this.lineUnderMouse && this.markerUnderMouse) {
-    //   this.drawingContext.translate(this.lineNamesWidth, this.mapCanvasHeight);
-    //   this.drawingContext.globalAlpha = 0.4;
-    //   this.drawingContext.fillStyle = '#fff';
-    //   this.drawingContext.fillRect(this.markerUnderMouse * this.boxSize, 0, this.boxSize, this.alleleCanvasHeight);
-    //   this.drawingContext.fillRect(0, this.lineUnderMouse * this.boxSize, this.alleleCanvasWidth, this.boxSize);
-    //   this.drawingContext.translate(-this.lineNamesWidth, -this.mapCanvasHeight);
-    //   this.drawingContext.globalAlpha = 1;
-    // }
+    if (this.chromosomeUnderMouse !== -1) {
+      const drawStart = this.chromosomeStarts[this.chromosomeUnderMouse] - this.translatedX;
+      const germplasmStart = Math.floor(this.translatedY / this.boxSize);
+      const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
+      this.drawingContext.save();
+      this.drawingContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
+      this.drawingContext.globalAlpha = 0.4;
+      this.drawingContext.fillStyle = '#fff';
+      this.drawingContext.fillRect(drawStart + (this.markerIndexUnderMouse * this.boxSize), 0, this.boxSize, this.alleleCanvasHeight());
+      this.drawingContext.fillRect(0, yWiggle + (this.lineUnderMouse * this.boxSize), this.alleleCanvasWidth(), this.boxSize);
+      this.drawingContext.translate(-this.nameCanvasWidth, -this.mapCanvasHeight);
+      this.drawingContext.globalAlpha = 1;
+      this.drawingContext.restore();
+    }
   }
 
   render(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle) {
@@ -378,10 +395,15 @@ export default class GenotypeCanvas {
   mouseOver(x, y) {
     // We need to calculate an offset because the gaps between chromosomes
     // aren't part of the data model
-    const offset = this.prevChromosomeStart();
+    const offset = this.chromosomeOffset(this.translatedX + (x - this.nameCanvasWidth));
 
-    const markerIndex = Math.floor((x - offset - this.nameCanvasWidth) / this.boxSize);
-    const markerUnderMouse = this.dataSet.markerAt(markerIndex);
+    const markerIndex = Math.floor((this.translatedX - offset + (x - this.nameCanvasWidth)) / this.boxSize);
+    this.markerUnderMouse = this.dataSet.markerAt(markerIndex);
+
+    this.markerIndexUnderMouse = Math.floor((this.translatedX + x - this.nameCanvasWidth) / this.boxSize);
+    this.chromosomeUnderMouse = this.chromosomeIndexFor(this.translatedX + (x - this.nameCanvasWidth));
+    
+    this.lineUnderMouse = Math.floor((y-this.mapCanvasHeight) / this.boxSize);
     // console.log(this.dataSet.genomeMap.chromosomeAndMarkerFor(markerIndex));
     // console.log(this.dataSet.genomeMap.chromosomes[markerUnderMouse[0].chromosomeIndex].markers[markerUnderMouse[0].firstMarker].name);
     // if (x >= this.nameCanvasWidth && x < this.backBuffer.width && y >= this.mapCanvasHeight && y < this.backBuffer.height) {
@@ -392,7 +414,7 @@ export default class GenotypeCanvas {
     //   this.markerUnderMouse = undefined;
     // }
 
-    // this.prerender();
+    this.prerender(false);
   }
 
   updateFontSize() {
