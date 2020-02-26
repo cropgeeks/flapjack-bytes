@@ -65,14 +65,12 @@ export default class GenotypeCanvas {
     return this.canvas.height - this.mapCanvasHeight - this.scrollbarHeight;
   }
 
-  prevChromosomeStart() {
+  chromosomeOffset(xPos) {
     let chromStart = 0;
-    const tempX = this.translatedX - this.nameCanvasWidth;
-    this.chromosomeStarts.forEach((start, index) => {
-      if ((tempX >= start && tempX < this.chromosomeEnds[index])
-        || (index > 0 && tempX >= this.chromosomeEnds[index - 1]
-        && tempX <= this.chromosomeStarts[index])) {
-        chromStart = index * this.chromosomeGapSize;
+    const tempX = xPos;
+    this.chromosomeEnds.forEach((end, index) => {
+      if (tempX > end) {
+        chromStart = (index + 1) * this.chromosomeGapSize;
       }
     });
 
@@ -97,7 +95,7 @@ export default class GenotypeCanvas {
 
       // We need to calculate an offset because the gaps between chromosomes
       // aren't part of the data model
-      const offset = this.prevChromosomeStart();
+      const offset = this.chromosomeOffset(this.translatedX);
 
       const markerStart = Math.floor((this.translatedX - offset) / this.boxSize);
       const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCount());
