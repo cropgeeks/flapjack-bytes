@@ -64,7 +64,7 @@ export default class GenomeMap {
     const chromStart = this.chromosomeStarts.get(chromosome);
     const markerIndex = Math.max(dataIndex - chromStart, 0);
 
-    return chromosome.markers[markerIndex];
+    return { marker: chromosome.markers[markerIndex], markerIndex };
   }
 
   markerByName(markerName) {

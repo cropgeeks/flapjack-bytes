@@ -136,9 +136,14 @@ export default class GenotypeCanvas {
     this.drawingContext.globalAlpha = 0.4;
     this.drawingContext.fillStyle = '#fff';
 
+    // Clip the canvas to prevent over-drawing of the crosshair
+    const region = new Path2D();
+    region.rect(0, 0, this.alleleCanvasWidth(), this.alleleCanvasHeight());
+    this.drawingContext.clip(region);
+
     // Render each element of the crosshair
-    this.renderVerticalCrosshairLine(this.drawingContext);
-    this.renderHorizontalCrosshairLine(this.drawingContext);
+    this.renderVerticalCrosshairLine();
+    this.renderHorizontalCrosshairLine();
 
     // Reset the drawing parameters for the rest of the render code
     this.drawingContext.translate(-this.nameCanvasWidth, -this.mapCanvasHeight);
@@ -147,7 +152,8 @@ export default class GenotypeCanvas {
   }
 
   renderVerticalCrosshairLine() {
-    const drawStart = this.chromosomeStarts[this.chromosomeUnderMouse] - this.translatedX;
+    const chrStart = this.chromosomeStarts[this.chromosomeUnderMouse];
+    const drawStart = chrStart - this.translatedX;
     const xPos = drawStart + (this.markerIndexUnderMouse * this.boxSize);
 
     this.drawingContext.fillRect(xPos, 0, this.boxSize, this.alleleCanvasHeight());
@@ -416,24 +422,18 @@ export default class GenotypeCanvas {
   mouseOver(x, y) {
     // We need to calculate an offset because the gaps between chromosomes
     // aren't part of the data model
-    const offset = this.chromosomeOffset(this.translatedX + (x - this.nameCanvasWidth));
+    const mouseXPos = x - this.nameCanvasWidth;
+    const mouseXPosCanvas = this.translatedX + mouseXPos;
+    const offset = this.chromosomeOffset(mouseXPosCanvas);
 
-    const markerIndex = Math.floor((this.translatedX - offset + (x - this.nameCanvasWidth)) / this.boxSize);
-    this.markerUnderMouse = this.dataSet.markerAt(markerIndex);
+    const markerIndex = Math.floor((this.translatedX - offset + mouseXPos) / this.boxSize);
+    const marker = this.dataSet.markerAt(markerIndex);
+    this.markerUnderMouse = marker.marker;
+    this.markerIndexUnderMouse = marker.markerIndex;
 
-    this.markerIndexUnderMouse = Math.floor((this.translatedX + x - this.nameCanvasWidth) / this.boxSize);
-    this.chromosomeUnderMouse = this.chromosomeIndexFor(this.translatedX + (x - this.nameCanvasWidth));
-    
-    this.lineUnderMouse = Math.max(0, Math.floor((y-this.mapCanvasHeight) / this.boxSize));
-    // console.log(this.dataSet.genomeMap.chromosomeAndMarkerFor(markerIndex));
-    // console.log(this.dataSet.genomeMap.chromosomes[markerUnderMouse[0].chromosomeIndex].markers[markerUnderMouse[0].firstMarker].name);
-    // if (x >= this.nameCanvasWidth && x < this.backBuffer.width && y >= this.mapCanvasHeight && y < this.backBuffer.height) {
-    //   this.markerUnderMouse = Math.floor((x - this.nameCanvasWidth) / this.boxSize);
-    //   this.lineUnderMouse = Math.floor((y - this.mapCanvasHeight) / this.boxSize);
-    // } else {
-    //   this.lineUnderMouse = undefined;
-    //   this.markerUnderMouse = undefined;
-    // }
+    this.chromosomeUnderMouse = this.chromosomeIndexFor(mouseXPosCanvas);
+
+    this.lineUnderMouse = Math.max(0, Math.floor((y - this.mapCanvasHeight) / this.boxSize));
 
     this.prerender(false);
   }
