@@ -424,16 +424,32 @@ export default class GenotypeCanvas {
     // aren't part of the data model
     const mouseXPos = x - this.nameCanvasWidth;
     const mouseXPosCanvas = this.translatedX + mouseXPos;
-    const offset = this.chromosomeOffset(mouseXPosCanvas);
+    const mouseYPos = y - this.mapCanvasHeight;
 
-    const markerIndex = Math.floor((this.translatedX - offset + mouseXPos) / this.boxSize);
-    const marker = this.dataSet.markerAt(markerIndex);
-    this.markerUnderMouse = marker.marker;
-    this.markerIndexUnderMouse = marker.markerIndex;
+    if (mouseXPos > 0 && mouseXPos < this.alleleCanvasWidth()) {
+      // Calculate the marker's index in the dataset and get the marker data
+      const offset = this.chromosomeOffset(mouseXPosCanvas);
+      const markerIndex = Math.floor((this.translatedX - offset + mouseXPos) / this.boxSize);
+      const marker = this.dataSet.markerAt(markerIndex);
+      this.markerUnderMouse = marker.marker;
+      this.markerIndexUnderMouse = marker.markerIndex;
+    } else {
+      this.markerUnderMouse = undefined;
+      this.markerIndexUnderMouse = undefined;
+      this.lineUnderMouse = undefined;
+    }
 
+    // Used as a flag to not render the crosshair when the mouse is between
+    // chromosomes
     this.chromosomeUnderMouse = this.chromosomeIndexFor(mouseXPosCanvas);
 
-    this.lineUnderMouse = Math.max(0, Math.floor((y - this.mapCanvasHeight) / this.boxSize));
+    if (mouseYPos > 0 && mouseYPos < this.alleleCanvasHeight()) {
+      this.lineUnderMouse = Math.max(0, Math.floor(mouseYPos / this.boxSize));
+    } else {
+      this.markerUnderMouse = undefined;
+      this.markerIndexUnderMouse = undefined;
+      this.lineUnderMouse = undefined;
+    }
 
     this.prerender(false);
   }
