@@ -125,19 +125,40 @@ export default class GenotypeCanvas {
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
 
     if (this.chromosomeUnderMouse !== -1) {
-      const drawStart = this.chromosomeStarts[this.chromosomeUnderMouse] - this.translatedX;
-      const germplasmStart = Math.floor(this.translatedY / this.boxSize);
-      const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
-      this.drawingContext.save();
-      this.drawingContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
-      this.drawingContext.globalAlpha = 0.4;
-      this.drawingContext.fillStyle = '#fff';
-      this.drawingContext.fillRect(drawStart + (this.markerIndexUnderMouse * this.boxSize), 0, this.boxSize, this.alleleCanvasHeight());
-      this.drawingContext.fillRect(0, (this.lineUnderMouse * this.boxSize) - yWiggle, this.alleleCanvasWidth(), this.boxSize);
-      this.drawingContext.translate(-this.nameCanvasWidth, -this.mapCanvasHeight);
-      this.drawingContext.globalAlpha = 1;
-      this.drawingContext.restore();
+      this.renderCrosshair();
     }
+  }
+
+  renderCrosshair() {
+    // Setup crosshair drawing parameters
+    this.drawingContext.save();
+    this.drawingContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
+    this.drawingContext.globalAlpha = 0.4;
+    this.drawingContext.fillStyle = '#fff';
+
+    // Render each element of the crosshair
+    this.renderVerticalCrosshairLine(this.drawingContext);
+    this.renderHorizontalCrosshairLine(this.drawingContext);
+
+    // Reset the drawing parameters for the rest of the render code
+    this.drawingContext.translate(-this.nameCanvasWidth, -this.mapCanvasHeight);
+    this.drawingContext.globalAlpha = 1;
+    this.drawingContext.restore();
+  }
+
+  renderVerticalCrosshairLine() {
+    const drawStart = this.chromosomeStarts[this.chromosomeUnderMouse] - this.translatedX;
+    const xPos = drawStart + (this.markerIndexUnderMouse * this.boxSize);
+
+    this.drawingContext.fillRect(xPos, 0, this.boxSize, this.alleleCanvasHeight());
+  }
+
+  renderHorizontalCrosshairLine() {
+    const germplasmStart = Math.floor(this.translatedY / this.boxSize);
+    const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
+    const yPos = (this.lineUnderMouse * this.boxSize) - yWiggle;
+
+    this.drawingContext.fillRect(0, yPos, this.alleleCanvasWidth(), this.boxSize);
   }
 
   render(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle) {
