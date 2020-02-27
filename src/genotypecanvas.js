@@ -133,7 +133,7 @@ export default class GenotypeCanvas {
       this.drawingContext.globalAlpha = 0.4;
       this.drawingContext.fillStyle = '#fff';
       this.drawingContext.fillRect(drawStart + (this.markerIndexUnderMouse * this.boxSize), 0, this.boxSize, this.alleleCanvasHeight());
-      this.drawingContext.fillRect(0, yWiggle + (this.lineUnderMouse * this.boxSize), this.alleleCanvasWidth(), this.boxSize);
+      this.drawingContext.fillRect(0, (this.lineUnderMouse * this.boxSize) - yWiggle, this.alleleCanvasWidth(), this.boxSize);
       this.drawingContext.translate(-this.nameCanvasWidth, -this.mapCanvasHeight);
       this.drawingContext.globalAlpha = 1;
       this.drawingContext.restore();
@@ -403,7 +403,7 @@ export default class GenotypeCanvas {
     this.markerIndexUnderMouse = Math.floor((this.translatedX + x - this.nameCanvasWidth) / this.boxSize);
     this.chromosomeUnderMouse = this.chromosomeIndexFor(this.translatedX + (x - this.nameCanvasWidth));
     
-    this.lineUnderMouse = Math.floor((y-this.mapCanvasHeight) / this.boxSize);
+    this.lineUnderMouse = Math.max(0, Math.floor((y-this.mapCanvasHeight) / this.boxSize));
     // console.log(this.dataSet.genomeMap.chromosomeAndMarkerFor(markerIndex));
     // console.log(this.dataSet.genomeMap.chromosomes[markerUnderMouse[0].chromosomeIndex].markers[markerUnderMouse[0].firstMarker].name);
     // if (x >= this.nameCanvasWidth && x < this.backBuffer.width && y >= this.mapCanvasHeight && y < this.backBuffer.height) {
