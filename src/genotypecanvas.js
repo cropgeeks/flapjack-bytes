@@ -196,14 +196,21 @@ export default class GenotypeCanvas {
 
       let xPos = this.calcMapMarkerPos(this.markerUnderMouse, firstMarkerPos, scaleFactor, drawStart);
 
+      const text = `${this.markerUnderMouse.name} (${this.markerUnderMouse.position})`;
+
       // Measure the text width so we can guarantee it doesn't get drawn off
       // the right hand side of the display
-      const textWidth = this.drawingContext.measureText(this.markerUnderMouse.name).width;
-      if (xPos + textWidth > this.alleleCanvasWidth() - this.nameCanvasWidth) {
-        xPos -= textWidth;
+      const textWidth = this.drawingContext.measureText(text).width;
+      const halfTextWidth = textWidth / 2;
+      xPos -= halfTextWidth;
+      if (xPos < 0) {
+        xPos = 0;
+      }
+      else if (xPos + halfTextWidth > this.alleleCanvasWidth() - this.nameCanvasWidth) {
+        xPos -= halfTextWidth;
       }
 
-      this.drawingContext.fillText(this.markerUnderMouse.name, xPos, 0);
+      this.drawingContext.fillText(text, xPos, 0);
       this.drawingContext.restore();
     }
   }
