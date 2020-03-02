@@ -27,7 +27,7 @@ export default class MapImporter {
       this.chromosomeNames.add(chromosome);
 
       // Create a marker object and add it to our array of markers
-      const marker = new Marker(markerName, chromosome, parseInt(pos.replace(/,/g, ''), 10));
+      const marker = new Marker(markerName, chromosome, parseFloat(pos.replace(/,/g, ''), 10));
       this.markerData.push(marker);
     }
   }
