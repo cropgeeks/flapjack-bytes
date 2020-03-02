@@ -132,12 +132,22 @@ export default class GenotypeCanvas {
     }
   }
 
-  highlightMarker() {
-    this.highlightMarkerName();
+  calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart) {
+    let mapMarkerPos = ((marker.position - firstMarkerPos) * (mapScaleFactor));
+    mapMarkerPos = drawStart > 0 ? mapMarkerPos + drawStart : mapMarkerPos;
 
-    this.drawingContext.save();
-    // Translate to the correct position to draw the map
-    this.drawingContext.translate(this.nameCanvasWidth, 10);
+    return mapMarkerPos;
+  }
+
+  highlightMarker() {
+    const dataWidth = Math.ceil((this.alleleCanvasWidth()) / this.boxSize);
+
+    const offset = this.chromosomeOffset(this.translatedX);
+
+    const markerStart = Math.floor((this.translatedX - offset) / this.boxSize);
+    const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCount());
+
+    const renderData = this.dataSet.markersToRender(markerStart, markerEnd);
 
     const chrStart = this.chromosomeStarts[this.chromosomeUnderMouse];
     const chrEnd = this.chromosomeEnds[this.chromosomeUnderMouse];
@@ -147,15 +157,6 @@ export default class GenotypeCanvas {
 
     const potentialWidth = drawStart > 0 ? this.alleleCanvasWidth() - drawStart : this.alleleCanvasWidth();
     const chromosomeWidth = Math.min(chrEnd - this.translatedX, potentialWidth, chrEnd - chrStart);
-
-    const dataWidth = Math.ceil((this.alleleCanvasWidth()) / this.boxSize);
-
-    const offset = this.chromosomeOffset(this.translatedX);
-
-    const markerStart = Math.floor((this.translatedX - offset) / this.boxSize);
-    const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCount());
-
-    const renderData = this.dataSet.markersToRender(markerStart, markerEnd);
 
     renderData.forEach((chr) => {
       if (chr.chromosomeIndex === this.chromosomeUnderMouse && this.markerUnderMouse) {
@@ -168,17 +169,24 @@ export default class GenotypeCanvas {
         const lastMarkerPos = chromosome.markers[chr.firstMarker + dW].position;
         const dist = (lastMarkerPos - firstMarkerPos);
         const scaleFactor = chromosomeWidth / dist;
-      
+
+        this.highlightMarkerName(firstMarkerPos, scaleFactor, drawStart);
+
+        this.drawingContext.save();
+        // Translate to the correct position to draw the map
+        this.drawingContext.translate(this.nameCanvasWidth, 10);
+
         let xPos = drawStart + (this.markerIndexUnderMouse * this.boxSize);
         xPos += (this.boxSize / 2);
         this.drawingContext.strokeStyle = '#F00';
         this.renderMarker(this.drawingContext, this.markerUnderMouse, xPos, firstMarkerPos, scaleFactor, drawStart);
+
+        this.drawingContext.restore();
       }
     });
-    this.drawingContext.restore();
   }
 
-  highlightMarkerName() {
+  highlightMarkerName(firstMarkerPos, scaleFactor, drawStart) {
     if (this.markerUnderMouse) {
       this.drawingContext.save();
       this.drawingContext.translate(this.nameCanvasWidth, 10);
@@ -186,9 +194,7 @@ export default class GenotypeCanvas {
       this.drawingContext.fillStyle = '#F00';
       this.drawingContext.font = this.markerNameFont;
 
-      const chrStart = this.chromosomeStarts[this.chromosomeUnderMouse];
-      const drawStart = chrStart - this.translatedX;
-      let xPos = drawStart + (this.markerIndexUnderMouse * this.boxSize);
+      let xPos = this.calcMapMarkerPos(this.markerUnderMouse, firstMarkerPos, scaleFactor, drawStart);
 
       // Measure the text width so we can guarantee it doesn't get drawn off
       // the right hand side of the display
@@ -269,8 +275,7 @@ export default class GenotypeCanvas {
   }
 
   renderMarker(mapCanvas, marker, genoMarkerPos, firstMarkerPos, mapScaleFactor, drawStart) {
-    let mapMarkerPos = ((marker.position - firstMarkerPos) * (mapScaleFactor));
-    mapMarkerPos = drawStart > 0 ? mapMarkerPos + drawStart : mapMarkerPos;
+    const mapMarkerPos = this.calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart);
     // console.log(drawStart, firstMarkerPos, marker.position, mapMarkerPos);
     mapCanvas.beginPath();
     // Draw vertical line on top of map rectangle
