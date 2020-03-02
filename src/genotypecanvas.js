@@ -254,12 +254,12 @@ export default class GenotypeCanvas {
     // console.log(drawStart, firstMarkerPos, marker.position, mapMarkerPos);
     mapCanvas.beginPath();
     // Draw vertical line on top of map rectangle
-    mapCanvas.moveTo(mapMarkerPos, 10);
-    mapCanvas.lineTo(mapMarkerPos, 20);
+    mapCanvas.moveTo(mapMarkerPos, 0);
+    mapCanvas.lineTo(mapMarkerPos, 10);
     // Draw diagonal line to marker position on the genotype canvas
-    mapCanvas.lineTo(genoMarkerPos, 40);
+    mapCanvas.lineTo(genoMarkerPos, 30);
     // Draw a vertical line down to the genotype canvas
-    mapCanvas.lineTo(genoMarkerPos, 50);
+    mapCanvas.lineTo(genoMarkerPos, 40);
     mapCanvas.stroke();
   }
 
