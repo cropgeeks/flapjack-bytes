@@ -11,7 +11,7 @@ export default class GenotypeCanvas {
     this.backBuffer.width = width;
     this.backBuffer.height = height;
     this.backContext = this.backBuffer.getContext('2d');
-    this.mapCanvasHeight = 50;
+    this.mapCanvasHeight = 60;
     this.nameCanvasWidth = 100;
 
     this.scrollbarWidth = 10;
@@ -36,6 +36,7 @@ export default class GenotypeCanvas {
     this.markerIndexUnderMouse = undefined;
     this.chromosomeUnderMouse = -1;
     this.lineUnderMouse = undefined;
+    this.markerNameFont = '10px sans-serif';
 
     this.dataSet = undefined;
 
@@ -126,6 +127,52 @@ export default class GenotypeCanvas {
 
     if (this.chromosomeUnderMouse !== -1) {
       this.renderCrosshair();
+      this.highlightMarkerName();
+      this.highlightLineName();
+    }
+  }
+
+  highlightMarkerName() {
+    if (this.markerUnderMouse) {
+      this.drawingContext.save();
+      this.drawingContext.translate(this.nameCanvasWidth, 10);
+
+      this.drawingContext.fillStyle = '#F00';
+      this.drawingContext.font = this.markerNameFont;
+
+      const chrStart = this.chromosomeStarts[this.chromosomeUnderMouse];
+      const drawStart = chrStart - this.translatedX;
+      let xPos = drawStart + (this.markerIndexUnderMouse * this.boxSize);
+
+      // Measure the text width so we can guarantee it doesn't get drawn off
+      // the right hand side of the display
+      const textWidth = this.drawingContext.measureText(this.markerUnderMouse.name).width;
+      if (xPos + textWidth > this.alleleCanvasWidth() - this.nameCanvasWidth) {
+        xPos -= textWidth;
+      }
+
+      this.drawingContext.fillText(this.markerUnderMouse.name, xPos, 0);
+      this.drawingContext.restore();
+    }
+  }
+
+  highlightLineName() {
+    if (this.lineUnderMouse) {
+      this.drawingContext.save();
+      this.drawingContext.translate(0, this.mapCanvasHeight);
+
+      this.drawingContext.fillStyle = '#F00';
+      this.drawingContext.font = this.font;
+
+      const germplasmStart = Math.floor(this.translatedY / this.boxSize);
+      const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
+      const yPos = (this.lineUnderMouse * this.boxSize) - yWiggle;
+
+      const { name } = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+
+      const y = yPos + (this.boxSize - (this.fontSize / 2));
+      this.drawingContext.fillText(name, 0, y);
+      this.drawingContext.restore();
     }
   }
 
@@ -179,12 +226,12 @@ export default class GenotypeCanvas {
     const mapMarkerPos = drawStart + ((marker.position - firstMarkerPos) * (mapScaleFactor));
     this.backContext.beginPath();
     // Draw vertical line on top of map rectangle
-    this.backContext.moveTo(mapMarkerPos, 0);
-    this.backContext.lineTo(mapMarkerPos, 10);
+    this.backContext.moveTo(mapMarkerPos, 10);
+    this.backContext.lineTo(mapMarkerPos, 20);
     // Draw diagonal line to marker position on the genotype canvas
-    this.backContext.lineTo(genoMarkerPos, 30);
-    // Draw a vertical line down to the genotype canvas
     this.backContext.lineTo(genoMarkerPos, 40);
+    // Draw a vertical line down to the genotype canvas
+    this.backContext.lineTo(genoMarkerPos, 50);
     this.backContext.stroke();
   }
 
@@ -225,7 +272,7 @@ export default class GenotypeCanvas {
     this.backContext.clip(region);
 
     // Translate to the correct position to draw the map
-    this.backContext.translate(this.nameCanvasWidth, 0);
+    this.backContext.translate(this.nameCanvasWidth, 10);
 
     const renderData = this.dataSet.markersToRender(markerStart, markerEnd);
 
@@ -445,6 +492,7 @@ export default class GenotypeCanvas {
 
     if (mouseYPos > 0 && mouseYPos < this.alleleCanvasHeight()) {
       this.lineUnderMouse = Math.max(0, Math.floor(mouseYPos / this.boxSize));
+      this.lineIndexUnderMouse = this.lineUnderMouse + Math.floor(this.translatedY / this.boxSize);
     } else {
       this.markerUnderMouse = undefined;
       this.markerIndexUnderMouse = undefined;
