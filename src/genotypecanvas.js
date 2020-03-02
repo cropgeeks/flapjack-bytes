@@ -205,9 +205,8 @@ export default class GenotypeCanvas {
       xPos -= halfTextWidth;
       if (xPos < 0) {
         xPos = 0;
-      }
-      else if (xPos + halfTextWidth > this.alleleCanvasWidth() - this.nameCanvasWidth) {
-        xPos -= halfTextWidth;
+      } else if (xPos + textWidth > this.alleleCanvasWidth()) {
+        xPos = this.alleleCanvasWidth() - textWidth;
       }
 
       this.drawingContext.fillText(text, xPos, 0);
