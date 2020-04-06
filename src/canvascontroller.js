@@ -60,6 +60,48 @@ export default class CanvasController {
         this.dragCanvas(e.pageX, e.pageY);
       }
     });
+
+    this.setupContextMenu();
+  }
+
+  setupContextMenu() {
+    const menu = document.querySelector('.menu');
+    let menuVisible = false;
+
+    const toggleMenu = (command) => {
+      menu.style.display = command === 'show' ? 'block' : 'none';
+      menuVisible = !menuVisible;
+    };
+
+    const setPosition = ({ top, left }) => {
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+      toggleMenu('show');
+    };
+
+    window.addEventListener('click', () => {
+      if (menuVisible) {
+        toggleMenu('hide');
+      }
+    });
+
+    this.genotypeCanvas.canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      const origin = {
+        left: e.pageX,
+        top: e.pageY,
+      };
+      setPosition(origin);
+      return false;
+    });
+
+    const menuOption = document.querySelector('.menu-option');
+    menuOption.addEventListener('click', (e) => {
+      const selected = e.target.innerHTML;
+      if (selected === 'Color schemes...') {
+        console.log('do something');
+      }
+    });
   }
 
   isOverVerticalScrollbar(x, verticalScrollbar) {

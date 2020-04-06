@@ -68,7 +68,52 @@ export default function GenotypeRenderer() {
     zoomDiv.appendChild(range);
     canvasHolder.appendChild(zoomDiv);
 
+    createContextMenu(canvasHolder);
+
     canvasController = new CanvasController(genotypeCanvas);
+  }
+
+  function addCSSRule(sheet, selector, rules, index) {
+    if ('insertRule' in sheet) {
+      sheet.insertRule(selector + '{' + rules + '}', index);
+    } else if ('addRule' in sheet) {
+      sheet.addRule(selector, rules, index);
+    }
+  }
+
+  function createContextMenu(canvasHolder) {
+    const contextMenu = document.createElement('div');
+    contextMenu.classList.add('menu');
+
+    const menuOptions = document.createElement('ul');
+    menuOptions.classList.add('menu-options');
+
+    const colorOption = document.createElement('li');
+    colorOption.classList.add('menu-option');
+    const textnode = document.createTextNode('Color schemes...');
+    colorOption.appendChild(textnode);
+
+    menuOptions.appendChild(colorOption);
+    contextMenu.appendChild(menuOptions);
+    canvasHolder.appendChild(contextMenu);
+
+    let sheet = (function() {
+      // Create the <style> tag
+      let style = document.createElement("style");
+
+      // WebKit hack :(
+      style.appendChild(document.createTextNode(""));
+
+      // Add the <style> element to the page
+      document.head.appendChild(style);
+
+      return style.sheet;
+    }());
+
+    addCSSRule(sheet, '.menu', 'width: 180px; box-shadow: 0 4px 5px 3px rgba(0, 0, 0, 0.2); position: fixed; display: none; background: rgb(255,255,255);');
+    addCSSRule(sheet, '.menu > .menu-options', 'list-style: none; padding: 10px 0; margin: 0;');
+    addCSSRule(sheet, '.menu > .menu-options > .menu-option', 'font-weight: 500; font-size: 14px; padding: 10px 40px 10px 20px; cursor: pointer;');
+    addCSSRule(sheet, '.menu > .menu-options > .menu-option:hover', 'background: rgba(0, 0, 0, 0.2);');
   }
 
   function processMarkerPositionsCall(client, url, params, markerpositions = []) {
