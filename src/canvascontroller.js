@@ -6,6 +6,7 @@ export default class CanvasController {
     this.draggingCanvas = false;
     this.draggingVerticalScrollbar = false;
     this.draggingHorizontalScrollbar = false;
+    this.contextMenuY = null;
 
     this.genotypeCanvas.canvas.addEventListener('mousedown', (e) => {
       // The following block of code is used to determine if we are scrolling
@@ -35,10 +36,8 @@ export default class CanvasController {
     });
 
     this.genotypeCanvas.canvas.addEventListener('mousemove', (e) => {
-      const rect = this.genotypeCanvas.canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / (rect.right - rect.left) * this.genotypeCanvas.backBuffer.width;
-      const y = (e.clientY - rect.top) / (rect.bottom - rect.top) * this.genotypeCanvas.backBuffer.height;
-      this.genotypeCanvas.mouseOver(x, y);
+      const mousePos = this.getCanvasMouseLocation(e.clientX, e.clientY);
+      this.genotypeCanvas.mouseOver(mousePos.x, mousePos.y);
     });
 
     this.genotypeCanvas.canvas.addEventListener('mouseleave', () => {
@@ -64,6 +63,14 @@ export default class CanvasController {
     this.setupContextMenu();
   }
 
+  getCanvasMouseLocation(clientX, clientY) {
+    const rect = this.genotypeCanvas.canvas.getBoundingClientRect();
+    const x = (clientX - rect.left) / (rect.right - rect.left) * this.genotypeCanvas.backBuffer.width;
+    const y = (clientY - rect.top) / (rect.bottom - rect.top) * this.genotypeCanvas.backBuffer.height;
+
+    return { x, y };
+  }
+
   setupContextMenu() {
     const menu = document.querySelector('.menu');
     let menuVisible = false;
@@ -73,9 +80,9 @@ export default class CanvasController {
       menuVisible = !menuVisible;
     };
 
-    const setPosition = ({ top, left }) => {
-      menu.style.left = `${left}px`;
-      menu.style.top = `${top}px`;
+    const setPosition = ({ y, x }) => {
+      menu.style.left = `${x}px`;
+      menu.style.top = `${y}px`;
       toggleMenu('show');
     };
 
@@ -87,10 +94,8 @@ export default class CanvasController {
 
     this.genotypeCanvas.canvas.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      const origin = {
-        left: e.pageX,
-        top: e.pageY,
-      };
+      const origin = this.getCanvasMouseLocation(e.clientX, e.clientY);
+      this.contextMenuY = origin.y;
       setPosition(origin);
       return false;
     });
@@ -99,7 +104,7 @@ export default class CanvasController {
     menuOption.addEventListener('click', (e) => {
       const selected = e.target.innerHTML;
       if (selected === 'Color schemes...') {
-        console.log('do something');
+        console.log(`do something ${this.contextMenuY}`);
       }
     });
   }
