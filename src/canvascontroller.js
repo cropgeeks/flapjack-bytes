@@ -60,7 +60,40 @@ export default class CanvasController {
       }
     });
 
-    this.setupContextMenu();
+    const radios = document.querySelectorAll('input[type=radio][name="selectedScheme"]');
+    console.log(radios);
+
+    radios.forEach((radio) => {
+      radio.addEventListener('change', this.colorSchemeChangeHandler);
+    });
+
+    // let modalBtn = document.getElementById('colorButton');
+    // let modal = document.querySelector('.modal');
+    // let closeBtn = document.querySelector('.close-btn');
+
+    // modalBtn.onclick = function() {
+    //   modal.style.display = 'block';
+    // }
+
+    // closeBtn.onclick = function() {
+    //   modal.style.display = 'none';
+    // }
+
+    // window.onclick = function(e) {
+    //   if (e.target == modal) {
+    //     modal.style.display = 'none';
+    //   }
+    // }
+  }
+
+  colorSchemeChangeHandler(event) {
+    if (event.target.id === 'nucleotideScheme') {
+      const lineSelect = document.getElementById('lineSelect');
+      lineSelect.disabled = true;
+    } else if (event.target.id === 'similarityScheme' ) {
+      const lineSelect = document.getElementById('lineSelect');
+      lineSelect.disabled = false;
+    }
   }
 
   getCanvasMouseLocation(clientX, clientY) {
@@ -69,44 +102,6 @@ export default class CanvasController {
     const y = (clientY - rect.top) / (rect.bottom - rect.top) * this.genotypeCanvas.backBuffer.height;
 
     return { x, y };
-  }
-
-  setupContextMenu() {
-    const menu = document.querySelector('.menu');
-    let menuVisible = false;
-
-    const toggleMenu = (command) => {
-      menu.style.display = command === 'show' ? 'block' : 'none';
-      menuVisible = !menuVisible;
-    };
-
-    const setPosition = ({ y, x }) => {
-      menu.style.left = `${x}px`;
-      menu.style.top = `${y}px`;
-      toggleMenu('show');
-    };
-
-    window.addEventListener('click', () => {
-      if (menuVisible) {
-        toggleMenu('hide');
-      }
-    });
-
-    this.genotypeCanvas.canvas.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      const origin = this.getCanvasMouseLocation(e.clientX, e.clientY);
-      this.contextMenuY = origin.y;
-      setPosition(origin);
-      return false;
-    });
-
-    const menuOption = document.querySelector('.menu-option');
-    menuOption.addEventListener('click', (e) => {
-      const selected = e.target.innerHTML;
-      if (selected === 'Color schemes...') {
-        console.log(`do something ${this.contextMenuY}`);
-      }
-    });
   }
 
   isOverVerticalScrollbar(x, verticalScrollbar) {

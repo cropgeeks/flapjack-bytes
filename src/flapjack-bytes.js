@@ -64,13 +64,49 @@ export default function GenotypeRenderer() {
       zoom(range.value);
     });
 
+    const colorButton = document.createElement('button');
+    colorButton.id = 'colorButton';
+    const textnode = document.createTextNode('Color schemes...');
+    colorButton.appendChild(textnode);
+
+    const fieldSet = document.createElement('fieldset');
+    const legend = document.createElement('legend');
+    const legendText = document.createTextNode('Color Schemes');
+    legend.appendChild(legendText);
+
+    fieldSet.appendChild(legend);
+    addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, fieldSet);
+    addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line', false, fieldSet);
+
+    const lineSelect = document.createElement('select');
+    lineSelect.id = 'lineSelect';
+    lineSelect.disabled = true;
+    fieldSet.appendChild(lineSelect);
+
     zoomDiv.appendChild(zoomLabel);
     zoomDiv.appendChild(range);
+    zoomDiv.appendChild(fieldSet);
     canvasHolder.appendChild(zoomDiv);
 
-    createContextMenu(canvasHolder);
+    // createColorModal(canvasHolder);
 
     canvasController = new CanvasController(genotypeCanvas);
+  }
+
+  function addRadioButton(name, id, text, checked, parent) {
+    const radio = document.createElement('input');
+    radio.setAttribute('type', 'radio');
+    radio.name = name;
+    radio.id = id;
+    radio.checked = checked;
+
+    const radioLabel = document.createElement('label');
+    radioLabel.htmlFor = id;
+    const labelText = document.createTextNode(text);
+    radioLabel.appendChild(labelText);
+
+    parent.appendChild(radio);
+    parent.appendChild(radioLabel);
   }
 
   function addCSSRule(sheet, selector, rules, index) {
@@ -81,21 +117,24 @@ export default function GenotypeRenderer() {
     }
   }
 
-  function createContextMenu(canvasHolder) {
-    const contextMenu = document.createElement('div');
-    contextMenu.classList.add('menu');
+  function createColorModal(canvasHolder) {
+    const colorModal = document.createElement('div');
+    colorModal.classList.add('modal');
 
-    const menuOptions = document.createElement('ul');
-    menuOptions.classList.add('menu-options');
+    const modalContent = document.createElement('div');
+    modalContent.classList.add('modal-content');
 
-    const colorOption = document.createElement('li');
-    colorOption.classList.add('menu-option');
+    const closeButton = document.createElement('span');
+    closeButton.classList.add('close-btn');
+
+    const para = document.createElement('p');
     const textnode = document.createTextNode('Color schemes...');
-    colorOption.appendChild(textnode);
+    para.appendChild(textnode);
 
-    menuOptions.appendChild(colorOption);
-    contextMenu.appendChild(menuOptions);
-    canvasHolder.appendChild(contextMenu);
+    modalContent.appendChild(closeButton);
+    modalContent.appendChild(para);
+    colorModal.appendChild(modalContent);
+    canvasHolder.appendChild(colorModal);
 
     let sheet = (function() {
       // Create the <style> tag
@@ -110,10 +149,10 @@ export default function GenotypeRenderer() {
       return style.sheet;
     }());
 
-    addCSSRule(sheet, '.menu', 'width: 180px; box-shadow: 0 4px 5px 3px rgba(0, 0, 0, 0.2); position: fixed; display: none; background: rgb(255,255,255);');
-    addCSSRule(sheet, '.menu > .menu-options', 'list-style: none; padding: 10px 0; margin: 0;');
-    addCSSRule(sheet, '.menu > .menu-options > .menu-option', 'font-weight: 500; font-size: 14px; padding: 10px 40px 10px 20px; cursor: pointer;');
-    addCSSRule(sheet, '.menu > .menu-options > .menu-option:hover', 'background: rgba(0, 0, 0, 0.2);');
+    addCSSRule(sheet, '.modal', 'display: none; position: fixed; padding-top: 50px; left: 0; top: 0; width: 100%; height: 100%; background-color: rgb(0,0,0); background-color: rgba(0, 0, 0, 0.5);');
+    addCSSRule(sheet, '.modal-content', 'position: relative; background-color: white; padding: 20px; margin: auto; width: 75%;');
+    addCSSRule(sheet, '.close-btn', 'float: right; color: lightgray; font-size: 24px; font-weight: bold;');
+    addCSSRule(sheet, '.close-btn:hover', 'color: darkgray;');
   }
 
   function processMarkerPositionsCall(client, url, params, markerpositions = []) {
@@ -200,6 +239,8 @@ export default function GenotypeRenderer() {
 
               dataSet = new DataSet(genomeMap, germplasmData);
 
+              populateLineSelect();
+
               genotypeCanvas.init(dataSet, colorScheme);
               genotypeCanvas.prerender();
 
@@ -233,6 +274,8 @@ export default function GenotypeRenderer() {
           colorScheme = new NucleotideColorScheme(stateTable, document);
 
           dataSet = new DataSet(genomeMap, germplasmData);
+
+          populateLineSelect();
 
           genotypeCanvas.init(dataSet, colorScheme);
           genotypeCanvas.prerender();
@@ -320,6 +363,16 @@ export default function GenotypeRenderer() {
     });
   }
 
+  function populateLineSelect() {
+    const lineSelect = document.getElementById('lineSelect');
+    dataSet.germplasmList.forEach((germplasm, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.text = germplasm.name;
+      lineSelect.add(opt);
+    });
+  }
+
   genotypeRenderer.renderGenotypesFile = function renderGenotypesFile(
     domParent,
     width,
@@ -362,6 +415,8 @@ export default function GenotypeRenderer() {
       colorScheme = new NucleotideColorScheme(stateTable, document);
 
       dataSet = new DataSet(genomeMap, germplasmData);
+
+      populateLineSelect();
 
       genotypeCanvas.init(dataSet, colorScheme);
       genotypeCanvas.prerender();
