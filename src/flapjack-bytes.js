@@ -237,7 +237,7 @@ export default function GenotypeRenderer() {
 
               colorScheme = new NucleotideColorScheme(stateTable, document);
 
-              dataSet = new DataSet(genomeMap, germplasmData);
+              dataSet = new DataSet(genomeMap, germplasmData, stateTable);
 
               populateLineSelect();
 
@@ -273,7 +273,7 @@ export default function GenotypeRenderer() {
 
           colorScheme = new NucleotideColorScheme(stateTable, document);
 
-          dataSet = new DataSet(genomeMap, germplasmData);
+          dataSet = new DataSet(genomeMap, germplasmData, stateTable);
 
           populateLineSelect();
 
@@ -412,9 +412,8 @@ export default function GenotypeRenderer() {
       germplasmData = genotypeImporter.parseFile(result);
       const { stateTable } = genotypeImporter;
 
-      colorScheme = new NucleotideColorScheme(stateTable, document);
-
-      dataSet = new DataSet(genomeMap, germplasmData);
+      dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+      colorScheme = new NucleotideColorScheme(dataSet);
 
       populateLineSelect();
 

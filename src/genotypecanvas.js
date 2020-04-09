@@ -1,4 +1,6 @@
 import ScrollBar from './ScrollBar';
+import NucleotideColorScheme from './NucleotideColorScheme';
+import SimilarityColorScheme from './SimilarityColorScheme';
 
 export default class GenotypeCanvas {
   constructor(width, height, boxSize) {
@@ -45,6 +47,8 @@ export default class GenotypeCanvas {
     this.chromosomeEnds = [];
 
     this.chromosomeGapSize = 50;
+
+    this.comparisonLineIndex = 0;
   }
 
   totalChromosomeGap() {
@@ -97,7 +101,6 @@ export default class GenotypeCanvas {
     this.font = this.updateFontSize();
     this.updateVisualPositions();
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
-    this.colorStamps = this.colorScheme.colorStamps;
     this.zoom(this.boxSize);
   }
 
@@ -392,7 +395,6 @@ export default class GenotypeCanvas {
     this.backContext.clip(region);
 
     this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
-    const { colorStamps } = this.colorScheme;
 
     for (let germplasm = germplasmStart, line = 0; germplasm < germplasmEnd; germplasm += 1, line += 1) {
       const yPos = (line * this.boxSize) - yWiggle;
@@ -401,8 +403,10 @@ export default class GenotypeCanvas {
         const chrStart = this.chromosomeStarts[chr.chromosomeIndex] - this.translatedX;
         for (let marker = chr.firstMarker; marker <= chr.lastMarker; marker += 1) {
           const xPos = chrStart + (marker * this.boxSize);
-          const geno = this.dataSet.genotypeFor(germplasm, chr.chromosomeIndex, marker);
-          this.backContext.drawImage(colorStamps[geno], xPos, yPos);
+
+          const stamp = this.colorScheme.getState(germplasm, chr.chromosomeIndex, marker);
+
+          this.backContext.drawImage(stamp, xPos, yPos);
         }
       });
     }
@@ -645,6 +649,18 @@ export default class GenotypeCanvas {
     }
 
     this.prerender(true);
+  }
+
+  setColorScheme(scheme) {
+    if (scheme === 'nucleotideScheme') {
+      this.colorScheme = new NucleotideColorScheme(this.dataSet);
+      this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
+      this.prerender(true);
+    } else if (scheme === 'similarityScheme') {
+      this.colorScheme = new SimilarityColorScheme(this.dataSet, this.comparisonLineIndex);
+      this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
+      this.prerender(true);
+    }
   }
 
 //   rainbowColor(numOfSteps, step) {

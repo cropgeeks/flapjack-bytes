@@ -1,7 +1,8 @@
 export default class DataSet {
-  constructor(genomeMap, germplasmList) {
+  constructor(genomeMap, germplasmList, stateTable) {
     this.genomeMap = genomeMap;
     this.germplasmList = germplasmList;
+    this.stateTable = stateTable;
   }
 
   germplasmFor(germplasmStart, germplasmEnd) {

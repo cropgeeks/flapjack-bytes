@@ -60,40 +60,19 @@ export default class CanvasController {
       }
     });
 
-    const radios = document.querySelectorAll('input[type=radio][name="selectedScheme"]');
-    console.log(radios);
-
-    radios.forEach((radio) => {
-      radio.addEventListener('change', this.colorSchemeChangeHandler);
-    });
-
-    // let modalBtn = document.getElementById('colorButton');
-    // let modal = document.querySelector('.modal');
-    // let closeBtn = document.querySelector('.close-btn');
-
-    // modalBtn.onclick = function() {
-    //   modal.style.display = 'block';
-    // }
-
-    // closeBtn.onclick = function() {
-    //   modal.style.display = 'none';
-    // }
-
-    // window.onclick = function(e) {
-    //   if (e.target == modal) {
-    //     modal.style.display = 'none';
-    //   }
-    // }
-  }
-
-  colorSchemeChangeHandler(event) {
-    if (event.target.id === 'nucleotideScheme') {
+    const nucleotideRadio = document.getElementById('nucleotideScheme');
+    nucleotideRadio.addEventListener('change', () => {
       const lineSelect = document.getElementById('lineSelect');
       lineSelect.disabled = true;
-    } else if (event.target.id === 'similarityScheme' ) {
+      this.genotypeCanvas.setColorScheme('nucleotideScheme');
+    });
+
+    const similarityRadio = document.getElementById('similarityScheme');
+    similarityRadio.addEventListener('change', () => {
       const lineSelect = document.getElementById('lineSelect');
       lineSelect.disabled = false;
-    }
+      this.genotypeCanvas.setColorScheme('similarityScheme');
+    });
   }
 
   getCanvasMouseLocation(clientX, clientY) {

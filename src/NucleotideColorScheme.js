@@ -1,6 +1,8 @@
 export default class NucleotideColorScheme {
-  constructor(stateTable) {
-    this.stateTable = stateTable;
+  constructor(dataSet) {
+    this.dataSet = dataSet;
+    this.stateTable = this.dataSet.stateTable;
+
     this.colors = {
       greenLight: 'rgb(171,255,171)',
       greenDark: 'rgb(86,179,86)',
@@ -25,6 +27,11 @@ export default class NucleotideColorScheme {
     this.colorMap.set('+', { light: this.colors.greyLight, dark: this.colors.greyDark });
 
     this.colorStamps = [];
+  }
+
+  getState(germplasm, chromosome, marker) {
+    const geno = this.dataSet.genotypeFor(germplasm, chromosome, marker);
+    return this.colorStamps[geno];
   }
 
   // Generates a set of homozygous and heterozygous color stamps from the stateTable
