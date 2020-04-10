@@ -218,4 +218,8 @@ export default class SimilarityColorScheme {
 
     return gradCanvas;
   }
+
+  setComparisonLineIndex(newIndex) {
+    this.compIndex = newIndex;
+  }
 }

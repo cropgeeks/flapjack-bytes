@@ -73,6 +73,11 @@ export default class CanvasController {
       lineSelect.disabled = false;
       this.genotypeCanvas.setColorScheme('similarityScheme');
     });
+
+    const lineSelect = document.getElementById('lineSelect');
+    lineSelect.addEventListener('change', (event) => {
+      this.genotypeCanvas.setComparisonLineIndex(event.target.selectedIndex);
+    });
   }
 
   getCanvasMouseLocation(clientX, clientY) {
