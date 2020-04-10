@@ -162,7 +162,7 @@ export default function GenotypeRenderer() {
 
         const newData = response.data.result.data;
         markerpositions.push(...newData.map(m => ({
-          name: m.markerName,
+          name: m.variantName,
           chromosome: m.linkageGroupName,
           position: m.position,
         })));
@@ -237,9 +237,8 @@ export default function GenotypeRenderer() {
               germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
               const { stateTable } = genotypeImporter;
 
-              colorScheme = new NucleotideColorScheme(stateTable, document);
-
               dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+              colorScheme = new NucleotideColorScheme(dataSet);
 
               populateLineSelect();
 
@@ -273,9 +272,8 @@ export default function GenotypeRenderer() {
           germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
           const { stateTable } = genotypeImporter;
 
-          colorScheme = new NucleotideColorScheme(stateTable, document);
-
           dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+          colorScheme = new NucleotideColorScheme(dataSet);
 
           populateLineSelect();
 
