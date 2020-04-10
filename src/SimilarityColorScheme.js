@@ -61,29 +61,30 @@ export default class SimilarityColorScheme {
           // Either state is missing
           if (iStateValue === 0 || jStateValue === 0) {
             table[i][j] = this.greyState;
-            // Our state is homozygous and the comparison state is heterozygous 
+          // Our state is homozygous and the comparison state is heterozygous 
           } else if (iStateKey.isHomozygous && !jStateKey.isHomozygous) {
             // if we match either allele in the comparison state give this the match class
             if (iStateKey.allele1 === jStateKey.allele1 || iStateKey.allele1 === jStateKey.allele2) {
               table[i][j] = this.matchComp;
-              // Our state is het and comp state is homozygous
-            } else if (!iStateKey.isHomozygous && jStateKey.isHomozygous) {
-              // First allele matches
-              if (iStateKey.allele1 === jStateKey.allele1) {
-                table[i][j] = this.het1Match;
-                // Second allele matches
-              } else if (iStateKey.allele2 === jStateKey.allele1) {
-                table[i][j] = this.het2Match;
-              }
-              // Neither state is honozygous
-            } else if (!iStateKey.isHomozygous && !jStateKey.isHomozygous) {
-              // First allele matches
-              if (iStateKey.allele1 === jStateKey.allele1 || iStateKey.allele1 === jStateKey.allele2) {
-                table[i][j] = this.het1Match;
-                // Second allele matches
-              } else if (iStateKey.allele2 === jStateKey.allele1 || iStateKey.allele2 === jStateKey.allele2) {
-                table[i][j] = this.het2Match;
-              }
+              
+            }
+          // Our state is het and comp state is homozygous
+          } else if (!iStateKey.isHomozygous && jStateKey.isHomozygous) {
+            // First allele matches
+            if (iStateKey.allele1 === jStateKey.allele1 || iStateKey.allele1 === jStateKey.allele2) {
+              table[i][j] = this.het1Match;
+              // Second allele matches
+            } else if (iStateKey.allele2 === jStateKey.allele1 || iStateKey.allele2 === jStateKey.allele2) {
+              table[i][j] = this.het2Match;
+            }
+          // Neither state is homozygous
+          } else if (!iStateKey.isHomozygous && !jStateKey.isHomozygous) {
+            // First allele matches
+            if (iStateKey.allele1 === jStateKey.allele1 || iStateKey.allele1 === jStateKey.allele2) {
+              table[i][j] = this.het1Match;
+            // Second allele matches
+            } else if (iStateKey.allele2 === jStateKey.allele1 || iStateKey.allele2 === jStateKey.allele2) {
+              table[i][j] = this.het2Match;
             }
           }
         }
@@ -111,7 +112,7 @@ export default class SimilarityColorScheme {
     } else if (lookupValue === this.matchComp) {
       stamp = this.matchStamps[genoState];
     } else if (lookupValue === this.het1Match) {
-      stamp = this.het1Match[genoState];
+      stamp = this.het1MatchStamps[genoState];
     } else if (lookupValue === this.het2Match) {
       stamp = this.het2MatchStamps[genoState];
     } else if (lookupValue === this.greyState) {
