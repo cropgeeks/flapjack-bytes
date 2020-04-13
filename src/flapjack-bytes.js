@@ -55,6 +55,7 @@ export default function GenotypeRenderer() {
     formZoomDiv.classList.add('form-group');
 
     const zoomFieldSet = document.createElement('fieldset');
+    zoomFieldSet.classList.add('bytes-fieldset');
 
     const zoomLegend = document.createElement('legend');
     const zoomLegendText = document.createTextNode('Controls');
@@ -146,8 +147,8 @@ export default function GenotypeRenderer() {
       return style.sheet;
     }());
 
-    addCSSRule(sheet, 'legend', 'border-style: none; border-width: 0; font-size: 14px; line-height: 20px; margin-bottom: 0; width: auto; padding: 0 10px; border: 1px solid #e0e0e0;');
-    addCSSRule(sheet, 'fieldset', 'border: 1px solid #e0e0e0; padding: 10px;');
+    addCSSRule(sheet, '.bytes-fieldset > legend', 'border-style: none; border-width: 0; font-size: 14px; line-height: 20px; margin-bottom: 0; width: auto; padding: 0 10px; border: 1px solid #e0e0e0;');
+    addCSSRule(sheet, '.bytes-fieldset', 'border: 1px solid #e0e0e0; padding: 10px;');
     // addCSSRule(sheet, 'input', 'margin: .4rem;');
   }
 
@@ -159,6 +160,7 @@ export default function GenotypeRenderer() {
     formGroup.classList.add('form-group');
 
     const fieldset = document.createElement('fieldset');
+    fieldset.classList.add('bytes-fieldset');
 
     const legend = document.createElement('legend');
     const legendText = document.createTextNode('Color Schemes');
