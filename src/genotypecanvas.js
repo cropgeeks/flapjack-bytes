@@ -664,6 +664,7 @@ export default class GenotypeCanvas {
   }
 
   setComparisonLineIndex(newIndex) {
+    this.comparisonLineIndex = newIndex;
     this.colorScheme.setComparisonLineIndex(newIndex);
     this.prerender(true);
   }
