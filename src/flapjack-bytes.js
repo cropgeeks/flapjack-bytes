@@ -46,6 +46,20 @@ export default function GenotypeRenderer() {
     const zoomDiv = document.createElement('div');
     zoomDiv.id = 'zoom-holder';
 
+    const form = document.createElement('form');
+    const formRow = document.createElement('div');
+    formRow.classList.add('row');
+    const zoomCol = document.createElement('div');
+    zoomCol.classList.add('col');
+    const formZoomDiv = document.createElement('div');
+    formZoomDiv.classList.add('form-group');
+
+    const zoomFieldSet = document.createElement('fieldset');
+
+    const zoomLegend = document.createElement('legend');
+    const zoomLegendText = document.createTextNode('Controls');
+    zoomLegend.appendChild(zoomLegendText);
+
     const zoomLabel = document.createElement('label');
     zoomLabel.setAttribute('for', 'zoom-control');
     zoomLabel.innerHTML = 'Zoom:';
@@ -69,44 +83,45 @@ export default function GenotypeRenderer() {
     const textnode = document.createTextNode('Color schemes...');
     colorButton.appendChild(textnode);
 
-    const fieldSet = document.createElement('fieldset');
-    const legend = document.createElement('legend');
-    const legendText = document.createTextNode('Color Schemes');
-    legend.appendChild(legendText);
+    const colorFieldSet = createColorSchemeFieldset();
 
-    fieldSet.appendChild(legend);
-    addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, fieldSet);
-    addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line', false, fieldSet);
+    zoomFieldSet.appendChild(zoomLegend);
+    zoomFieldSet.appendChild(zoomLabel);
+    zoomFieldSet.appendChild(range);
+    formZoomDiv.appendChild(zoomFieldSet);
+    zoomCol.appendChild(formZoomDiv);
+    formRow.appendChild(zoomCol);
 
-    const lineSelect = document.createElement('select');
-    lineSelect.id = 'lineSelect';
-    lineSelect.disabled = true;
-    fieldSet.appendChild(lineSelect);
-
-    zoomDiv.appendChild(zoomLabel);
-    zoomDiv.appendChild(range);
-    zoomDiv.appendChild(fieldSet);
+    formRow.appendChild(colorFieldSet);
+    form.appendChild(formRow);
+    zoomDiv.appendChild(form);
+    
     canvasHolder.appendChild(zoomDiv);
 
-    // createColorModal(canvasHolder);
+    addStyleSheet();
 
     canvasController = new CanvasController(genotypeCanvas);
   }
 
   function addRadioButton(name, id, text, checked, parent) {
+    const formCheck = document.createElement('div');
+    formCheck.classList.add('form-check');
     const radio = document.createElement('input');
     radio.setAttribute('type', 'radio');
     radio.name = name;
     radio.id = id;
     radio.checked = checked;
+    radio.classList.add('form-check-input');
 
     const radioLabel = document.createElement('label');
     radioLabel.htmlFor = id;
+    radioLabel.classList.add('form-check-label');
     const labelText = document.createTextNode(text);
     radioLabel.appendChild(labelText);
 
-    parent.appendChild(radio);
-    parent.appendChild(radioLabel);
+    formCheck.appendChild(radio);
+    formCheck.appendChild(radioLabel);
+    parent.appendChild(formCheck);
   }
 
   function addCSSRule(sheet, selector, rules, index) {
@@ -117,25 +132,7 @@ export default function GenotypeRenderer() {
     }
   }
 
-  function createColorModal(canvasHolder) {
-    const colorModal = document.createElement('div');
-    colorModal.classList.add('modal');
-
-    const modalContent = document.createElement('div');
-    modalContent.classList.add('modal-content');
-
-    const closeButton = document.createElement('span');
-    closeButton.classList.add('close-btn');
-
-    const para = document.createElement('p');
-    const textnode = document.createTextNode('Color schemes...');
-    para.appendChild(textnode);
-
-    modalContent.appendChild(closeButton);
-    modalContent.appendChild(para);
-    colorModal.appendChild(modalContent);
-    canvasHolder.appendChild(colorModal);
-
+  function addStyleSheet() {
     let sheet = (function() {
       // Create the <style> tag
       let style = document.createElement("style");
@@ -149,10 +146,48 @@ export default function GenotypeRenderer() {
       return style.sheet;
     }());
 
-    addCSSRule(sheet, '.modal', 'display: none; position: fixed; padding-top: 50px; left: 0; top: 0; width: 100%; height: 100%; background-color: rgb(0,0,0); background-color: rgba(0, 0, 0, 0.5);');
-    addCSSRule(sheet, '.modal-content', 'position: relative; background-color: white; padding: 20px; margin: auto; width: 75%;');
-    addCSSRule(sheet, '.close-btn', 'float: right; color: lightgray; font-size: 24px; font-weight: bold;');
-    addCSSRule(sheet, '.close-btn:hover', 'color: darkgray;');
+    addCSSRule(sheet, 'legend', 'border-style: none; border-width: 0; font-size: 14px; line-height: 20px; margin-bottom: 0; width: auto; padding: 0 10px; border: 1px solid #e0e0e0;');
+    addCSSRule(sheet, 'fieldset', 'border: 1px solid #e0e0e0; padding: 10px;');
+    // addCSSRule(sheet, 'input', 'margin: .4rem;');
+  }
+
+  function createColorSchemeFieldset() {
+    const formCol = document.createElement('div');
+    formCol.classList.add('col');
+
+    const formGroup = document.createElement('div');
+    formGroup.classList.add('form-group');
+
+    const fieldset = document.createElement('fieldset');
+
+    const legend = document.createElement('legend');
+    const legendText = document.createTextNode('Color Schemes');
+    legend.appendChild(legendText);
+
+    const radioCol = document.createElement('div');
+    radioCol.classList.add('col');
+    addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, radioCol);
+    addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line', false, radioCol);
+
+    const selectLabel = document.createElement('label');
+    selectLabel.htmlFor = 'lineSelect';
+    selectLabel.classList.add('col-form-label');
+    const labelText = document.createTextNode('Comparison line:');
+    selectLabel.appendChild(labelText);
+
+    const lineSelect = document.createElement('select');
+    lineSelect.id = 'lineSelect';
+    lineSelect.disabled = true;
+
+    fieldset.appendChild(legend);
+    fieldset.appendChild(radioCol);
+    fieldset.appendChild(selectLabel);
+    fieldset.appendChild(lineSelect);
+    formGroup.appendChild(fieldset);
+
+    formCol.appendChild(formGroup);
+
+    return formCol;
   }
 
   function processMarkerPositionsCall(client, url, params, markerpositions = []) {
