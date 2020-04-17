@@ -221,6 +221,12 @@ export default class GenotypeCanvas {
     if (this.lineUnderMouse) {
       this.drawingContext.save();
       this.drawingContext.translate(0, this.mapCanvasHeight);
+      // Prevent line name under scrollbar being highlighted
+      const region = new Path2D();
+      const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+      region.rect(0, 0, this.nameCanvasWidth,
+        clipHeight);
+      this.drawingContext.clip(region);
 
       this.drawingContext.fillStyle = '#F00';
       this.drawingContext.font = this.font;
@@ -365,8 +371,11 @@ export default class GenotypeCanvas {
     // Create a clipping region so that lineNames can't creep up above the line
     // name canvas
     const region = new Path2D();
+    // We need to take account of the scrollbar potentially disappearing when
+    //zoomed out
+    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
     region.rect(0, this.mapCanvasHeight, this.nameCanvasWidth,
-      this.canvas.height - this.scrollbarHeight - this.mapCanvasHeight);
+      clipHeight);
     this.backContext.clip(region);
 
     const lineNames = this.dataSet.germplasmFor(germplasmStart, germplasmEnd)
