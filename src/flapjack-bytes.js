@@ -253,8 +253,6 @@ export default function GenotypeRenderer() {
     const client = axios.create({ baseURL: server });
     client.defaults.headers.common.Authorization = `Bearer ${authToken}`;
 
-    console.log(mapId);
-
     if (mapId !== null) {
       // TODO: GOBii don't have the markerpositions call implemented yet so I
       // can't load map data
