@@ -1,6 +1,6 @@
 {
   "name": "flapjack-bytes",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "BrAPI enabled Flapjack style graphical previews of genotype data",
   "main": "flapjack-bytes.js",
   "scripts": {
