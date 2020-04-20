@@ -1,0 +1,25 @@
+<html>
+  <head>
+    <title>Flapjack Bytes</title>
+    <meta charset="UTF-8">
+  </head>
+  <body>
+      <div>
+          <input type="submit" action="#" id="submit" name="submit" value="Submit">
+      </div>
+      <div id="canvas-holder">
+        <!-- Empty div that we can insert a canvas into from javascript. -->
+      </div>
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+      <script src="build/flapjack-bytes.js"></script>
+      <script type="text/javascript">
+        $(document).ready(function(){
+          $("#submit").click(function(){
+            var renderer = GenotypeRenderer();
+            renderer.renderGenotypesUrl("#canvas-holder", 800, 600, 'http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.map', 'http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.dat');
+            return false;
+          });
+      });
+      </script>
+  </body>
+</html>

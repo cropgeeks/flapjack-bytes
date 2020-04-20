@@ -328,62 +328,54 @@ export default function GenotypeRenderer() {
     return genotypeRenderer;
   };
 
-  // genotypeRenderer.renderGenotypesUrl = function renderGenotypesUrl(
-  //   domParent,
-  //   width,
-  //   height,
-  //   mapFileURL,
-  //   genotypeFileURL,
-  //   authToken,
-  // ) {
-  //   createRendererComponents(domParent, width, height);
+  genotypeRenderer.renderGenotypesUrl = function renderGenotypesUrl(
+    domParent,
+    width,
+    height,
+    mapFileURL,
+    genotypeFileURL,
+    authToken,
+  ) {
+    createRendererComponents(domParent, width, height);
 
-  //   if (typeof mapFileURL !== 'undefined') {
-  //     fetch(mapFileURL, { headers: { Authorization: `Bearer ${authToken}` } })
-  //       .then((response) => {
-  //         if (response.status !== 200) {
-  //           console.log(`Couldn't load file: ${mapFileURL}. Status code: ${response.status}`);
-  //           return;
-  //         }
-  //         response.text().then((data) => {
-  //           const lines = data.split(/\r?\n/);
-  //           for (let line = 0; line < lines.length; line += 1) {
-  //             processMapFileLine(lines[line]);
-  //           }
-  //         })
-  //       })
-  //       .catch((err) => {
-  //         console.log('Fetch Error :-S', err);
-  //       });
-  //   }
+    let mapFile;
+    let genotypeFile;
 
-  //   fetch(genotypeFileURL, { headers: { Authorization: `Bearer ${authToken}` } })
-  //     .then((response) => {
-  //       if (response.status !== 200) {
-  //         console.log(`Couldn't load file: ${genotypeFileURL}. Status code: ${response.status}`);
-  //         return;
-  //       }
-  //       response.text().then((data) => {
-  //         const lines = data.split(/\r?\n/);
-  //         for (let line = 0; line < lines.length; line += 1) {
-  //           processFileLine(lines[line]);
-  //         }
-  //         setupColorStamps(boxSize);
-  //         genotypeCanvas.init(markerData, lineNames, lineData, qtls, colorStamps);
-  //         genotypeCanvas.prerender();
-  //       });
-  //     })
-  //     .catch((err) => {
-  //       console.log('Fetch Error :-S', err);
-  //     });
+    axios.get(mapFileURL, {}, { headers: { 'Content-Type': 'text/plain' } }).then((response) => {
+      mapFile = response.data;
+    }).catch((error) => {
+      console.log(error)
+    }).then(() => {
+      if (mapFile !== undefined) {
+        const mapImporter = new MapImporter();
+        genomeMap = mapImporter.parseFile(mapFile);
+      }
 
-  //   sendEvent('FlapjackFinished', domParent);
+      axios.get(genotypeFileURL, {}, { headers: { 'Content-Type': 'text/plain' } }).then((response) => {
+        genotypeFile = response.data;
+      }).then(() => {
+        const genotypeImporter = new GenotypeImporter(genomeMap);
 
-  //   return genotypeRenderer;
-  // };
+        if (genomeMap === undefined) {
+          genomeMap = genotypeImporter.createFakeMap(genotypeFile);
+        }
 
-  function loadFromFile(fileDom) {
-    const file = document.getElementById(fileDom.slice(1)).files[0];
+        const germplasmData = genotypeImporter.parseFile(genotypeFile);
+        const { stateTable } = genotypeImporter;
+
+        dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+        colorScheme = new NucleotideColorScheme(dataSet);
+
+        populateLineSelect();
+
+        genotypeCanvas.init(dataSet, colorScheme);
+        genotypeCanvas.prerender();
+      });
+    });
+    return genotypeRenderer;
+  };
+
+  function loadFromFile(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => {
@@ -419,9 +411,11 @@ export default function GenotypeRenderer() {
     // let qtls = [];
     let germplasmData;
 
-    const mapPromise = loadFromFile(mapFileDom);
+    const mapFile = document.getElementById(mapFileDom.slice(1)).files[0];
+    const mapPromise = loadFromFile(mapFile);
     // const qtlPromise = loadFromFile(qtlFileDom);
-    const genotypePromise = loadFromFile(genotypeFileDom);
+    const genotypeFile = document.getElementById(genotypeFileDom.slice(1)).files[0];
+    const genotypePromise = loadFromFile(genotypeFile);
 
     // Load map data
     mapPromise.then((result) => {
