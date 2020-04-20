@@ -21,6 +21,10 @@ export default class DataSet {
     return this.genomeMap.markerAt(markerIndex);
   }
 
+  chromosomeCount() {
+    return this.genomeMap.chromosomes.length;
+  }
+
   markerCount() {
     return this.genomeMap.markerCount();
   }

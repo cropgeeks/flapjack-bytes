@@ -76,6 +76,10 @@ export default class GenotypeCanvas {
     return this.dataSet.lineCount() * this.boxSize;
   }
 
+  maxDataWidth() {
+    return (this.dataSet.markerCount() * this.boxSize) + ((this.dataSet.chromosomeCount() - 1) * this.chromosomeGapSize);
+  }
+
   chromosomeOffset(xPos) {
     let chromStart = 0;
     this.chromosomeEnds.forEach((end, index) => {
@@ -558,7 +562,7 @@ export default class GenotypeCanvas {
     const mouseXPosCanvas = this.translatedX + mouseXPos;
     const mouseYPos = y - this.mapCanvasHeight;
 
-    if (mouseXPos > 0 && mouseXPos < this.alleleCanvasWidth()) {
+    if (mouseXPos > 0 && mouseXPos < this.alleleCanvasWidth() && mouseXPos < this.maxDataWidth()) {
       // Calculate the marker's index in the dataset and get the marker data
       const offset = this.chromosomeOffset(mouseXPosCanvas);
       const markerIndex = Math.floor((this.translatedX - offset + mouseXPos) / this.boxSize);
