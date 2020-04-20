@@ -5,7 +5,15 @@
   </head>
   <body>
       <div>
-          <input type="submit" action="#" id="submit" name="submit" value="Submit">
+        <div>
+          <label for="mapfile">Map file:</label>
+          <input type="text" id="mapfile" name="mapfile" value="http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.map">
+        </div>
+        <div>
+          <label for="genofile">Genotype file:</label>
+          <input type="text" id="genofile" name="genofile" value="http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.dat">
+        </div>
+        <input type="submit" action="#" id="submit" name="submit" value="Submit">
       </div>
       <div id="canvas-holder">
         <!-- Empty div that we can insert a canvas into from javascript. -->
@@ -16,7 +24,7 @@
         $(document).ready(function(){
           $("#submit").click(function(){
             var renderer = GenotypeRenderer();
-            renderer.renderGenotypesUrl("#canvas-holder", 800, 600, 'http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.map', 'http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.dat');
+            renderer.renderGenotypesUrl("#canvas-holder", 800, 600, $('#mapfile').val(), $('#genofile').val());
             return false;
           });
       });
