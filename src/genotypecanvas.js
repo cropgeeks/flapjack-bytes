@@ -72,6 +72,10 @@ export default class GenotypeCanvas {
     return this.canvas.height - this.mapCanvasHeight - this.scrollbarHeight;
   }
 
+  maxDataHeight() {
+    return this.dataSet.lineCount() * this.boxSize;
+  }
+
   chromosomeOffset(xPos) {
     let chromStart = 0;
     this.chromosomeEnds.forEach((end, index) => {
@@ -571,7 +575,7 @@ export default class GenotypeCanvas {
     // chromosomes
     this.chromosomeUnderMouse = this.chromosomeIndexFor(mouseXPosCanvas);
 
-    if (mouseYPos > 0 && mouseYPos < this.alleleCanvasHeight()) {
+    if (mouseYPos > 0 && mouseYPos < this.alleleCanvasHeight() && mouseYPos < this.maxDataHeight()) {
       this.lineUnderMouse = Math.max(0, Math.floor(mouseYPos / this.boxSize));
       this.lineIndexUnderMouse = this.lineUnderMouse + Math.floor(this.translatedY / this.boxSize);
     } else {
