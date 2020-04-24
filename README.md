@@ -22,7 +22,7 @@ API can be found at: http://bioinf.hutton.ac.uk/gobii-flapjack-bytes.
 
 - Visualization of genotype data, either in the context of a genomic map, or
 not.
-- Laod data from [BrAPI](https://brapi.org) enabled resources, files on your
+- Load data from [BrAPI](https://brapi.org) enabled resources, files on your
 local computer, or via URL.
 - Multiple colour schemes; the default Nucelotride colour scheme, a similarity
 colour scheme where each line is coloured on a basis of its match to a user
