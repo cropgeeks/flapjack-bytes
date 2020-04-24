@@ -37,6 +37,20 @@ data into the library in web pages / web applications.
 
 ### BrAPI
 
+The Flapjack-Bytes library doesn't want to be prescriptive about the steps
+required to search for and select a dataset for viewing. As such the only
+expectaion is that the calling code will pass Flapjack-Bytes a variantSetDbId
+and optionally a mapDbId. If a mapDbId is not passed to Flapjack-Bytes, a "fake"
+map will be constructed and all markers/variants will be displayed on the same
+chromosome. For BrAPi servers which require authentication, an authentication
+token can also be passed to the library. 
+
+#### Required BrAPI endpoint
+- variantsets/{variantSetDbId}/calls
+
+#### Optional BrAPI endpoint
+- markerpositions?mapDbId={mapDbId}
+
 First define a target div in the web page.
 
 ```html
