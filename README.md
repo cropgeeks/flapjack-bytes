@@ -37,19 +37,24 @@ data into the library in web pages / web applications.
 
 ### BrAPI
 
-The Flapjack-Bytes library doesn't want to be prescriptive about the steps
-required to search for and select a dataset for viewing. As such the only
-expectaion is that the calling code will pass Flapjack-Bytes a variantSetDbId
-and optionally a mapDbId. If a mapDbId is not passed to Flapjack-Bytes, a "fake"
-map will be constructed and all markers/variants will be displayed on the same
-chromosome. For BrAPi servers which require authentication, an authentication
-token can also be passed to the library. 
+The Flapjack-Bytes library is designed to work with version 2.0 of the
+[BrAPI](https://brapi.org/) specification and doesn't want to be prescriptive
+about the steps required to search for and select a dataset for viewing. As such 
+the only expectaion is that the calling code will pass Flapjack-Bytes a 
+variantSetDbId and optionally a mapDbId. If a mapDbId is not passed to
+Flapjack-Bytes, a "fake" map will be constructed and all markers/variants will
+be displayed on the same chromosome. For BrAPi servers which require
+authentication, an authentication token can also be passed to the library. 
 
 #### Required BrAPI endpoint
-- variantsets/{variantSetDbId}/calls
+- variantsets/{variantSetDbId}/calls 
+
+[See endpoint documentation](https://brapigenotyping.docs.apiary.io/#reference/variantsets/get-variantsetsvariantsetdbidcalls/get-/variantsets/{variantsetdbid}/calls)
 
 #### Optional BrAPI endpoint
-- markerpositions?mapDbId={mapDbId}
+- markerpositions?mapDbId={mapDbId} 
+
+[See endpoint documentation](https://brapigenotyping.docs.apiary.io/#reference/genome-maps/get-markerpositions/get-/markerpositions)
 
 First define a target div in the web page.
 
