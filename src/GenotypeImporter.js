@@ -124,8 +124,9 @@ export default class GenotypeImporter {
   // A method to create a fake map from BrAPI variantset calls
   createFakeMapFromVariantSets(variantSetCalls) {
     const firstGenoName = variantSetCalls[0].callSetName;
-    const markerNames = variantSetCalls.filter(v => v.callSetName === firstGenoName).map(v => v.markerName);
-    console.log(markerNames);
+    const firstGenoCalls = variantSetCalls.filter(v => v.callSetName === firstGenoName).map(v => v.markerName);
+    // Make sure we only have unique markerNames
+    const markerNames = [...new Set(firstGenoCalls)];
 
     const markers = [];
     markerNames.forEach((name, idx) => {
