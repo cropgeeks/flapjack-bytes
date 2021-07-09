@@ -370,6 +370,14 @@ export default function GenotypeRenderer() {
 
         genotypeCanvas.init(dataSet, colorScheme);
         genotypeCanvas.prerender();
+
+        // Tells the dom parent that Flapjack has finished loading. Allows spinners
+        // or similar to be disabled
+        sendEvent('FlapjackFinished', domParent);
+      }).catch((error) => {
+        sendEvent('FlapjackError', domParent);
+        // eslint-disable-next-line no-console
+        console.log(error);
       });
     });
     return genotypeRenderer;
