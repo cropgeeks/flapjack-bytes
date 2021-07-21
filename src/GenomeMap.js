@@ -67,14 +67,24 @@ export default class GenomeMap {
     return { marker: chromosome.markers[markerIndex], markerIndex };
   }
 
-  markerByName(markerName) {	/* this method could probably be optimized for faster loading (calling it again and again takes really long with numerous markers)*/
+  markerByName(markerName, markerIndexesByNamesAndChromosomes) {
     let found = -1;
-    this.chromosomes.forEach((chromosome, idx) => {
-      const markerIndex = chromosome.markers.map(m => m.name).indexOf(markerName);
-      if (markerIndex !== -1) {
-        found = { chromosome: idx, markerIndex };
-      }
-    });
+
+	if (markerIndexesByNamesAndChromosomes != null)
+		for (var chrIdx in markerIndexesByNamesAndChromosomes) {
+			const markerIndex = markerIndexesByNamesAndChromosomes[chrIdx].indexOf(markerName);
+			if (markerIndex !== -1) {
+	        	found = { chromosome: chrIdx, markerIndex };
+				break;
+	    	}
+		}
+	else
+	    this.chromosomes.forEach((chromosome, idx) => {
+	      const markerIndex = chromosome.markers.map(m => m.name).indexOf(markerName);
+	      if (markerIndex !== -1) {
+	        found = { chromosome: idx, markerIndex };
+	      }
+	    });
 
     return found;
   }
