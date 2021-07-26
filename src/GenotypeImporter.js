@@ -14,6 +14,8 @@ export default class GenotypeImporter {
     this.genomeMap = genomeMap;
     this.markerIndices = new Map();
     this.germplasmList = [];
+	this.processedLines;
+	this.totalLineCount;
   }
 
   getState(genoString) {
@@ -48,7 +50,7 @@ export default class GenotypeImporter {
     return data;
   }
 
-  processFileLine(line) {
+  processFileLine(line, markerIndexesByNamesAndChromosomes) {
     if (line.startsWith('#') || (!line || line.length === 0)) {
       return;
     }
@@ -57,7 +59,7 @@ export default class GenotypeImporter {
       const markerNames = line.split('\t');
 
       markerNames.slice(1).forEach((name, idx) => {
-        const indices = this.genomeMap.markerByName(name);
+        const indices = this.genomeMap.markerByName(name, markerIndexesByNamesAndChromosomes);
         if (indices !== -1) {
           this.markerIndices.set(idx, indices);
         }
@@ -82,12 +84,28 @@ export default class GenotypeImporter {
   }
 
   parseFile(fileContents) {
-    const lines = fileContents.split(/\r?\n/);
-    for (let line = 0; line < lines.length; line += 1) {
-      this.processFileLine(lines[line]);
-    }
+	var b4 = Date.now();
+	
+	// pre-calculating this index array once for all brings significantly faster loading
+	var markerIndexesByNamesAndChromosomes = new Array();
+	this.genomeMap.chromosomes.forEach((chromosome, idx) => {
+	  markerIndexesByNamesAndChromosomes[idx] = chromosome.markers.map(m => m.name);
+    });
 
+	this.processedLines = 0;
+	this.totalLineCount = 0;
+    const lines = fileContents.split(/\r?\n/);
+	this.totalLineCount = lines.length;
+    for (let line = 0; line < this.totalLineCount; line += 1) {
+      this.processFileLine(lines[line], markerIndexesByNamesAndChromosomes);
+	  this.processedLines = line;
+    }
+	console.log("parseFile took " + (Date.now() - b4) + "ms");
     return this.germplasmList;
+  }
+
+  getImportProgressPercentage() {
+	return parseInt(this.processedLines + " / " + this.totalLineCount);
   }
 
   // In situations where a map hasn't been provided, we want to create a fake or
