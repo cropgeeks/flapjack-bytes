@@ -14,8 +14,8 @@ export default class GenotypeImporter {
     this.genomeMap = genomeMap;
     this.markerIndices = new Map();
     this.germplasmList = [];
-	this.processedLines;
-	this.totalLineCount;
+    this.processedLines;
+    this.totalLineCount;
   }
 
   getState(genoString) {
@@ -84,28 +84,28 @@ export default class GenotypeImporter {
   }
 
   parseFile(fileContents) {
-	var b4 = Date.now();
-	
-	// pre-calculating this index array once for all brings significantly faster loading
-	var markerIndexesByNamesAndChromosomes = new Array();
-	this.genomeMap.chromosomes.forEach((chromosome, idx) => {
-	  markerIndexesByNamesAndChromosomes[idx] = chromosome.markers.map(m => m.name);
+    var b4 = Date.now();
+    
+    // pre-calculating this index array once for all brings significantly faster loading
+    var markerIndexesByNamesAndChromosomes = new Array();
+    this.genomeMap.chromosomes.forEach((chromosome, idx) => {
+      markerIndexesByNamesAndChromosomes[idx] = chromosome.markers.map(m => m.name);
     });
 
-	this.processedLines = 0;
-	this.totalLineCount = 0;
+    this.processedLines = 0;
+    this.totalLineCount = 0;
     const lines = fileContents.split(/\r?\n/);
-	this.totalLineCount = lines.length;
+    this.totalLineCount = lines.length;
     for (let line = 0; line < this.totalLineCount; line += 1) {
       this.processFileLine(lines[line], markerIndexesByNamesAndChromosomes);
-	  this.processedLines = line;
+      this.processedLines = line;
     }
-	console.log("parseFile took " + (Date.now() - b4) + "ms");
+    console.log("parseFile took " + (Date.now() - b4) + "ms");
     return this.germplasmList;
   }
 
   getImportProgressPercentage() {
-	return parseInt(this.processedLines + " / " + this.totalLineCount);
+    return parseInt(this.processedLines + " / " + this.totalLineCount);
   }
 
   // In situations where a map hasn't been provided, we want to create a fake or

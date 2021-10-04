@@ -5,6 +5,7 @@ import GenotypeImporter from './GenotypeImporter';
 import NucleotideColorScheme from './NucleotideColorScheme';
 import MapImporter from './MapImporter';
 import DataSet from './DataSet';
+import alphabeticLineSort from './AlphabeticLineSort.js'
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -421,13 +422,13 @@ export default function GenotypeRenderer() {
     let germplasmData;
 
     const mapFile = document.getElementById(mapFileDom.slice(1)).files[0];
-    const mapPromise = loadFromFile(mapFile);
+    let mapPromise = loadFromFile(mapFile);
     // const qtlPromise = loadFromFile(qtlFileDom);
     const genotypeFile = document.getElementById(genotypeFileDom.slice(1)).files[0];
-    const genotypePromise = loadFromFile(genotypeFile);
+    let genotypePromise = loadFromFile(genotypeFile);
 
     // Load map data
-    mapPromise.then((result) => {
+    mapPromise = mapPromise.then((result) => {
       const mapImporter = new MapImporter();
       genomeMap = mapImporter.parseFile(result);
     });
@@ -440,7 +441,9 @@ export default function GenotypeRenderer() {
     // });
 
     // Then genotype data
-    genotypePromise.then((result) => {
+    // Must be executed after the map file has been parsed *and* the genotype file has been read
+    Promise.all([mapPromise, genotypePromise]).then((results) => {
+      let result = results[1];
       genotypeImporter = new GenotypeImporter(genomeMap);
 
       if (genomeMap === undefined) {
@@ -450,7 +453,7 @@ export default function GenotypeRenderer() {
       germplasmData = genotypeImporter.parseFile(result);
       const { stateTable } = genotypeImporter;
 
-      dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+      dataSet = new DataSet(genomeMap, germplasmData, stateTable, alphabeticLineSort);
       colorScheme = new NucleotideColorScheme(dataSet);
 
       populateLineSelect();
@@ -463,7 +466,7 @@ export default function GenotypeRenderer() {
   };
 
   genotypeRenderer.getRenderingProgressPercentage = function getRenderingProgressPercentage() {
-	return genotypeImporter == null ? -1 : genotypeImporter.getImportProgressPercentage();
+    return genotypeImporter == null ? -1 : genotypeImporter.getImportProgressPercentage();
   };
 
   return genotypeRenderer;
