@@ -1,3 +1,8 @@
+import AlphabeticLineSort from './AlphabeticLineSort'
+import SimilarityLineSort from './SimilarityLineSort'
+import ImportingOrderLineSort from './ImportingOrderLineSort'
+
+
 export default class CanvasController {
   constructor(genotypeCanvas) {
     this.genotypeCanvas = genotypeCanvas;
@@ -60,6 +65,7 @@ export default class CanvasController {
       }
     });
 
+    // Color schemes
     const nucleotideRadio = document.getElementById('nucleotideScheme');
     nucleotideRadio.addEventListener('change', () => {
       const lineSelect = document.getElementById('colorLineSelect');
@@ -76,7 +82,50 @@ export default class CanvasController {
 
     const lineSelect = document.getElementById('colorLineSelect');
     lineSelect.addEventListener('change', (event) => {
-      this.genotypeCanvas.setComparisonLineIndex(event.target.selectedIndex);
+      this.genotypeCanvas.setColorComparisonLine(event.target.options[event.target.selectedIndex].value);
+    });
+
+    // Sort
+
+    const importingOrderRadio = document.getElementById('importingOrderSort');
+    importingOrderRadio.addEventListener('change', () => {
+      const sortLineSelect = document.getElementById('sortLineSelect');
+      const chromosomeSelect = document.getElementById('sortChromosomeSelect');
+      sortLineSelect.disabled = false;
+      chromosomeSelect.disabled = true;
+      this.genotypeCanvas.setLineSort(new ImportingOrderLineSort());
+    });
+
+    const alphabetOrderRadio = document.getElementById('alphabeticSort');
+    alphabetOrderRadio.addEventListener('change', () => {
+      const sortLineSelect = document.getElementById('sortLineSelect');
+      const chromosomeSelect = document.getElementById('sortChromosomeSelect');
+      sortLineSelect.disabled = false;
+      chromosomeSelect.disabled = true;
+      this.genotypeCanvas.setLineSort(new AlphabeticLineSort());
+    });
+
+    const similarityOrderRadio = document.getElementById('similaritySort');
+    similarityOrderRadio.addEventListener('change', () => {
+      const sortLineSelect = document.getElementById('sortLineSelect');
+      const chromosomeSelect = document.getElementById('sortChromosomeSelect');
+      sortLineSelect.disabled = false;
+      chromosomeSelect.disabled = false;
+
+      const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
+      const chromosomeNames = Array.from(chromosomeSelect.options).filter(option => option.selected).map(option => option.text);
+      this.genotypeCanvas.setLineSort(new SimilarityLineSort(referenceName, chromosomeNames));
+    });
+
+    const sortLineSelect = document.getElementById('sortLineSelect');
+    sortLineSelect.addEventListener('change', (event) => {
+      this.genotypeCanvas.setSortComparisonLine(event.target.options[event.target.selectedIndex].value);
+    })
+
+    const sortChromosomeSelect = document.getElementById('sortChromosomeSelect');
+    sortChromosomeSelect.addEventListener('change', (event) => {
+      const chromosomeNames = Array.from(event.target.options).filter(option => option.selected).map(option => option.text);
+      this.genotypeCanvas.setSortComparisonChromosomes(chromosomeNames);
     });
   }
 

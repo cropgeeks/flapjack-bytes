@@ -3,7 +3,7 @@ import NucleotideColorScheme from './NucleotideColorScheme';
 import SimilarityColorScheme from './SimilarityColorScheme';
 
 export default class GenotypeCanvas {
-  constructor(width, height, boxSize) {
+  constructor(width, height, boxSize, lineSort) {
     this.canvas = document.createElement('canvas');
     this.canvas.width = width;
     this.canvas.height = height;
@@ -41,6 +41,7 @@ export default class GenotypeCanvas {
     this.markerNameFont = '10px sans-serif';
 
     this.dataSet = undefined;
+    this.lineSort = lineSort;
 
     // Visual start and end points for each chromosome
     this.chromosomeStarts = [];
@@ -48,7 +49,10 @@ export default class GenotypeCanvas {
 
     this.chromosomeGapSize = 50;
 
-    this.comparisonLineIndex = 0;
+    this.colorComparisonLineIndex = 0;
+    this.sortComparisonLineIndex = 0;
+
+    this.scorePadding = 2;
   }
 
   totalChromosomeGap() {
@@ -65,7 +69,7 @@ export default class GenotypeCanvas {
   }
 
   alleleCanvasWidth() {
-    return this.canvas.width - this.nameCanvasWidth - this.scrollbarWidth;
+    return this.canvas.width - this.alleleCanvasXOffset - this.scrollbarWidth;
   }
 
   alleleCanvasHeight() {
@@ -105,6 +109,7 @@ export default class GenotypeCanvas {
 
   init(dataSet, colorScheme) {
     this.dataSet = dataSet;
+    this.lineSort.sort(this.dataSet);
     this.colorScheme = colorScheme;
     this.font = this.updateFontSize();
     this.updateVisualPositions();
@@ -185,7 +190,7 @@ export default class GenotypeCanvas {
 
         this.drawingContext.save();
         // Translate to the correct position to draw the map
-        this.drawingContext.translate(this.nameCanvasWidth, 10);
+        this.drawingContext.translate(this.alleleCanvasXOffset, 10);
 
         let xPos = drawStart + (this.markerIndexUnderMouse * this.boxSize);
         xPos += (this.boxSize / 2);
@@ -200,7 +205,7 @@ export default class GenotypeCanvas {
   highlightMarkerName(firstMarkerPos, scaleFactor, drawStart) {
     if (this.markerUnderMouse) {
       this.drawingContext.save();
-      this.drawingContext.translate(this.nameCanvasWidth, 10);
+      this.drawingContext.translate(this.alleleCanvasXOffset, 10);
 
       this.drawingContext.fillStyle = '#F00';
       this.drawingContext.font = this.markerNameFont;
@@ -232,7 +237,7 @@ export default class GenotypeCanvas {
       // Prevent line name under scrollbar being highlighted
       const region = new Path2D();
       const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
-      region.rect(0, 0, this.nameCanvasWidth,
+      region.rect(0, 0, this.alleleCanvasXOffset,
         clipHeight);
       this.drawingContext.clip(region);
 
@@ -254,7 +259,7 @@ export default class GenotypeCanvas {
   renderCrosshair() {
     // Setup crosshair drawing parameters
     this.drawingContext.save();
-    this.drawingContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
+    this.drawingContext.translate(this.alleleCanvasXOffset, this.mapCanvasHeight);
     this.drawingContext.globalAlpha = 0.4;
     this.drawingContext.fillStyle = '#fff';
 
@@ -268,7 +273,7 @@ export default class GenotypeCanvas {
     this.renderHorizontalCrosshairLine();
 
     // Reset the drawing parameters for the rest of the render code
-    this.drawingContext.translate(-this.nameCanvasWidth, -this.mapCanvasHeight);
+    this.drawingContext.translate(-this.alleleCanvasXOffset, -this.mapCanvasHeight);
     this.drawingContext.globalAlpha = 1;
     this.drawingContext.restore();
   }
@@ -293,6 +298,9 @@ export default class GenotypeCanvas {
     this.backContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.renderMap(markerStart, markerEnd);
     this.renderGermplasmNames(germplasmStart, germplasmEnd, yWiggle);
+    if (this.lineSort.hasScore){
+      this.renderGermplasmScore(germplasmStart, germplasmEnd, yWiggle);
+    }
     this.renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle);
     this.renderScrollbars();
   }
@@ -359,11 +367,11 @@ export default class GenotypeCanvas {
     // Create a clipping region so that lineNames can't creep up above the line
     // name canvas
     const region = new Path2D();
-    region.rect(this.nameCanvasWidth, 0, this.alleleCanvasWidth(), this.mapCanvasHeight);
+    region.rect(this.alleleCanvasXOffset, 0, this.alleleCanvasWidth(), this.mapCanvasHeight);
     this.backContext.clip(region);
 
     // Translate to the correct position to draw the map
-    this.backContext.translate(this.nameCanvasWidth, 10);
+    this.backContext.translate(this.alleleCanvasXOffset, 10);
 
     const renderData = this.dataSet.markersToRender(markerStart, markerEnd);
 
@@ -400,6 +408,34 @@ export default class GenotypeCanvas {
     this.backContext.restore();
   }
 
+  renderGermplasmScore(germplasmStart, germplasmEnd, yWiggle){
+    this.backContext.save();
+
+    // Create a clipping region so that lineNames can't creep up above the line
+    // name canvas
+    const region = new Path2D();
+    // We need to take account of the scrollbar potentially disappearing when
+    //zoomed out
+    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+    region.rect(this.nameCanvasWidth, this.mapCanvasHeight, this.scoreCanvasWidth,
+      clipHeight);
+    this.backContext.clip(region);
+
+    const lineNames = this.dataSet.germplasmFor(germplasmStart, germplasmEnd)
+      .map(germplasm => germplasm.name);
+
+    this.backContext.fillStyle = '#333';
+    this.backContext.font = this.font;
+    this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
+
+    lineNames.forEach((name, idx) => {
+      const y = (idx * this.boxSize) - yWiggle + (this.boxSize - (this.fontSize / 2));
+      const score = this.lineSort.getScore(name);
+      this.backContext.fillText(score.toFixed(2), 2, y);
+    });
+    this.backContext.restore();
+  }
+
   renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle) {
     this.backContext.save();
 
@@ -408,10 +444,10 @@ export default class GenotypeCanvas {
     // Clip so that we can only draw into the region that is intended to be the
     // genotype canvas
     const region = new Path2D();
-    region.rect(this.nameCanvasWidth, this.mapCanvasHeight, this.canvas.width, this.canvas.height);
+    region.rect(this.alleleCanvasXOffset, this.mapCanvasHeight, this.canvas.width, this.canvas.height);
     this.backContext.clip(region);
 
-    this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
+    this.backContext.translate(this.alleleCanvasXOffset, this.mapCanvasHeight);
 
     for (let germplasm = germplasmStart, line = 0; germplasm < germplasmEnd; germplasm += 1, line += 1) {
       const yPos = (line * this.boxSize) - yWiggle;
@@ -439,14 +475,14 @@ export default class GenotypeCanvas {
     this.backContext.restore();
     this.backContext.save();
     if (this.canScrollX()) {
-      this.backContext.translate(this.nameCanvasWidth, 0);
+      this.backContext.translate(this.alleleCanvasXOffset, 0);
       this.horizontalScrollbar.render(this.backContext);
     }
     this.backContext.restore();
 
     this.backContext.save();
     if (this.canScrollX() || this.canScrollY()) {
-      this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
+      this.backContext.translate(this.alleleCanvasXOffset, this.mapCanvasHeight);
       this.backContext.fillStyle = '#aaa';
       this.backContext.strokeRect(this.alleleCanvasWidth(), this.alleleCanvasHeight(), this.scrollbarWidth, this.scrollbarHeight);
       this.backContext.fillRect(this.alleleCanvasWidth(), this.alleleCanvasHeight(), this.scrollbarWidth, this.scrollbarHeight);
@@ -558,7 +594,7 @@ export default class GenotypeCanvas {
   mouseOver(x, y) {
     // We need to calculate an offset because the gaps between chromosomes
     // aren't part of the data model
-    const mouseXPos = x - this.nameCanvasWidth;
+    const mouseXPos = x - this.alleleCanvasXOffset;
     const mouseXPosCanvas = this.translatedX + mouseXPos;
     const mouseYPos = y - this.mapCanvasHeight;
 
@@ -622,6 +658,13 @@ export default class GenotypeCanvas {
     const longestName = Math.max(...germplasm.map(g => this.backContext.measureText(g.name).width));
     this.nameCanvasWidth = longestName;
 
+    if (this.lineSort.hasScore){
+      this.scoreCanvasWidth = this.backContext.measureText("0.00").width + 2*this.scorePadding;  // 2px of padding on each side
+    } else {
+      this.scoreCanvasWidth = 0;
+    }
+    this.alleleCanvasXOffset = this.nameCanvasWidth + this.scoreCanvasWidth;
+
     this.horizontalScrollbar.updateWidth(this.alleleCanvasWidth());
   }
 
@@ -674,15 +717,40 @@ export default class GenotypeCanvas {
       this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
       this.prerender(true);
     } else if (scheme === 'similarityScheme') {
-      this.colorScheme = new SimilarityColorScheme(this.dataSet, this.comparisonLineIndex);
+      this.colorScheme = new SimilarityColorScheme(this.dataSet, this.colorComparisonLineIndex);
       this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
       this.prerender(true);
     }
   }
 
-  setComparisonLineIndex(newIndex) {
-    this.comparisonLineIndex = newIndex;
-    this.colorScheme.setComparisonLineIndex(newIndex);
+  setColorComparisonLine(comparedName) {
+    this.colorComparisonLineIndex = this.dataSet.germplasmList.findIndex(germplasm => germplasm.name == comparedName);
+    this.colorScheme.setComparisonLineIndex(this.colorComparisonLineIndex);
+    this.prerender(true);
+  }
+
+  setLineSort(newLineSort){
+    this.lineSort = newLineSort;
+    this.updateCanvasWidths();  // To account for the presence or absence of scores
+    this.sortLines();
+  }
+
+  setSortComparisonLine(comparedName) {
+    this.lineSort.setComparisonLine(comparedName);
+    this.sortLines();
+  }
+
+  setSortComparisonChromosomes(chromosomeNames) {
+    this.lineSort.setChromosomes(chromosomeNames);
+    this.sortLines();
+  }
+
+  sortLines(){
+    // Save the color comparison line to restore it later
+    // TODO : Use a line name instead of index in the color scheme to improve stability
+    let colorComparisonName = this.dataSet.germplasmList[this.colorComparisonLineIndex].name;
+    this.lineSort.sort(this.dataSet)
+    this.setColorComparisonLine(colorComparisonName);
     this.prerender(true);
   }
 

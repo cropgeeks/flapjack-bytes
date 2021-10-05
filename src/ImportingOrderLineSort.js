@@ -1,7 +1,11 @@
 
 
-export default function ImportingOrderLineSort(){
-	return function (dataSet) {
-		dataSet.germplasmList.sort((a, b) => dataSet.importingOrder.find(b.name) - dataSet.importingOrder.find(a.name));
-	}
+export default class ImportingOrderLineSort {
+  constructor(){
+    this.hasScore = false;
+  }
+
+  sort(dataSet){
+    dataSet.germplasmList.sort((a, b) => dataSet.importingOrder.indexOf(a.name) - dataSet.importingOrder.indexOf(b.name));
+  }
 }

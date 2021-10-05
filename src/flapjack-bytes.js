@@ -9,7 +9,7 @@ import AlphabeticLineSort from './AlphabeticLineSort'
 import SimilarityLineSort from './SimilarityLineSort'
 import ImportingOrderLineSort from './ImportingOrderLineSort'
 
-const defaultSort = ImportingOrderLineSort();
+const defaultLineSort = new ImportingOrderLineSort();
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -47,7 +47,7 @@ export default function GenotypeRenderer() {
     // Canvas
     const canvasHolder = document.getElementById(domParent.slice(1));
 
-    genotypeCanvas = new GenotypeCanvas(width, height, boxSize);
+    genotypeCanvas = new GenotypeCanvas(width, height, boxSize, defaultLineSort);
     canvasHolder.append(genotypeCanvas.canvas);
 
     // Form
@@ -223,20 +223,33 @@ export default function GenotypeRenderer() {
     addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
     addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol);
 
-    const selectLabel = document.createElement('label');
-    selectLabel.htmlFor = 'sortLineSelect';
-    selectLabel.classList.add('col-form-label');
-    const labelText = document.createTextNode('Comparison line:');
-    selectLabel.appendChild(labelText);
+    const lineSelectLabel = document.createElement('label');
+    lineSelectLabel.htmlFor = 'sortLineSelect';
+    lineSelectLabel.classList.add('col-form-label');
+    const lineSelectLabelText = document.createTextNode('Comparison line:');
+    lineSelectLabel.appendChild(lineSelectLabelText);
 
     const lineSelect = document.createElement('select');
     lineSelect.id = 'sortLineSelect';
     lineSelect.disabled = true;
 
+    const chromosomeSelectLabel = document.createElement('label');
+    chromosomeSelectLabel.htmlFor = 'sortChromosomeSelect';
+    chromosomeSelectLabel.classList.add('col-form-label');
+    const chrSelectLabelText = document.createTextNode('Chromosomes to compare:');
+    chromosomeSelectLabel.appendChild(chrSelectLabelText);
+
+    const chromosomeSelect = document.createElement('select')
+    chromosomeSelect.id = 'sortChromosomeSelect';
+    chromosomeSelect.multiple = true;
+    chromosomeSelect.disabled = true;
+
     fieldset.appendChild(legend);
     fieldset.appendChild(radioCol);
-    fieldset.appendChild(selectLabel);
+    fieldset.appendChild(lineSelectLabel);
     fieldset.appendChild(lineSelect);
+    fieldset.appendChild(chromosomeSelectLabel);
+    fieldset.appendChild(chromosomeSelect);
     formGroup.appendChild(fieldset);
 
     formCol.appendChild(formGroup);
@@ -323,10 +336,11 @@ export default function GenotypeRenderer() {
               germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
               const { stateTable } = genotypeImporter;
 
-              dataSet = new DataSet(genomeMap, germplasmData, stateTable, defaultSort);
+              dataSet = new DataSet(genomeMap, germplasmData, stateTable);
               colorScheme = new NucleotideColorScheme(dataSet);
 
               populateLineSelect();
+              populateChromosomeSelect();
 
               genotypeCanvas.init(dataSet, colorScheme);
               genotypeCanvas.prerender();
@@ -358,10 +372,11 @@ export default function GenotypeRenderer() {
           germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
           const { stateTable } = genotypeImporter;
 
-          dataSet = new DataSet(genomeMap, germplasmData, stateTable, defaultSort);
+          dataSet = new DataSet(genomeMap, germplasmData, stateTable);
           colorScheme = new NucleotideColorScheme(dataSet);
 
           populateLineSelect();
+          populateChromosomeSelect();
 
           genotypeCanvas.init(dataSet, colorScheme);
           genotypeCanvas.prerender();
@@ -414,10 +429,11 @@ export default function GenotypeRenderer() {
         const germplasmData = genotypeImporter.parseFile(genotypeFile);
         const { stateTable } = genotypeImporter;
 
-        dataSet = new DataSet(genomeMap, germplasmData, stateTable, defaultSort);
+        dataSet = new DataSet(genomeMap, germplasmData, stateTable);
         colorScheme = new NucleotideColorScheme(dataSet);
 
         populateLineSelect();
+        populateChromosomeSelect();
 
         genotypeCanvas.init(dataSet, colorScheme);
         genotypeCanvas.prerender();
@@ -452,12 +468,27 @@ export default function GenotypeRenderer() {
   function populateLineSelect() {
     const colorLineSelect = document.getElementById('colorLineSelect');
     const sortLineSelect = document.getElementById('sortLineSelect');
-    dataSet.germplasmList.forEach((germplasm, idx) => {
+
+    let optList = dataSet.germplasmList.slice();  // Shallow copy
+    optList.sort((a, b) => (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0)));  // Alphabetic sort
+    optList.forEach(germplasm => {
       const opt = document.createElement('option');
-      opt.value = idx;
+      opt.value = germplasm.name;
       opt.text = germplasm.name;
       colorLineSelect.add(opt);
       sortLineSelect.add(opt.cloneNode(true));
+    });
+  }
+
+  function populateChromosomeSelect() {
+    const chromosomeSelect = document.getElementById('sortChromosomeSelect');
+
+    dataSet.genomeMap.chromosomes.forEach((chromosome, index) => {
+      const opt = document.createElement('option');
+      opt.value = chromosome.name;
+      opt.text = chromosome.name;
+      opt.selected = true;
+      chromosomeSelect.add(opt);
     });
   }
 
@@ -504,10 +535,11 @@ export default function GenotypeRenderer() {
       germplasmData = genotypeImporter.parseFile(result);
       const { stateTable } = genotypeImporter;
 
-      dataSet = new DataSet(genomeMap, germplasmData, stateTable, defaultSort);
+      dataSet = new DataSet(genomeMap, germplasmData, stateTable);
       colorScheme = new NucleotideColorScheme(dataSet);
 
       populateLineSelect();
+      populateChromosomeSelect();
 
       genotypeCanvas.init(dataSet, colorScheme);
       genotypeCanvas.prerender();

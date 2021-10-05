@@ -116,4 +116,9 @@ export default class NucleotideColorScheme {
 
     return gradCanvas;
   }
+
+
+  setComparisonLineIndex(index){
+    
+  }
 }
