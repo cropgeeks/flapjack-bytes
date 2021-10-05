@@ -2,7 +2,7 @@ import {germplasmSimilarityScore} from './Similarity'
 
 
 // Return a function to sort germplasms by similarity to a given line
-export default function similarityLineSort(referenceIndex, chromosomes){
+export default function SimilarityLineSort(referenceIndex, chromosomes){
   return function (dataSet){
     let similarityMap = new Map();
     for (let comparedIndex in dataSet.germplasmList){

@@ -5,11 +5,11 @@ import GenotypeImporter from './GenotypeImporter';
 import NucleotideColorScheme from './NucleotideColorScheme';
 import MapImporter from './MapImporter';
 import DataSet from './DataSet';
-import alphabeticLineSort from './AlphabeticLineSort'
-import similarityLineSort from './SimilarityLineSort'
-import importingOrderLineSort from './ImportingOrderLineSort'
+import AlphabeticLineSort from './AlphabeticLineSort'
+import SimilarityLineSort from './SimilarityLineSort'
+import ImportingOrderLineSort from './ImportingOrderLineSort'
 
-const defaultSort = similarityLineSort(0, [0]);
+const defaultSort = ImportingOrderLineSort();
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -44,17 +44,20 @@ export default function GenotypeRenderer() {
   }
 
   function createRendererComponents(domParent, width, height) {
+    // Canvas
     const canvasHolder = document.getElementById(domParent.slice(1));
 
     genotypeCanvas = new GenotypeCanvas(width, height, boxSize);
     canvasHolder.append(genotypeCanvas.canvas);
 
-    const zoomDiv = document.createElement('div');
-    zoomDiv.id = 'zoom-holder';
-
+    // Form
     const form = document.createElement('form');
     const formRow = document.createElement('div');
     formRow.classList.add('row');
+    
+    // Zoom
+    const zoomDiv = document.createElement('div');
+    zoomDiv.id = 'zoom-holder';
     const zoomCol = document.createElement('div');
     zoomCol.classList.add('col');
     const formZoomDiv = document.createElement('div');
@@ -91,6 +94,7 @@ export default function GenotypeRenderer() {
     colorButton.appendChild(textnode);
 
     const colorFieldSet = createColorSchemeFieldset();
+    const sortFieldSet = createSortFieldSet();
 
     zoomFieldSet.appendChild(zoomLegend);
     zoomFieldSet.appendChild(zoomLabel);
@@ -100,6 +104,7 @@ export default function GenotypeRenderer() {
     formRow.appendChild(zoomCol);
 
     formRow.appendChild(colorFieldSet);
+    formRow.appendChild(sortFieldSet);
     form.appendChild(formRow);
     zoomDiv.appendChild(form);
     
@@ -178,13 +183,13 @@ export default function GenotypeRenderer() {
     addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line', false, radioCol);
 
     const selectLabel = document.createElement('label');
-    selectLabel.htmlFor = 'lineSelect';
+    selectLabel.htmlFor = 'colorLineSelect';
     selectLabel.classList.add('col-form-label');
     const labelText = document.createTextNode('Comparison line:');
     selectLabel.appendChild(labelText);
 
     const lineSelect = document.createElement('select');
-    lineSelect.id = 'lineSelect';
+    lineSelect.id = 'colorLineSelect';
     lineSelect.disabled = true;
 
     fieldset.appendChild(legend);
@@ -195,6 +200,46 @@ export default function GenotypeRenderer() {
 
     formCol.appendChild(formGroup);
 
+    return formCol;
+  }
+
+  function createSortFieldSet() {
+    const formCol = document.createElement('div');
+    formCol.classList.add('col');
+
+    const formGroup = document.createElement('div');
+    formGroup.classList.add('form-group');
+
+    const fieldset = document.createElement('fieldset');
+    fieldset.classList.add('bytes-fieldset');
+
+    const legend = document.createElement('legend');
+    const legendText = document.createTextNode('Sort lines');
+    legend.appendChild(legendText);
+
+    const radioCol = document.createElement('div');
+    radioCol.classList.add('col');
+    addRadioButton('selectedSort', 'importingOrderSort', 'By importing order', true, radioCol);
+    addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
+    addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol);
+
+    const selectLabel = document.createElement('label');
+    selectLabel.htmlFor = 'sortLineSelect';
+    selectLabel.classList.add('col-form-label');
+    const labelText = document.createTextNode('Comparison line:');
+    selectLabel.appendChild(labelText);
+
+    const lineSelect = document.createElement('select');
+    lineSelect.id = 'sortLineSelect';
+    lineSelect.disabled = true;
+
+    fieldset.appendChild(legend);
+    fieldset.appendChild(radioCol);
+    fieldset.appendChild(selectLabel);
+    fieldset.appendChild(lineSelect);
+    formGroup.appendChild(fieldset);
+
+    formCol.appendChild(formGroup);
     return formCol;
   }
 
@@ -405,12 +450,14 @@ export default function GenotypeRenderer() {
   }
 
   function populateLineSelect() {
-    const lineSelect = document.getElementById('lineSelect');
+    const colorLineSelect = document.getElementById('colorLineSelect');
+    const sortLineSelect = document.getElementById('sortLineSelect');
     dataSet.germplasmList.forEach((germplasm, idx) => {
       const opt = document.createElement('option');
       opt.value = idx;
       opt.text = germplasm.name;
-      lineSelect.add(opt);
+      colorLineSelect.add(opt);
+      sortLineSelect.add(opt.cloneNode(true));
     });
   }
 

@@ -62,19 +62,19 @@ export default class CanvasController {
 
     const nucleotideRadio = document.getElementById('nucleotideScheme');
     nucleotideRadio.addEventListener('change', () => {
-      const lineSelect = document.getElementById('lineSelect');
+      const lineSelect = document.getElementById('colorLineSelect');
       lineSelect.disabled = true;
       this.genotypeCanvas.setColorScheme('nucleotideScheme');
     });
 
     const similarityRadio = document.getElementById('similarityScheme');
     similarityRadio.addEventListener('change', () => {
-      const lineSelect = document.getElementById('lineSelect');
+      const lineSelect = document.getElementById('colorLineSelect');
       lineSelect.disabled = false;
       this.genotypeCanvas.setColorScheme('similarityScheme');
     });
 
-    const lineSelect = document.getElementById('lineSelect');
+    const lineSelect = document.getElementById('colorLineSelect');
     lineSelect.addEventListener('change', (event) => {
       this.genotypeCanvas.setComparisonLineIndex(event.target.selectedIndex);
     });

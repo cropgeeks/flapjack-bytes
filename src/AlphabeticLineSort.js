@@ -1,7 +1,7 @@
 
 
 // Return a function to sort germplasms alphabetically by name
-export default function alphabeticLineSort(){
+export default function AlphabeticLineSort(){
 	return dataSet => {
 		dataSet.germplasmList.sort((a, b) => (
 			a.name < b.name ? -1 : (
