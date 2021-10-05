@@ -1,8 +1,11 @@
+import {buildSimilarityLookupTable} from './Similarity'
+
 export default class DataSet {
   constructor(genomeMap, germplasmList, stateTable, lineSort) {
     this.genomeMap = genomeMap;
     this.germplasmList = germplasmList;
     this.stateTable = stateTable;
+    this.similarityLookupTable = buildSimilarityLookupTable(this.stateTable);
     this.reorderGermplasms(lineSort);
   }
 

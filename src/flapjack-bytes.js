@@ -5,7 +5,10 @@ import GenotypeImporter from './GenotypeImporter';
 import NucleotideColorScheme from './NucleotideColorScheme';
 import MapImporter from './MapImporter';
 import DataSet from './DataSet';
-import alphabeticLineSort from './AlphabeticLineSort.js'
+import alphabeticLineSort from './AlphabeticLineSort'
+import similarityLineSort from './SimilarityLineSort'
+
+const defaultSort = similarityLineSort(0, [0]);
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -274,7 +277,7 @@ export default function GenotypeRenderer() {
               germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
               const { stateTable } = genotypeImporter;
 
-              dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+              dataSet = new DataSet(genomeMap, germplasmData, stateTable, defaultSort);
               colorScheme = new NucleotideColorScheme(dataSet);
 
               populateLineSelect();
@@ -309,7 +312,7 @@ export default function GenotypeRenderer() {
           germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
           const { stateTable } = genotypeImporter;
 
-          dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+          dataSet = new DataSet(genomeMap, germplasmData, stateTable, defaultSort);
           colorScheme = new NucleotideColorScheme(dataSet);
 
           populateLineSelect();
@@ -365,7 +368,7 @@ export default function GenotypeRenderer() {
         const germplasmData = genotypeImporter.parseFile(genotypeFile);
         const { stateTable } = genotypeImporter;
 
-        dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+        dataSet = new DataSet(genomeMap, germplasmData, stateTable, defaultSort);
         colorScheme = new NucleotideColorScheme(dataSet);
 
         populateLineSelect();
@@ -453,7 +456,7 @@ export default function GenotypeRenderer() {
       germplasmData = genotypeImporter.parseFile(result);
       const { stateTable } = genotypeImporter;
 
-      dataSet = new DataSet(genomeMap, germplasmData, stateTable, alphabeticLineSort);
+      dataSet = new DataSet(genomeMap, germplasmData, stateTable, defaultSort);
       colorScheme = new NucleotideColorScheme(dataSet);
 
       populateLineSelect();

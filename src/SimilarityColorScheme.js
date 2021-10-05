@@ -1,7 +1,10 @@
+import {similarityCases} from './Similarity'
+
 export default class SimilarityColorScheme {
   constructor(dataSet, compIndex) {
     this.dataSet = dataSet;
     this.stateTable = this.dataSet.stateTable;
+    this.lookupTable = this.dataSet.similarityLookupTable;
     // Line index of the line to be compared against
     this.compIndex = compIndex;
 
@@ -17,19 +20,7 @@ export default class SimilarityColorScheme {
       greyDark: 'rgb(192,192,192)',
     };
 
-    // These are the cases for establishing similarity to a given line
-    this.misMatch = 0;
-    this.compLine = 1;
-    this.matchComp = 2;
-    this.het1Match = 3;
-    this.het2Match = 4;
-    this.greyState = 5;
-
     const { size } = this.stateTable;
-
-    // Create this lookup table once which establishes which class of color stamp
-    // we should use for a given comparison between lines
-    this.lookupTable = this.createLookupTable(size);
 
     // An array of color stamps for each class of comparison
     this.compStamps = [size];
@@ -38,59 +29,6 @@ export default class SimilarityColorScheme {
     this.het1MatchStamps = [size];
     this.het2MatchStamps = [size];
     this.greyStamps = [size];
-  }
-
-  createLookupTable(length) {
-    const table = Array.from(Array(length), () => new Array(length));
-    const stateTableKeys = Array.from(this.stateTable.keys());
-
-    for (let i = 0; i < length; i += 1) {
-      for (let j = 0; j < length; j += 1) {
-        // Default to misMatch
-        table[i][j] = this.misMatch;
-
-        // States match
-        if (i === j) {
-          table[i][j] = this.matchComp;
-        } else {
-          const iStateKey = stateTableKeys[i];
-          const iStateValue = this.stateTable.get(iStateKey);
-          const jStateKey = stateTableKeys[j];
-          const jStateValue = this.stateTable.get(jStateKey);
-
-          // Either state is missing
-          if (iStateValue === 0 || jStateValue === 0) {
-            table[i][j] = this.greyState;
-          // Our state is homozygous and the comparison state is heterozygous 
-          } else if (iStateKey.isHomozygous && !jStateKey.isHomozygous) {
-            // if we match either allele in the comparison state give this the match class
-            if (iStateKey.allele1 === jStateKey.allele1 || iStateKey.allele1 === jStateKey.allele2) {
-              table[i][j] = this.matchComp;
-              
-            }
-          // Our state is het and comp state is homozygous
-          } else if (!iStateKey.isHomozygous && jStateKey.isHomozygous) {
-            // First allele matches
-            if (iStateKey.allele1 === jStateKey.allele1 || iStateKey.allele1 === jStateKey.allele2) {
-              table[i][j] = this.het1Match;
-              // Second allele matches
-            } else if (iStateKey.allele2 === jStateKey.allele1 || iStateKey.allele2 === jStateKey.allele2) {
-              table[i][j] = this.het2Match;
-            }
-          // Neither state is homozygous
-          } else if (!iStateKey.isHomozygous && !jStateKey.isHomozygous) {
-            // First allele matches
-            if (iStateKey.allele1 === jStateKey.allele1 || iStateKey.allele1 === jStateKey.allele2) {
-              table[i][j] = this.het1Match;
-            // Second allele matches
-            } else if (iStateKey.allele2 === jStateKey.allele1 || iStateKey.allele2 === jStateKey.allele2) {
-              table[i][j] = this.het2Match;
-            }
-          }
-        }
-      }
-    }
-    return table;
   }
 
   getState(germplasm, chromosome, marker) {
@@ -105,18 +43,21 @@ export default class SimilarityColorScheme {
 
     if (this.compIndex === germplasm) {
       stamp = this.compStamps[genoState];
-    } else if (lookupValue === this.misMatch) {
-      stamp = this.misMatchStamps[genoState];
-    } else if (lookupValue === this.compLine) {
-      stamp = this.compStamps[genoState];
-    } else if (lookupValue === this.matchComp) {
-      stamp = this.matchStamps[genoState];
-    } else if (lookupValue === this.het1Match) {
-      stamp = this.het1MatchStamps[genoState];
-    } else if (lookupValue === this.het2Match) {
-      stamp = this.het2MatchStamps[genoState];
-    } else if (lookupValue === this.greyState) {
-      stamp = this.greyStamps[genoState];
+    } else {
+      switch (lookupValue){
+        case similarityCases.misMatch:
+          stamp = this.misMatchStamps[genoState]; break;
+        case similarityCases.comparisonLine:
+          stamp = this.compStamps[genoState]; break;
+        case similarityCases.fullMatch:
+          stamp = this.matchStamps[genoState]; break;
+        case similarityCases.heterozygote1Match:
+          stamp = this.het1MatchStamps[genoState]; break;
+        case similarityCases.heterozygote2Match:
+          stamp = this.het2MatchStamps[genoState]; break;
+        case similarityCases.missing:
+          stamp = this.greyStamps[genoState]; break;
+      }
     }
 
     return stamp;
