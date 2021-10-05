@@ -4,6 +4,7 @@ export default class DataSet {
   constructor(genomeMap, germplasmList, stateTable, lineSort) {
     this.genomeMap = genomeMap;
     this.germplasmList = germplasmList;
+    this.importingOrder = germplasmList.map(germplasm => germplasm.name);
     this.stateTable = stateTable;
     this.similarityLookupTable = buildSimilarityLookupTable(this.stateTable);
     this.reorderGermplasms(lineSort);

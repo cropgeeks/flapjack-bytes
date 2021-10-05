@@ -7,6 +7,7 @@ import MapImporter from './MapImporter';
 import DataSet from './DataSet';
 import alphabeticLineSort from './AlphabeticLineSort'
 import similarityLineSort from './SimilarityLineSort'
+import importingOrderLineSort from './ImportingOrderLineSort'
 
 const defaultSort = similarityLineSort(0, [0]);
 
