@@ -1,5 +1,6 @@
 import axios from 'axios';
 import GenotypeCanvas from './genotypecanvas';
+import OverviewCanvas from './OverviewCanvas';
 import CanvasController from './canvascontroller';
 import GenotypeImporter from './GenotypeImporter';
 import NucleotideColorScheme from './NucleotideColorScheme';
@@ -17,6 +18,7 @@ export default function GenotypeRenderer() {
 
   // Variables for referring to the genotype canvas
   let genotypeCanvas;
+  let overviewCanvas;
   // TODO: need to investigate a proper clean way to implement this controller
   // functionality
   // eslint-disable-next-line no-unused-vars
@@ -43,42 +45,74 @@ export default function GenotypeRenderer() {
     genotypeCanvas.zoom(size, colorScheme);
   }
 
-  function createRendererComponents(domParent, width, height) {
+  function setChromosome(chromosomeIndex) {
+    canvasController.setChromosome(chromosomeIndex);
+  }
+
+  function createRendererComponents(domParent, width, height, overviewWidth, overviewHeight) {
     // Canvas
     const canvasHolder = document.getElementById(domParent.slice(1));
 
     genotypeCanvas = new GenotypeCanvas(width, height, boxSize, defaultLineSort);
     canvasHolder.append(genotypeCanvas.canvas);
 
+    // FIXME ?
+    if (!overviewWidth) overviewWidth = width;
+    if (!overviewHeight) overviewHeight = 200;
+
+    overviewCanvas = new OverviewCanvas(overviewWidth, overviewHeight);
+    canvasHolder.append(overviewCanvas.canvas);
+
     // Form
     const form = document.createElement('form');
     const formRow = document.createElement('div');
     formRow.classList.add('row');
     
+    // Controls
+    const controlDiv = document.createElement('div');
+    controlDiv.id = 'zoom-holder';
+    const controlCol = document.createElement('div');
+    controlCol.classList.add('col');
+    const formControlDiv = document.createElement('div');
+    formControlDiv.classList.add('form-group');
+
+    const controlFieldSet = document.createElement('fieldset');
+    controlFieldSet.classList.add('bytes-fieldset');
+
+    const controlLegend = document.createElement('legend');
+    const controlLegendText = document.createTextNode('Controls');
+    controlLegend.appendChild(controlLegendText);
+
+    // Chromosome
+    const chromosomeLabel = document.createElement('label');
+    chromosomeLabel.setAttribute('for', 'chromosomeSelect')
+    chromosomeLabel.innerHTML = 'Chromosome: ';
+
+    const chromosomeSelect = document.createElement('select');
+    chromosomeSelect.id = 'chromosomeSelect';
+    chromosomeSelect.addEventListener('change', (event) => {
+      setChromosome(event.target.selectedIndex);
+    });
+
+    const chromosomeContainer = document.createElement('div');
+    chromosomeContainer.append(chromosomeLabel);
+    chromosomeContainer.append(chromosomeSelect);
+
     // Zoom
-    const zoomDiv = document.createElement('div');
-    zoomDiv.id = 'zoom-holder';
-    const zoomCol = document.createElement('div');
-    zoomCol.classList.add('col');
-    const formZoomDiv = document.createElement('div');
-    formZoomDiv.classList.add('form-group');
-
-    const zoomFieldSet = document.createElement('fieldset');
-    zoomFieldSet.classList.add('bytes-fieldset');
-
-    const zoomLegend = document.createElement('legend');
-    const zoomLegendText = document.createTextNode('Controls');
-    zoomLegend.appendChild(zoomLegendText);
-
     const zoomLabel = document.createElement('label');
     zoomLabel.setAttribute('for', 'zoom-control');
     zoomLabel.innerHTML = 'Zoom:';
 
     const range = document.createElement('input');
+    range.id = 'zoom-control';
     range.setAttribute('type', 'range');
     range.min = 2;
     range.max = 64;
     range.value = 16;
+
+    const zoomContainer = document.createElement('div');
+    zoomContainer.append(zoomLabel);
+    zoomContainer.append(range);
 
     range.addEventListener('change', () => {
       zoom(range.value);
@@ -88,31 +122,31 @@ export default function GenotypeRenderer() {
       zoom(range.value);
     });
 
-    const colorButton = document.createElement('button');
+    /*const colorButton = document.createElement('button');
     colorButton.id = 'colorButton';
     const textnode = document.createTextNode('Color schemes...');
-    colorButton.appendChild(textnode);
+    colorButton.appendChild(textnode);*/
 
     const colorFieldSet = createColorSchemeFieldset();
     const sortFieldSet = createSortFieldSet();
 
-    zoomFieldSet.appendChild(zoomLegend);
-    zoomFieldSet.appendChild(zoomLabel);
-    zoomFieldSet.appendChild(range);
-    formZoomDiv.appendChild(zoomFieldSet);
-    zoomCol.appendChild(formZoomDiv);
-    formRow.appendChild(zoomCol);
+    controlFieldSet.appendChild(controlLegend);
+    controlFieldSet.appendChild(chromosomeContainer);
+    controlFieldSet.appendChild(zoomContainer);
+    formControlDiv.appendChild(controlFieldSet);
+    controlCol.appendChild(formControlDiv);
+    formRow.appendChild(controlCol);
 
     formRow.appendChild(colorFieldSet);
     formRow.appendChild(sortFieldSet);
     form.appendChild(formRow);
-    zoomDiv.appendChild(form);
+    controlDiv.appendChild(form);
     
-    canvasHolder.appendChild(zoomDiv);
+    canvasHolder.appendChild(controlDiv);
 
     addStyleSheet();
 
-    canvasController = new CanvasController(genotypeCanvas);
+    canvasController = new CanvasController(genotypeCanvas, overviewCanvas);
   }
 
   function addRadioButton(name, id, text, checked, parent) {
@@ -233,23 +267,10 @@ export default function GenotypeRenderer() {
     lineSelect.id = 'sortLineSelect';
     lineSelect.disabled = true;
 
-    const chromosomeSelectLabel = document.createElement('label');
-    chromosomeSelectLabel.htmlFor = 'sortChromosomeSelect';
-    chromosomeSelectLabel.classList.add('col-form-label');
-    const chrSelectLabelText = document.createTextNode('Chromosomes to compare:');
-    chromosomeSelectLabel.appendChild(chrSelectLabelText);
-
-    const chromosomeSelect = document.createElement('select')
-    chromosomeSelect.id = 'sortChromosomeSelect';
-    chromosomeSelect.multiple = true;
-    chromosomeSelect.disabled = true;
-
     fieldset.appendChild(legend);
     fieldset.appendChild(radioCol);
     fieldset.appendChild(lineSelectLabel);
     fieldset.appendChild(lineSelect);
-    fieldset.appendChild(chromosomeSelectLabel);
-    fieldset.appendChild(chromosomeSelect);
     formGroup.appendChild(fieldset);
 
     formCol.appendChild(formGroup);
@@ -302,7 +323,7 @@ export default function GenotypeRenderer() {
       });
   }
 
-  genotypeRenderer.renderGenotypesBrapi = function renderGenotypesBrapi(
+  genotypeRenderer.renderGenotypesBrapi = function renderGenotypesBrapi({
     domParent,
     width,
     height,
@@ -310,8 +331,10 @@ export default function GenotypeRenderer() {
     matrixId,
     mapId,
     authToken,
-  ) {
-    createRendererComponents(domParent, width, height);
+    overviewWidth,
+    overviewHeight,
+  }) {
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight);
     let germplasmData;
 
     const client = axios.create({ baseURL: server });
@@ -344,6 +367,9 @@ export default function GenotypeRenderer() {
 
               genotypeCanvas.init(dataSet, colorScheme);
               genotypeCanvas.prerender();
+
+              overviewCanvas.init(dataSet, colorScheme);
+              overviewCanvas.prerender();
 
               // Tells the dom parent that Flapjack has finished loading. Allows spinners
               // or similar to be disabled
@@ -381,6 +407,9 @@ export default function GenotypeRenderer() {
           genotypeCanvas.init(dataSet, colorScheme);
           genotypeCanvas.prerender();
 
+          overviewCanvas.init(dataSet, colorScheme);
+          overviewCanvas.prerender();
+
           // Tells the dom parent that Flapjack has finished loading. Allows spinners
           // or similar to be disabled
           sendEvent('FlapjackFinished', domParent);
@@ -401,8 +430,10 @@ export default function GenotypeRenderer() {
     mapFileURL,
     genotypeFileURL,
     authToken,
+    overviewWidth,
+    overviewHeight,
   ) {
-    createRendererComponents(domParent, width, height);
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight);
 
     let mapFile;
     let genotypeFile;
@@ -437,6 +468,9 @@ export default function GenotypeRenderer() {
 
         genotypeCanvas.init(dataSet, colorScheme);
         genotypeCanvas.prerender();
+
+        overviewCanvas.init(dataSet, colorScheme);
+        overviewCanvas.prerender();
 
         // Tells the dom parent that Flapjack has finished loading. Allows spinners
         // or similar to be disabled
@@ -481,15 +515,17 @@ export default function GenotypeRenderer() {
   }
 
   function populateChromosomeSelect() {
-    const chromosomeSelect = document.getElementById('sortChromosomeSelect');
+    const chromosomeSelect = document.getElementById('chromosomeSelect');
 
     dataSet.genomeMap.chromosomes.forEach((chromosome, index) => {
       const opt = document.createElement('option');
-      opt.value = chromosome.name;
+      opt.value = index;
       opt.text = chromosome.name;
       opt.selected = true;
       chromosomeSelect.add(opt);
     });
+
+    chromosomeSelect.selectedIndex = 0;
   }
 
   genotypeRenderer.renderGenotypesFile = function renderGenotypesFile(
@@ -498,8 +534,10 @@ export default function GenotypeRenderer() {
     height,
     mapFileDom,
     genotypeFileDom,
+    overviewWidth,
+    overviewHeight,
   ) {
-    createRendererComponents(domParent, width, height);
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight);
     // let qtls = [];
     let germplasmData;
 
@@ -543,6 +581,9 @@ export default function GenotypeRenderer() {
 
       genotypeCanvas.init(dataSet, colorScheme);
       genotypeCanvas.prerender();
+
+      overviewCanvas.init(dataSet, colorScheme);
+      overviewCanvas.prerender();
     });
 
     return genotypeRenderer;

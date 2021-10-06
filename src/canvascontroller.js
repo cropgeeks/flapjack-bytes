@@ -4,8 +4,10 @@ import ImportingOrderLineSort from './ImportingOrderLineSort'
 
 
 export default class CanvasController {
-  constructor(genotypeCanvas) {
+  constructor(genotypeCanvas, overviewCanvas) {
     this.genotypeCanvas = genotypeCanvas;
+    this.overviewCanvas = overviewCanvas;
+    this.chromosomeIndex = 0;
     this.dragStartX = null;
     this.dragStartY = null;
     this.draggingCanvas = false;
@@ -90,43 +92,36 @@ export default class CanvasController {
     const importingOrderRadio = document.getElementById('importingOrderSort');
     importingOrderRadio.addEventListener('change', () => {
       const sortLineSelect = document.getElementById('sortLineSelect');
-      const chromosomeSelect = document.getElementById('sortChromosomeSelect');
       sortLineSelect.disabled = false;
-      chromosomeSelect.disabled = true;
       this.genotypeCanvas.setLineSort(new ImportingOrderLineSort());
     });
 
     const alphabetOrderRadio = document.getElementById('alphabeticSort');
     alphabetOrderRadio.addEventListener('change', () => {
       const sortLineSelect = document.getElementById('sortLineSelect');
-      const chromosomeSelect = document.getElementById('sortChromosomeSelect');
       sortLineSelect.disabled = false;
-      chromosomeSelect.disabled = true;
       this.genotypeCanvas.setLineSort(new AlphabeticLineSort());
     });
 
     const similarityOrderRadio = document.getElementById('similaritySort');
     similarityOrderRadio.addEventListener('change', () => {
       const sortLineSelect = document.getElementById('sortLineSelect');
-      const chromosomeSelect = document.getElementById('sortChromosomeSelect');
       sortLineSelect.disabled = false;
-      chromosomeSelect.disabled = false;
 
       const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
-      const chromosomeNames = Array.from(chromosomeSelect.options).filter(option => option.selected).map(option => option.text);
-      this.genotypeCanvas.setLineSort(new SimilarityLineSort(referenceName, chromosomeNames));
+      this.genotypeCanvas.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
     });
 
     const sortLineSelect = document.getElementById('sortLineSelect');
     sortLineSelect.addEventListener('change', (event) => {
       this.genotypeCanvas.setSortComparisonLine(event.target.options[event.target.selectedIndex].value);
-    })
-
-    const sortChromosomeSelect = document.getElementById('sortChromosomeSelect');
-    sortChromosomeSelect.addEventListener('change', (event) => {
-      const chromosomeNames = Array.from(event.target.options).filter(option => option.selected).map(option => option.text);
-      this.genotypeCanvas.setSortComparisonChromosomes(chromosomeNames);
     });
+  }
+
+  setChromosome(chromosomeIndex) {
+    this.chromosomeIndex = chromosomeIndex;
+    this.genotypeCanvas.setChromosome(chromosomeIndex);
+    this.overviewCanvas.setChromosome(chromosomeIndex);
   }
 
   getCanvasMouseLocation(clientX, clientY) {

@@ -8,4 +8,8 @@ export default class ImportingOrderLineSort {
   sort(dataSet){
     dataSet.germplasmList.sort((a, b) => dataSet.importingOrder.indexOf(a.name) - dataSet.importingOrder.indexOf(b.name));
   }
+
+  setChromosomes(chromosomeIndices){
+    
+  }
 }

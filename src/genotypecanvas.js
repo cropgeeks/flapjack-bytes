@@ -740,8 +740,8 @@ export default class GenotypeCanvas {
     this.sortLines();
   }
 
-  setSortComparisonChromosomes(chromosomeNames) {
-    this.lineSort.setChromosomes(chromosomeNames);
+  setChromosome(chromosomeIndex) {
+    this.lineSort.setChromosomes([chromosomeIndex]);
     this.sortLines();
   }
 
