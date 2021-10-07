@@ -49,6 +49,13 @@ export default function GenotypeRenderer() {
     canvasController.setChromosome(chromosomeIndex);
   }
 
+  function clearParent(domParent) {
+    const canvasHolder = document.getElementById(domParent.slice(1));
+    while (canvasHolder.firstChild){
+      canvasHolder.removeChild(canvasHolder.firstChild);
+    }
+  }
+
   function createRendererComponents(domParent, width, height, overviewWidth, overviewHeight) {
     // Canvas
     const canvasHolder = document.getElementById(domParent.slice(1));
@@ -334,6 +341,7 @@ export default function GenotypeRenderer() {
     overviewWidth,
     overviewHeight,
   }) {
+    clearParent(domParent)
     createRendererComponents(domParent, width, height, overviewWidth, overviewHeight);
     let germplasmData;
 
@@ -433,6 +441,7 @@ export default function GenotypeRenderer() {
     overviewWidth,
     overviewHeight,
   ) {
+    clearParent(domParent);
     createRendererComponents(domParent, width, height, overviewWidth, overviewHeight);
 
     let mapFile;
@@ -537,6 +546,7 @@ export default function GenotypeRenderer() {
     overviewWidth,
     overviewHeight,
   ) {
+    clearParent(domParent);
     createRendererComponents(domParent, width, height, overviewWidth, overviewHeight);
     // let qtls = [];
     let germplasmData;
@@ -551,6 +561,8 @@ export default function GenotypeRenderer() {
     mapPromise = mapPromise.then((result) => {
       const mapImporter = new MapImporter();
       genomeMap = mapImporter.parseFile(result);
+    }).catch(reason => {
+      genomeMap = undefined;
     });
 
     // // Then QTL data
