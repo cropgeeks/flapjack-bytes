@@ -1,6 +1,4 @@
 import ScrollBar from './ScrollBar';
-import NucleotideColorScheme from './NucleotideColorScheme';
-import SimilarityColorScheme from './SimilarityColorScheme';
 
 export default class GenotypeCanvas {
   constructor(width, height, boxSize, lineSort) {
@@ -741,15 +739,8 @@ export default class GenotypeCanvas {
   }
 
   setColorScheme(scheme) {
-    if (scheme === 'nucleotideScheme') {
-      this.colorScheme = new NucleotideColorScheme(this.dataSet);
-      this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
-      this.prerender(true);
-    } else if (scheme === 'similarityScheme') {
-      this.colorScheme = new SimilarityColorScheme(this.dataSet, this.colorComparisonLineIndex);
-      this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
-      this.prerender(true);
-    }
+    this.colorScheme = scheme;
+    this.prerender(true);
   }
 
   setColorComparisonLine(comparedName) {

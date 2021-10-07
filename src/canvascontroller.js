@@ -1,6 +1,8 @@
 import AlphabeticLineSort from './AlphabeticLineSort'
 import SimilarityLineSort from './SimilarityLineSort'
 import ImportingOrderLineSort from './ImportingOrderLineSort'
+import NucleotideColorScheme from './NucleotideColorScheme';
+import SimilarityColorScheme from './SimilarityColorScheme';
 
 
 export default class CanvasController {
@@ -72,14 +74,26 @@ export default class CanvasController {
     nucleotideRadio.addEventListener('change', () => {
       const lineSelect = document.getElementById('colorLineSelect');
       lineSelect.disabled = true;
-      this.genotypeCanvas.setColorScheme('nucleotideScheme');
+
+      let colorScheme = new NucleotideColorScheme(this.genotypeCanvas.dataSet);
+      colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
+      this.genotypeCanvas.setColorScheme(colorScheme);
+      this.overviewCanvas.setColorScheme(colorScheme);
     });
 
     const similarityRadio = document.getElementById('similarityScheme');
     similarityRadio.addEventListener('change', () => {
       const lineSelect = document.getElementById('colorLineSelect');
       lineSelect.disabled = false;
-      this.genotypeCanvas.setColorScheme('similarityScheme');
+
+      const referenceName = lineSelect.options[lineSelect.selectedIndex].value;
+      const referenceIndex = this.genotypeCanvas.dataSet.germplasmList.findIndex(germplasm => germplasm.name == referenceName)
+      
+      let colorScheme = new SimilarityColorScheme(this.genotypeCanvas.dataSet, referenceIndex);
+      colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
+      this.genotypeCanvas.setColorScheme(colorScheme);
+      this.genotypeCanvas.setColorComparisonLine(referenceName);
+      this.overviewCanvas.setColorScheme(colorScheme);
     });
 
     const lineSelect = document.getElementById('colorLineSelect');
@@ -94,6 +108,7 @@ export default class CanvasController {
       const sortLineSelect = document.getElementById('sortLineSelect');
       sortLineSelect.disabled = false;
       this.genotypeCanvas.setLineSort(new ImportingOrderLineSort());
+      this.overviewCanvas.prerender(true);
     });
 
     const alphabetOrderRadio = document.getElementById('alphabeticSort');
@@ -101,6 +116,7 @@ export default class CanvasController {
       const sortLineSelect = document.getElementById('sortLineSelect');
       sortLineSelect.disabled = false;
       this.genotypeCanvas.setLineSort(new AlphabeticLineSort());
+      this.overviewCanvas.prerender(true);
     });
 
     const similarityOrderRadio = document.getElementById('similaritySort');
@@ -110,6 +126,7 @@ export default class CanvasController {
 
       const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
       this.genotypeCanvas.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
+      this.overviewCanvas.prerender(true);
     });
 
     const sortLineSelect = document.getElementById('sortLineSelect');

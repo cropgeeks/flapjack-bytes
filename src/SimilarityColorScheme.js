@@ -1,4 +1,5 @@
 import {similarityCases} from './Similarity'
+import {buildCSSColors} from './Colors'
 
 export default class SimilarityColorScheme {
   constructor(dataSet, compIndex) {
@@ -9,16 +10,19 @@ export default class SimilarityColorScheme {
     this.compIndex = compIndex;
 
     this.colors = {
-      compGreenLight: 'rgb(90,180,90)',
-      compGreenDark: 'rgb(50,100,50)',
-      greenLight: 'rgb(171,255,171)',
-      greenDark: 'rgb(86,179,86)',
-      redLight: 'rgb(255,171,171)',
-      redDark: 'rgb(179,86,86)',
-      white: 'rgb(255,255,255)',
-      greyLight: 'rgb(210,210,210)',
-      greyDark: 'rgb(192,192,192)',
+      compGreenLight: [90, 180, 90],
+      compGreenDark: [50, 100, 50],
+      greenLight: [171, 255, 171],
+      greenDark: [86, 179, 86],
+      redLight: [255, 171, 171],
+      redDark: [179, 86, 86],
+      white: [255, 255, 255],
+      greyLight: [210, 210, 210],
+      greyDark: [192, 192, 192],
+      heterozygotePrimary: [100, 100, 100],
     };
+
+    this.cssColors = buildCSSColors(this.colors);
 
     const { size } = this.stateTable;
 
@@ -31,14 +35,34 @@ export default class SimilarityColorScheme {
     this.greyStamps = [size];
   }
 
-  getState(germplasm, chromosome, marker) {
+  getColor(germplasm, chromosome, marker){
     const compState = this.dataSet.genotypeFor(this.compIndex, chromosome, marker);
     const genoState = this.dataSet.genotypeFor(germplasm, chromosome, marker);
+    const lookupValue = this.lookupTable[genoState][compState];
 
+    if (genoState === 0){
+      return this.colors.white;
+    } else {
+      switch (lookupValue){
+        case similarityCases.misMatch:
+          return this.colors.redLight;
+        case similarityCases.comparisonLine:
+          return this.colors.compGreenLight;
+        case similarityCases.fullMatch:
+          return this.colors.greenLight;
+        case similarityCases.heterozygote1Match:
+        case similarityCases.heterozygote2Match:
+          return this.colors.heterozygotePrimary;
+        case similarityCases.missing:
+          return this.colors.greyDark;
+      }
+    }
+  }
+
+  getState(germplasm, chromosome, marker) {
     let stamp;
-
-    // Use the lookup value to determine which class of color stamps we should
-    // return
+    const compState = this.dataSet.genotypeFor(this.compIndex, chromosome, marker);
+    const genoState = this.dataSet.genotypeFor(germplasm, chromosome, marker);
     const lookupValue = this.lookupTable[genoState][compState];
 
     if (this.compIndex === germplasm) {
@@ -76,17 +100,17 @@ export default class SimilarityColorScheme {
     let index = 0;
     this.stateTable.forEach((value, genotype) => {
       if (genotype.isHomozygous) {
-        this.compStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.colors.compGreenLight, this.colors.compGreenDark);
-        this.matchStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.colors.greenLight, this.colors.greenDark);
-        this.misMatchStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.colors.redLight, this.colors.redDark);
-        this.greyStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.colors.greyLight, this.colors.greyDark);
+        this.compStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.cssColors.compGreenLight, this.cssColors.compGreenDark);
+        this.matchStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.cssColors.greenLight, this.cssColors.greenDark);
+        this.misMatchStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.cssColors.redLight, this.cssColors.redDark);
+        this.greyStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.cssColors.greyLight, this.cssColors.greyDark);
       } else {
-        this.compStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.colors.compGreenLight, this.colors.compGreenDark, this.colors.compGreenLight, this.colors.compGreenDark);
-        this.matchStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.colors.greenLight, this.colors.greenDark, this.colors.greenLight, this.colors.greenDark);
-        this.misMatchStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.colors.redLight, this.colors.redDark, this.colors.redLight, this.colors.redDark);
-        this.het1MatchStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.colors.greenLight, this.colors.greenDark, this.colors.redLight, this.colors.redDark);
-        this.het2MatchStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.colors.redLight, this.colors.redDark, this.colors.greenLight, this.colors.greenDark);
-        this.greyStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.colors.greyLight, this.colors.greyDark, this.colors.greyLight, this.colors.greyDark);
+        this.compStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.cssColors.compGreenLight, this.cssColors.compGreenDark, this.cssColors.compGreenLight, this.cssColors.compGreenDark);
+        this.matchStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.cssColors.greenLight, this.cssColors.greenDark, this.cssColors.greenLight, this.cssColors.greenDark);
+        this.misMatchStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.cssColors.redLight, this.cssColors.redDark, this.cssColors.redLight, this.cssColors.redDark);
+        this.het1MatchStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.cssColors.greenLight, this.cssColors.greenDark, this.cssColors.redLight, this.cssColors.redDark);
+        this.het2MatchStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.cssColors.redLight, this.cssColors.redDark, this.cssColors.greenLight, this.cssColors.greenDark);
+        this.greyStamps[index] = this.drawHetSquare(size, genotype, font, fontSize, this.cssColors.greyLight, this.cssColors.greyDark, this.cssColors.greyLight, this.cssColors.greyDark);
       }
       index += 1;
     });
@@ -99,7 +123,7 @@ export default class SimilarityColorScheme {
     const gradientCtx = gradCanvas.getContext('2d');
 
     if (genotype.allele1 === '') {
-      colorLight = colorDark = this.colors.white;
+      colorLight = colorDark = this.cssColors.white;
     }
 
     const lingrad = gradientCtx.createLinearGradient(0, 0, size, size);
@@ -125,7 +149,7 @@ export default class SimilarityColorScheme {
     const gradientCtx = gradCanvas.getContext('2d');
 
     if (genotype.allele1 === '') {
-      color1Light = color1Dark = color2Light = color2Dark = this.colors.white;
+      color1Light = color1Dark = color2Light = color2Dark = this.cssColors.white;
     }
 
     const lingrad = gradientCtx.createLinearGradient(0, 0, size, size);
