@@ -50,7 +50,7 @@ export default class GenotypeImporter {
     return data;
   }
 
-  processFileLine(line, markerIndexesByNamesAndChromosomes) {
+  processFileLine(line, markerNameMap) {
     if (line.startsWith('#') || (!line || line.length === 0)) {
       return;
     }
@@ -59,37 +59,46 @@ export default class GenotypeImporter {
       const markerNames = line.split('\t');
 
       markerNames.slice(1).forEach((name, idx) => {
-        const indices = this.genomeMap.markerByName(name, markerIndexesByNamesAndChromosomes);
-        if (indices !== -1) {
-          this.markerIndices.set(idx, indices);
-        }
+        // const indices = this.genomeMap.markerByName(name, markerIndexesByNamesAndChromosomes);
+        const indices = markerNameMap.get(name);
+        //if (indices) {
+        this.markerIndices.set(idx, indices);
+        //}
       });
+      console.log(this.markerIndices);
       // TODO: write code to deal with cases where we don't have a map here...
       // console.log(this.genomeMap.totalMarkerCount());
-      return;
-    }
-    const tokens = line.split('\t');
-    const lineName = tokens[0];
-    const genotypeData = this.initGenotypeData();
-    tokens.slice(1).forEach((state, idx) => {
-      const indices = this.markerIndices.get(idx);
-      // console.log(indices);
-      if (indices !== undefined && indices !== -1) {
-        genotypeData[indices.chromosome][indices.markerIndex] = this.getState(state);
-      }
-    });
+    } else {
+      const tokens = line.split('\t');
+      const lineName = tokens[0];
+      const genotypeData = this.initGenotypeData();
+      tokens.slice(1).forEach((state, idx) => {
+        const indices = this.markerIndices.get(idx);
+        if (indices !== undefined && indices !== -1) {
+          genotypeData[indices.chromosome][indices.markerIndex] = this.getState(state);
+        }
+      });
 
-    const germplasm = new Germplasm(lineName, genotypeData);
-    this.germplasmList.push(germplasm);
+      const germplasm = new Germplasm(lineName, genotypeData);
+      this.germplasmList.push(germplasm);
+    }
   }
 
   parseFile(fileContents) {
     var b4 = Date.now();
     
-    // pre-calculating this index array once for all brings significantly faster loading
+    /*// pre-calculating this index array once for all brings significantly faster loading
     var markerIndexesByNamesAndChromosomes = new Array();
     this.genomeMap.chromosomes.forEach((chromosome, idx) => {
       markerIndexesByNamesAndChromosomes[idx] = chromosome.markers.map(m => m.name);
+    });*/
+
+    // Pre-mapping the marker names to their position for faster loading
+    let markerNameMap = new Map();
+    this.genomeMap.chromosomes.forEach((chromosome, chromosomeIndex) => {
+      chromosome.markers.forEach((marker, markerIndex) => {
+        markerNameMap.set(marker.name, {chromosome: chromosomeIndex, markerIndex});
+      });
     });
 
     this.processedLines = 0;
@@ -97,7 +106,7 @@ export default class GenotypeImporter {
     const lines = fileContents.split(/\r?\n/);
     this.totalLineCount = lines.length;
     for (let line = 0; line < this.totalLineCount; line += 1) {
-      this.processFileLine(lines[line], markerIndexesByNamesAndChromosomes);
+      this.processFileLine(lines[line], markerNameMap);
       this.processedLines = line;
     }
     console.log("parseFile took " + (Date.now() - b4) + "ms");
