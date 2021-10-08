@@ -107,7 +107,7 @@ export default class CanvasController {
     const importingOrderRadio = document.getElementById('importingOrderSort');
     importingOrderRadio.addEventListener('change', () => {
       const sortLineSelect = document.getElementById('sortLineSelect');
-      sortLineSelect.disabled = false;
+      sortLineSelect.disabled = true;
       this.genotypeCanvas.setLineSort(new ImportingOrderLineSort());
       this.overviewCanvas.prerender(true);
     });
@@ -115,7 +115,7 @@ export default class CanvasController {
     const alphabetOrderRadio = document.getElementById('alphabeticSort');
     alphabetOrderRadio.addEventListener('change', () => {
       const sortLineSelect = document.getElementById('sortLineSelect');
-      sortLineSelect.disabled = false;
+      sortLineSelect.disabled = true;
       this.genotypeCanvas.setLineSort(new AlphabeticLineSort());
       this.overviewCanvas.prerender(true);
     });

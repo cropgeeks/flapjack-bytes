@@ -71,7 +71,7 @@ export default function GenotypeRenderer() {
     canvasHolder.append(overviewCanvas.canvas);
 
     // Form
-    const form = document.createElement('form');
+    const form = document.createElement('div');
     const formRow = document.createElement('div');
     formRow.classList.add('row');
     
@@ -136,6 +136,7 @@ export default function GenotypeRenderer() {
 
     const colorFieldSet = createColorSchemeFieldset();
     const sortFieldSet = createSortFieldSet();
+    const exportFieldSet = createExportFieldSet();
 
     controlFieldSet.appendChild(controlLegend);
     controlFieldSet.appendChild(chromosomeContainer);
@@ -146,6 +147,7 @@ export default function GenotypeRenderer() {
 
     formRow.appendChild(colorFieldSet);
     formRow.appendChild(sortFieldSet);
+    formRow.appendChild(exportFieldSet);
     form.appendChild(formRow);
     controlDiv.appendChild(form);
     
@@ -278,6 +280,57 @@ export default function GenotypeRenderer() {
     fieldset.appendChild(radioCol);
     fieldset.appendChild(lineSelectLabel);
     fieldset.appendChild(lineSelect);
+    formGroup.appendChild(fieldset);
+
+    formCol.appendChild(formGroup);
+    return formCol;
+  }
+
+  function createExportFieldSet() {
+    const formCol = document.createElement('div');
+    formCol.classList.add('col');
+
+    const formGroup = document.createElement('div');
+    formGroup.classList.add('form-group');
+
+    const fieldset = document.createElement('fieldset');
+    fieldset.classList.add('bytes-fieldset');
+
+    const legend = document.createElement('legend');
+    const legendText = document.createTextNode('Export');
+    legend.appendChild(legendText);
+
+    const exportViewButton = document.createElement('button')
+    const exportViewText = document.createTextNode('Export view');
+    exportViewButton.appendChild(exportViewText);
+
+    exportViewButton.addEventListener('click', function(e) {
+      const element = document.createElement('a');
+      element.setAttribute('href', genotypeCanvas.toDataURL('image/png'));
+      element.setAttribute('download', genotypeCanvas.exportName() + '.png');
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    });
+
+    const exportOverviewButton = document.createElement('button');
+    const exportOverviewText = document.createTextNode('Export overview');
+    exportOverviewButton.appendChild(exportOverviewText);
+
+    exportOverviewButton.addEventListener('click', function(e) {
+      const element = document.createElement('a');
+      element.setAttribute('href', overviewCanvas.toDataURL('image/png'));
+      element.setAttribute('download', overviewCanvas.exportName() + '.png');
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    });
+
+    fieldset.appendChild(legend);
+    fieldset.appendChild(exportViewButton);
+    fieldset.appendChild(exportOverviewButton);
     formGroup.appendChild(fieldset);
 
     formCol.appendChild(formGroup);
