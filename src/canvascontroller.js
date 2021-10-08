@@ -99,6 +99,7 @@ export default class CanvasController {
     const lineSelect = document.getElementById('colorLineSelect');
     lineSelect.addEventListener('change', (event) => {
       this.genotypeCanvas.setColorComparisonLine(event.target.options[event.target.selectedIndex].value);
+      this.overviewCanvas.prerender(true);
     });
 
     // Sort
@@ -132,6 +133,7 @@ export default class CanvasController {
     const sortLineSelect = document.getElementById('sortLineSelect');
     sortLineSelect.addEventListener('change', (event) => {
       this.genotypeCanvas.setSortComparisonLine(event.target.options[event.target.selectedIndex].value);
+      this.overviewCanvas.prerender(true);
     });
   }
 

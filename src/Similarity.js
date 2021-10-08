@@ -34,20 +34,20 @@ function buildSimilarityLookupTable(stateTable){
       // Default to misMatch
       table[i][j] = similarityCases.misMatch;
 
-      // States match
-      if (i === j) {
+      const iStateKey = stateTableKeys[i];
+      const iStateValue = stateTable.get(iStateKey);
+      const jStateKey = stateTableKeys[j];
+      const jStateValue = stateTable.get(jStateKey);
+
+      // Either state is missing
+      if (iStateValue === 0 || jStateValue === 0) {
+        table[i][j] = similarityCases.missing;
+      // Same state
+      } else if (i === j) {
         table[i][j] = similarityCases.fullMatch;
       } else {
-        const iStateKey = stateTableKeys[i];
-        const iStateValue = stateTable.get(iStateKey);
-        const jStateKey = stateTableKeys[j];
-        const jStateValue = stateTable.get(jStateKey);
-
-        // Either state is missing
-        if (iStateValue === 0 || jStateValue === 0) {
-          table[i][j] = similarityCases.missing;
         // Our state is homozygous and the comparison state is heterozygous 
-        } else if (iStateKey.isHomozygous && !jStateKey.isHomozygous) {
+        if (iStateKey.isHomozygous && !jStateKey.isHomozygous) {
           // if we match either allele in the comparison state give this the match class
           if (iStateKey.allele1 === jStateKey.allele1 || iStateKey.allele1 === jStateKey.allele2) {
             table[i][j] = similarityCases.fullMatch;

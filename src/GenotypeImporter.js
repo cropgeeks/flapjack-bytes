@@ -6,8 +6,11 @@ import Chromosome from './Chromosome';
 
 export default class GenotypeImporter {
   constructor(genomeMap) {
+    const missingGenotype = Genotype.fromString('');
     this.rawToGenoMap = new Map();
-    this.rawToGenoMap.set('', Genotype.fromString(''));
+    this.rawToGenoMap.set('', missingGenotype);
+    this.rawToGenoMap.set('-', missingGenotype);
+
     this.stateTable = new Map();
     this.stateTable.set(this.rawToGenoMap.get(''), 0);
 
@@ -36,7 +39,7 @@ export default class GenotypeImporter {
         this.stateTable.set(genotype, index);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
     return index;
   }
@@ -65,7 +68,6 @@ export default class GenotypeImporter {
         this.markerIndices.set(idx, indices);
         //}
       });
-      console.log(this.markerIndices);
       // TODO: write code to deal with cases where we don't have a map here...
       // console.log(this.genomeMap.totalMarkerCount());
     } else {
