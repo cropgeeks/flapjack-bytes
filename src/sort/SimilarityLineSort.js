@@ -1,4 +1,4 @@
-import {germplasmSimilarityScore} from './Similarity'
+import {germplasmSimilarityScore} from '../Similarity'
 
 
 export default class SimilarityLineSort {

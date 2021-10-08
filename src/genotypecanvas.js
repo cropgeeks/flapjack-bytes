@@ -794,8 +794,6 @@ export default class GenotypeCanvas {
     tmpContext.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
     tmpContext.drawImage(this.canvas, 0, 0);
 
-    console.log(type, encoderOptions, tmpCanvas.width, tmpCanvas.height);
-
     return tmpCanvas.toDataURL(type, encoderOptions);
   }
 

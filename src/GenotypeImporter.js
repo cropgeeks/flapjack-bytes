@@ -6,13 +6,12 @@ import Chromosome from './Chromosome';
 
 export default class GenotypeImporter {
   constructor(genomeMap) {
-    const missingGenotype = Genotype.fromString('');
-    this.rawToGenoMap = new Map();
-    this.rawToGenoMap.set('', missingGenotype);
-    this.rawToGenoMap.set('-', missingGenotype);
+    this.rawToIndexMap = new Map();
+    this.rawToIndexMap.set('', 0);
+    this.rawToIndexMap.set('-', 0);
 
     this.stateTable = new Map();
-    this.stateTable.set(this.rawToGenoMap.get(''), 0);
+    this.stateTable.set(Genotype.fromString(''), 0);
 
     this.genomeMap = genomeMap;
     this.markerIndices = new Map();
@@ -24,19 +23,14 @@ export default class GenotypeImporter {
   getState(genoString) {
     let index = 0;
     try {
-      let genotype = this.rawToGenoMap.get(genoString);
-      if (genotype === undefined) {
-        genotype = Genotype.fromString(genoString);
-        this.rawToGenoMap.set(genoString, genotype);
-      }
+      index = this.rawToIndexMap.get(genoString);
 
-      index = this.stateTable.get(genotype);
-
-      // If the genotype is not found in the map, we have a new genotype, so set
-      // its index in the map to the size of the map
-      if (index === undefined) {
+      // New genotype, so add it to the stateTable and set its index to the size of the map
+      if (index === undefined){
+        const genotype = Genotype.fromString(genoString);
         index = this.stateTable.size;
         this.stateTable.set(genotype, index);
+        this.rawToIndexMap.set(genoString, index);
       }
     } catch (error) {
       console.error(error);

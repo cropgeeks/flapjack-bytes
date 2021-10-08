@@ -1,4 +1,4 @@
-import {similarityCases} from './Similarity'
+import {similarityCases} from '../Similarity'
 import {buildCSSColors} from './Colors'
 
 export default class SimilarityColorScheme {

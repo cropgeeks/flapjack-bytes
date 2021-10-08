@@ -3,12 +3,10 @@ import GenotypeCanvas from './genotypecanvas';
 import OverviewCanvas from './OverviewCanvas';
 import CanvasController from './canvascontroller';
 import GenotypeImporter from './GenotypeImporter';
-import NucleotideColorScheme from './NucleotideColorScheme';
+import NucleotideColorScheme from './color/NucleotideColorScheme';
 import MapImporter from './MapImporter';
 import DataSet from './DataSet';
-import AlphabeticLineSort from './AlphabeticLineSort'
-import SimilarityLineSort from './SimilarityLineSort'
-import ImportingOrderLineSort from './ImportingOrderLineSort'
+import ImportingOrderLineSort from './sort/ImportingOrderLineSort'
 
 const defaultLineSort = new ImportingOrderLineSort();
 

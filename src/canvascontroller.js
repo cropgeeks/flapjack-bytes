@@ -1,8 +1,8 @@
-import AlphabeticLineSort from './AlphabeticLineSort'
-import SimilarityLineSort from './SimilarityLineSort'
-import ImportingOrderLineSort from './ImportingOrderLineSort'
-import NucleotideColorScheme from './NucleotideColorScheme';
-import SimilarityColorScheme from './SimilarityColorScheme';
+import AlphabeticLineSort from './sort/AlphabeticLineSort'
+import SimilarityLineSort from './sort/SimilarityLineSort'
+import ImportingOrderLineSort from './sort/ImportingOrderLineSort'
+import NucleotideColorScheme from './color/NucleotideColorScheme';
+import SimilarityColorScheme from './color/SimilarityColorScheme';
 
 
 export default class CanvasController {
