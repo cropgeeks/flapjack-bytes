@@ -424,11 +424,7 @@ export default function GenotypeRenderer() {
               populateLineSelect();
               populateChromosomeSelect();
 
-              genotypeCanvas.init(dataSet, colorScheme);
-              genotypeCanvas.prerender();
-
-              overviewCanvas.init(dataSet, colorScheme);
-              overviewCanvas.prerender();
+              canvasController.init(dataSet, colorScheme);
 
               // Tells the dom parent that Flapjack has finished loading. Allows spinners
               // or similar to be disabled
@@ -463,11 +459,7 @@ export default function GenotypeRenderer() {
           populateLineSelect();
           populateChromosomeSelect();
 
-          genotypeCanvas.init(dataSet, colorScheme);
-          genotypeCanvas.prerender();
-
-          overviewCanvas.init(dataSet, colorScheme);
-          overviewCanvas.prerender();
+          canvasController.init(dataSet, colorScheme);
 
           // Tells the dom parent that Flapjack has finished loading. Allows spinners
           // or similar to be disabled
@@ -526,11 +518,7 @@ export default function GenotypeRenderer() {
         populateLineSelect();
         populateChromosomeSelect();
 
-        genotypeCanvas.init(dataSet, colorScheme);
-        genotypeCanvas.prerender();
-
-        overviewCanvas.init(dataSet, colorScheme);
-        overviewCanvas.prerender();
+        canvasController.init(dataSet, colorScheme);
 
         // Tells the dom parent that Flapjack has finished loading. Allows spinners
         // or similar to be disabled
@@ -642,11 +630,7 @@ export default function GenotypeRenderer() {
       populateLineSelect();
       populateChromosomeSelect();
 
-      genotypeCanvas.init(dataSet, colorScheme);
-      genotypeCanvas.prerender();
-
-      overviewCanvas.init(dataSet, colorScheme);
-      overviewCanvas.prerender();
+      canvasController.init(dataSet, colorScheme);
     });
 
     return genotypeRenderer;

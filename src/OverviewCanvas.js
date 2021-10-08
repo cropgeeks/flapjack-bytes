@@ -15,6 +15,8 @@ export default class OverviewCanvas {
     this.backBuffer.height = height;
     this.backContext = this.backBuffer.getContext('2d');
 
+    this.windowRect = {x: 0, y: 0, width: 0, height: 0};
+
     this.dataSet = undefined;
     this.colorScheme = undefined;
     this.selectedChromosome = 0;
@@ -28,22 +30,45 @@ export default class OverviewCanvas {
 
   prerender (redraw){
     if (redraw){
-      this.renderImage(this.drawingContext, this.width, this.height);
+      this.renderImage(this.backContext, this.width, this.height);
     }
+
+    this.drawingContext.drawImage(this.backBuffer, 0, 0);
+    this.renderWindow();
   }
+
+  renderWindow (){
+    this.drawingContext.save();
+    this.drawingContext.fillStyle = 'rgba(0,0,0,0.2)';
+    this.drawingContext.strokeStyle = 'rgba(255,0,0,0.8)';
+    this.drawingContext.lineWidth = 1;
+    this.drawingContext.fillRect(this.windowRect.x, this.windowRect.y, this.windowRect.width, this.windowRect.height);
+    this.drawingContext.strokeRect(this.windowRect.x, this.windowRect.y, this.windowRect.width, this.windowRect.height);
+    this.drawingContext.restore();
+  }
+
 
   renderImage (context, width, height){
     const imageData = this.createImage(context.createImageData(width, height), width, height);
     context.putImageData(imageData, 0, 0);
   }
 
+  // Calculate the number of markers and germplasms per pixel in the overview
+  renderingScale (width, height){
+    return {
+      markersPerPixel: this.dataSet.markerCountOn(this.selectedChromosome) / width,
+      germplasmsPerPixel: this.dataSet.germplasmList.length / height,
+    }
+  }
+
   createImage (imageData, width, height){
+    const scale = this.renderingScale(width, height);
     const germplasmsPerPixel = this.dataSet.germplasmList.length / height;
     const markersPerPixel = this.dataSet.markerCountOn(this.selectedChromosome) / width;
     for (let x = 0; x < width; x += 1){
       for (let y = 0; y < height; y += 1){
-        const marker = Math.floor(x * markersPerPixel);
-        const germplasm = Math.floor(y * germplasmsPerPixel);
+        const marker = Math.floor(x * scale.markersPerPixel);
+        const germplasm = Math.floor(y * scale.germplasmsPerPixel);
         const color = this.colorScheme.getColor(germplasm, this.selectedChromosome, marker);
 
         const pixelIndex = (y * width + x) * 4;
@@ -54,6 +79,27 @@ export default class OverviewCanvas {
       }
     }
     return imageData;
+  }
+
+  mouseDrag (mouseX, mouseY, visibilityWindow){
+    const scale = this.renderingScale(this.width, this.height);
+
+    const centerMarker = mouseX * scale.markersPerPixel;
+    const centerGermplasm = mouseY * scale.germplasmsPerPixel;
+
+    // Clamp within the canvas (no position < 0 or > number of markers or germplasms)
+    let cornerMarker = Math.min(Math.max(0, Math.floor(centerMarker - visibilityWindow.markers / 2)), this.dataSet.markerCountOn(this.selectedChromosome) - visibilityWindow.markers);
+    let cornerGermplasm = Math.min(Math.max(Math.floor(centerGermplasm - visibilityWindow.germplasms / 2), 0), this.dataSet.germplasmList.length - visibilityWindow.germplasms);
+
+    const cornerX = cornerMarker / scale.markersPerPixel;
+    const cornerY = cornerGermplasm / scale.germplasmsPerPixel;
+    const windowWidth = visibilityWindow.markers / scale.markersPerPixel;
+    const windowHeight = visibilityWindow.germplasms / scale.germplasmsPerPixel;
+
+    this.windowRect = {x: cornerX, y: cornerY, width: windowWidth, height: windowHeight};
+    this.prerender(false);
+
+    return {marker: cornerMarker, germplasm: cornerGermplasm};
   }
 
   setChromosome (chromosomeIndex){

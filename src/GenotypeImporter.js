@@ -55,12 +55,10 @@ export default class GenotypeImporter {
     if (line.startsWith('Accession') || line.startsWith('\t')) {
       const markerNames = line.split('\t');
 
+      // Get the position from the precalculated name -> position map 
       markerNames.slice(1).forEach((name, idx) => {
-        // const indices = this.genomeMap.markerByName(name, markerIndexesByNamesAndChromosomes);
         const indices = markerNameMap.get(name);
-        //if (indices) {
         this.markerIndices.set(idx, indices);
-        //}
       });
       // TODO: write code to deal with cases where we don't have a map here...
       // console.log(this.genomeMap.totalMarkerCount());
@@ -82,12 +80,6 @@ export default class GenotypeImporter {
 
   parseFile(fileContents) {
     var b4 = Date.now();
-    
-    /*// pre-calculating this index array once for all brings significantly faster loading
-    var markerIndexesByNamesAndChromosomes = new Array();
-    this.genomeMap.chromosomes.forEach((chromosome, idx) => {
-      markerIndexesByNamesAndChromosomes[idx] = chromosome.markers.map(m => m.name);
-    });*/
 
     // Pre-mapping the marker names to their position for faster loading
     let markerNameMap = new Map();

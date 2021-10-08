@@ -611,6 +611,12 @@ export default class GenotypeCanvas {
     this.prerender(true);
   }
 
+  moveToPosition(marker, germplasm) {
+    const diffX = this.translatedX - marker * this.boxSize;
+    const diffY = this.translatedY - germplasm * this.boxSize;
+    this.move(diffX, diffY)
+  }
+
   move(diffX, diffY) {
     this.moveX(diffX);
     this.moveY(diffY);
@@ -738,6 +744,12 @@ export default class GenotypeCanvas {
     this.prerender(true);
   }
 
+  visibilityWindow() {
+    const markers = Math.min(this.alleleCanvasWidth() / this.boxSize, this.dataSet.markerCountOn(this.selectedChromosome));
+    const germplasms = Math.min(this.alleleCanvasHeight() / this.boxSize, this.dataSet.germplasmList.length);
+    return {markers, germplasms};
+  }
+
   setColorScheme(scheme) {
     this.colorScheme = scheme;
     this.prerender(true);
@@ -764,7 +776,7 @@ export default class GenotypeCanvas {
     this.selectedChromosome = chromosomeIndex;
 
     // Reset to the left
-    this.translatedX = 0;
+    this.moveX(-this.translatedX);
     this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
 
     this.lineSort.setChromosomes([chromosomeIndex]);
