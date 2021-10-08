@@ -102,6 +102,9 @@ export default class SimilarityColorScheme {
       if (genotype.isHomozygous) {
         this.compStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.cssColors.compGreenLight, this.cssColors.compGreenDark);
         this.matchStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.cssColors.greenLight, this.cssColors.greenDark);
+        // Homozygotes compared to heterozygotes show as a match, but retain a half-point for similarity score
+        this.het1MatchStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.cssColors.greenLight, this.cssColors.greenDark);
+        this.het2MatchStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.cssColors.greenLight, this.cssColors.greenDark);
         this.misMatchStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.cssColors.redLight, this.cssColors.redDark);
         this.greyStamps[index] = this.drawGradientSquare(size, genotype, font, fontSize, this.cssColors.greyLight, this.cssColors.greyDark);
       } else {
