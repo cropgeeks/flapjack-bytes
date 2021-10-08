@@ -34,24 +34,24 @@ function buildSimilarityLookupTable(stateTable){
       // Default to misMatch
       table[i][j] = similarityCases.misMatch;
 
-      // States match
-      if (i === j) {
+      const iStateKey = stateTableKeys[i];
+      const iStateValue = stateTable.get(iStateKey);
+      const jStateKey = stateTableKeys[j];
+      const jStateValue = stateTable.get(jStateKey);
+
+      // Either state is missing
+      if (iStateValue === 0 || jStateValue === 0) {
+        table[i][j] = similarityCases.missing;
+      // Same state
+      } else if (i === j) {
         table[i][j] = similarityCases.fullMatch;
       } else {
-        const iStateKey = stateTableKeys[i];
-        const iStateValue = stateTable.get(iStateKey);
-        const jStateKey = stateTableKeys[j];
-        const jStateValue = stateTable.get(jStateKey);
-
-        // Either state is missing
-        if (iStateValue === 0 || jStateValue === 0) {
-          table[i][j] = similarityCases.missing;
         // Our state is homozygous and the comparison state is heterozygous 
-        } else if (iStateKey.isHomozygous && !jStateKey.isHomozygous) {
-          // if we match either allele in the comparison state give this the match class
-          if (iStateKey.allele1 === jStateKey.allele1 || iStateKey.allele1 === jStateKey.allele2) {
-            table[i][j] = similarityCases.fullMatch;
-            
+        if (iStateKey.isHomozygous && !jStateKey.isHomozygous) {
+          if (iStateKey.allele1 === jStateKey.allele1){
+            table[i][j] = similarityCases.heterozygote1Match;
+          } else if (iStateKey.allele1 === jStateKey.allele2){
+            table[i][j] = similarityCases.heterozygote2Match;
           }
         // Our state is het and comp state is homozygous
         } else if (!iStateKey.isHomozygous && jStateKey.isHomozygous) {
@@ -85,13 +85,18 @@ function germplasmSimilarityScore(dataSet, referenceIndex, comparedIndex, chromo
   let markerCount = 0;
   let referenceGermplasm = dataSet.germplasmList[referenceIndex];
   for (let chromosome of chromosomes){
+    markerCount += referenceGermplasm.genotypeData[chromosome].length;
     for (let marker in referenceGermplasm.genotypeData[chromosome]){
       let reference = dataSet.genotypeFor(referenceIndex, chromosome, marker);
       let compared = dataSet.genotypeFor(comparedIndex, chromosome, marker);
       let similarityCase = dataSet.similarityLookupTable[compared][reference];
+
+      if (similarityCase == similarityCases.missing){
+        markerCount -= 1;
+        continue;
+      }
       score += similarityScores.get(similarityCase);
     }
-    markerCount += referenceGermplasm.genotypeData[chromosome].length;
   }
   return score / markerCount;
 }

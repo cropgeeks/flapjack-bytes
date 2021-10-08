@@ -2,23 +2,21 @@ import {germplasmSimilarityScore} from './Similarity'
 
 
 export default class SimilarityLineSort {
-  constructor(referenceName, chromosomeNames){
+  constructor(referenceName, chromosomeIndices){
     this.referenceName = referenceName;
-    this.chromosomeNames = chromosomeNames;
+    this.chromosomeIndices = chromosomeIndices;
     this.scoreMap = undefined;
     this.hasScore = true;
   }
 
   sort(dataSet){
-    const chromosomeIndices = this.chromosomeNames.map(name => 
-      dataSet.genomeMap.chromosomes.findIndex(chromosome => chromosome.name == name));
     const referenceIndex = dataSet.germplasmList.findIndex(germplasm => germplasm.name == this.referenceName);
 
     this.scoreMap = new Map();
     for (let comparedIndex in dataSet.germplasmList){
       this.scoreMap.set(
         dataSet.germplasmList[comparedIndex].name,
-        germplasmSimilarityScore(dataSet, referenceIndex, comparedIndex, chromosomeIndices),
+        germplasmSimilarityScore(dataSet, referenceIndex, comparedIndex, this.chromosomeIndices),
       );
     }
 
@@ -33,7 +31,7 @@ export default class SimilarityLineSort {
     this.referenceName = referenceName;
   }
 
-  setChromosomes(chromosomeNames){
-    this.chromosomeNames = chromosomeNames
+  setChromosomes(chromosomeIndices){
+    this.chromosomeIndices = chromosomeIndices
   }
 }

@@ -10,4 +10,8 @@ export default class AlphabeticLineSort {
       a.name < b.name ? -1 : (
         a.name > b.name ? 1 : 0)));
   }
+
+  setChromosomes(chromosomeIndices){
+    
+  }
 }
