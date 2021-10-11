@@ -111,6 +111,7 @@ export default class GenotypeCanvas {
     // this.updateVisualPositions();
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
     this.zoom(this.boxSize);
+    this.moveToPosition(0, 0);
   }
 
   prerender(redraw) {
@@ -728,7 +729,11 @@ export default class GenotypeCanvas {
   }
 
   zoom(size) {
-    this.boxSize = size;
+    const newBoxSize = parseInt(size);
+    // oldPosition * zoomFactor = newPosition => zoomFactor = newBoxSize / oldBoxSize
+    const zoomFactor = newBoxSize / this.boxSize;
+    this.boxSize = newBoxSize;
+
     this.updateFontSize();
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
     this.updateCanvasWidths();
@@ -740,6 +745,8 @@ export default class GenotypeCanvas {
     if (!this.canScrollX()) {
       this.translatedX = 0;
       this.horizontalScrollbar.move(0, this.horizontalScrollbar.y);
+    } else {
+      this.translatedX *= zoomFactor;
     }
 
     // If zooming out means the genotypes don't take up the full canvas, return
@@ -747,6 +754,8 @@ export default class GenotypeCanvas {
     if (!this.canScrollY()) {
       this.translatedY = 0;
       this.verticalScrollbar.move(this.verticalScrollbar.x, 0);
+    } else {
+      this.translatedY *= zoomFactor;
     }
 
     this.prerender(true);

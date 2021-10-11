@@ -90,7 +90,7 @@ export default class CanvasController {
     // Initialize the components
     this.genotypeCanvas.init(dataSet, colorScheme);
     this.genotypeCanvas.prerender(true);
-    this.overviewCanvas.init(dataSet, colorScheme);
+    this.overviewCanvas.init(dataSet, colorScheme, this.genotypeCanvas.visibilityWindow());
     this.overviewCanvas.prerender(true);
 
     // Genotype canvas control

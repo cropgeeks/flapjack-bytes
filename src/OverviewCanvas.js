@@ -22,9 +22,10 @@ export default class OverviewCanvas {
     this.selectedChromosome = 0;
   }
 
-  init (dataSet, colorScheme){
+  init (dataSet, colorScheme, visibilityWindow){
     this.dataSet = dataSet;
     this.colorScheme = colorScheme;
+    this.moveToPosition(0, 0, visibilityWindow);
     this.prerender(true);
   }
 
