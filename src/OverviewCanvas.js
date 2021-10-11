@@ -136,6 +136,13 @@ export default class OverviewCanvas {
     this.prerender(true);
   }
 
+  setAutoWidth (newWidth) {
+    this.width = newWidth;
+    this.canvas.width = newWidth;
+    this.backBuffer.width = newWidth;
+    this.prerender(true);
+  }
+
   exportName (){
     return `overview-${this.dataSet.genomeMap.chromosomes[this.selectedChromosome].name}`;
   }

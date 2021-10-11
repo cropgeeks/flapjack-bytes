@@ -642,6 +642,18 @@ export default class GenotypeCanvas {
     this.verticalScrollbar.resizeWidgetHeight(vScrollWidgetHeight);
   }
 
+  updateScrollBars() {
+    this.updateScrollBarSizes();
+    
+    const scrollWidth = this.alleleCanvasWidth() - this.horizontalScrollbar.widget.width;
+    const scrollX = Math.floor(this.mapToRange(this.translatedX, 0, this.maxCanvasWidth() - this.alleleCanvasWidth(), 0, scrollWidth));
+    this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
+
+    const scrollHeight = this.alleleCanvasHeight() - this.verticalScrollbar.widget.height;
+    const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, this.maxCanvasHeight() - this.alleleCanvasHeight(), 0, scrollHeight));
+    this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
+  }
+
   zoom(size) {
     const newBoxSize = parseInt(size);
     
@@ -652,7 +664,6 @@ export default class GenotypeCanvas {
     this.updateFontSize();
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
     this.updateCanvasWidths();
-    this.updateScrollBarSizes();
 
     // If zooming out means the genotypes don't take up the full canvas, return
     // the display to its horizontal origin
@@ -662,9 +673,6 @@ export default class GenotypeCanvas {
     } else {
       this.translatedX = Math.min(this.translatedX * zoomFactor, this.maxDataWidth() - this.alleleCanvasWidth());
     }
-    const scrollWidth = this.alleleCanvasWidth() - this.horizontalScrollbar.widget.width;
-    const scrollX = Math.floor(this.mapToRange(this.translatedX, 0, this.maxCanvasWidth() - this.alleleCanvasWidth(), 0, scrollWidth));
-    this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
 
     // If zooming out means the genotypes don't take up the full canvas, return
     // the display to its vertical origin
@@ -674,9 +682,8 @@ export default class GenotypeCanvas {
     } else {
       this.translatedY = Math.min(this.translatedY * zoomFactor, this.maxDataHeight() - this.alleleCanvasHeight());
     }
-    const scrollHeight = this.alleleCanvasHeight() - this.verticalScrollbar.widget.height;
-    const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, this.maxCanvasHeight() - this.alleleCanvasHeight(), 0, scrollHeight));
-    this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
+
+    this.updateScrollBars();
 
     this.prerender(true);
     return this.currentPosition();
@@ -694,6 +701,37 @@ export default class GenotypeCanvas {
     const markers = Math.min(this.alleleCanvasWidth() / this.boxSize, this.dataSet.markerCountOn(this.selectedChromosome));
     const germplasms = Math.min(this.alleleCanvasHeight() / this.boxSize, this.dataSet.germplasmList.length);
     return {markers, germplasms};
+  }
+
+  setAutoWidth (newWidth){
+    this.width = newWidth;
+    this.canvas.width = newWidth;
+    this.backBuffer.width = newWidth;
+
+    this.verticalScrollbar.setPosition(newWidth - this.verticalScrollbar.width, 0);
+    this.horizontalScrollbar.updateWidth(this.alleleCanvasWidth());
+
+    this.updateScrollBars();
+
+    // If zooming out means the genotypes don't take up the full canvas, return
+    // the display to its horizontal origin
+    if (!this.canScrollX()) {
+      this.translatedX = 0;
+      this.horizontalScrollbar.move(0, this.horizontalScrollbar.y);
+    } else {
+      this.translatedX = Math.min(this.translatedX, this.maxDataWidth() - this.alleleCanvasWidth());
+    }
+
+    // If zooming out means the genotypes don't take up the full canvas, return
+    // the display to its vertical origin
+    if (!this.canScrollY()) {
+      this.translatedY = 0;
+      this.verticalScrollbar.move(this.verticalScrollbar.x, 0);
+    } else {
+      this.translatedY = Math.min(this.translatedY, this.maxDataHeight() - this.alleleCanvasHeight());
+    }
+    
+    this.prerender(true);
   }
 
   setColorScheme(scheme) {

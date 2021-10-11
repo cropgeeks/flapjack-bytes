@@ -110,7 +110,7 @@ export default class GenotypeImporter {
           // and return once they are done
           setTimeout(function (){
             doLine(line + 1).then(resolve);
-          }, 10);
+          }, 2);
         } else {  // Finish
           resolve();
         }

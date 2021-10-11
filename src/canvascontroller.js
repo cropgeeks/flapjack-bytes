@@ -6,9 +6,15 @@ import SimilarityColorScheme from './color/SimilarityColorScheme';
 
 
 export default class CanvasController {
-  constructor(genotypeCanvas, overviewCanvas) {
+  constructor(container, genotypeCanvas, overviewCanvas, genotypeAutoWidth, overviewAutoWidth, minGenotypeAutoWidth, minOverviewAutoWidth) {
+    this.canvasContainer = container;
     this.genotypeCanvas = genotypeCanvas;
     this.overviewCanvas = overviewCanvas;
+    this.genotypeAutoWidth = genotypeAutoWidth === undefined ? false : genotypeAutoWidth;
+    this.overviewAutoWidth = overviewAutoWidth === undefined ? false : overviewAutoWidth;
+    this.minGenotypeAutoWidth = minGenotypeAutoWidth === undefined ? 0 : minGenotypeAutoWidth;
+    this.minOverviewAutoWidth = minOverviewAutoWidth === undefined ? 0 : minOverviewAutoWidth;
+
     this.chromosomeIndex = 0;
     this.dragStartX = null;
     this.dragStartY = null;
@@ -92,6 +98,12 @@ export default class CanvasController {
     this.overviewCanvas.init(dataSet, colorScheme, this.genotypeCanvas.visibilityWindow());
     this.overviewCanvas.prerender(true);
 
+    this.updateAutoWidth();
+
+    window.addEventListener("resize", event => {
+      this.updateAutoWidth();
+    });
+
     // Set the canvas controls only once we have a valid data set and color scheme
     // If they are set in the constructor, moving the mouse above the canvas before
     // the loading is complete throws errors
@@ -100,7 +112,7 @@ export default class CanvasController {
     this.genotypeCanvas.canvas.addEventListener('mousedown', (e) => {
       // The following block of code is used to determine if we are scrolling
       // using the scrollbar widget, rather than grabbing the canvas
-      const { x, y } = this.getGenotypeMouseLocation();
+      const { x, y } = this.getGenotypeMouseLocation(e.clientX, e.clientY);
 
       const { verticalScrollbar, horizontalScrollbar } = this.genotypeCanvas;
 
@@ -157,6 +169,25 @@ export default class CanvasController {
     });
   }
 
+  updateAutoWidth() {
+    const computedStyles = window.getComputedStyle(this.canvasContainer);
+    const autoWidth = this.canvasContainer.clientWidth - parseInt(computedStyles.paddingLeft) - parseInt(computedStyles.paddingRight);
+    
+    if (this.genotypeAutoWidth){
+      const genotypeWidth = Math.max(autoWidth, this.minGenotypeAutoWidth);
+      this.genotypeCanvas.setAutoWidth(genotypeWidth);
+    }
+
+    if (this.overviewAutoWidth){
+      const overviewWidth = Math.max(autoWidth, this.minOverviewAutoWidth);
+      this.overviewCanvas.setAutoWidth(overviewWidth);
+    }
+
+    // Update the visibilityWindow
+    const position = this.genotypeCanvas.currentPosition();
+    this.overviewCanvas.moveToPosition(position.marker, position.germplasm, this.genotypeCanvas.visibilityWindow());
+  }
+
   setChromosome(chromosomeIndex) {
     this.chromosomeIndex = chromosomeIndex;
     this.genotypeCanvas.setChromosome(chromosomeIndex);
@@ -165,8 +196,8 @@ export default class CanvasController {
 
   getGenotypeMouseLocation(clientX, clientY) {
     const rect = this.genotypeCanvas.canvas.getBoundingClientRect();
-    const x = (clientX - rect.left) / (rect.right - rect.left) * this.genotypeCanvas.backBuffer.width;
-    const y = (clientY - rect.top) / (rect.bottom - rect.top) * this.genotypeCanvas.backBuffer.height;
+    const x = (clientX - rect.left) / (rect.right - rect.left) * this.genotypeCanvas.canvas.width;
+    const y = (clientY - rect.top) / (rect.bottom - rect.top) * this.genotypeCanvas.canvas.height;
 
     return { x, y };
   }
@@ -196,7 +227,7 @@ export default class CanvasController {
     const rectTop = (rect.top + mapCanvasHeight);
     // Calculate the y coordinate of the mouse on the allele canvas
     const y = (clientY - rectTop) / (rect.bottom - rectTop) * alleleCanvasHeight;
-    // Move the vertical scrollbar to coorodinate y
+    // Move the vertical scrollbar to coordinate y
     const newPosition = this.genotypeCanvas.dragVerticalScrollbar(y);
 
     this.overviewCanvas.moveToPosition(newPosition.marker, newPosition.germplasm, this.genotypeCanvas.visibilityWindow());

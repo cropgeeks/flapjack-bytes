@@ -59,9 +59,17 @@ export default function GenotypeRenderer() {
     }
   }
 
-  function createRendererComponents(domParent, width, height, overviewWidth, overviewHeight) {
+  function createRendererComponents(domParent, widthValue, height, overviewWidthValue, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth) {
     // Canvas
+    if (minGenotypeAutoWidth === undefined) minGenotypeAutoWidth = 0;
+    if (minOverviewAutoWidth === undefined) minOverviewAutoWidth = 0;
+
     const canvasHolder = document.getElementById(domParent.slice(1));
+    
+    const computedStyles = window.getComputedStyle(canvasHolder);
+    const autoWidth = canvasHolder.clientWidth - parseInt(computedStyles.paddingLeft) - parseInt(computedStyles.paddingRight);
+    const width = (widthValue === null) ? Math.max(autoWidth, minGenotypeAutoWidth) : widthValue;
+    const overviewWidth = (overviewWidthValue === null) ? Math.max(autoWidth, minOverviewAutoWidth) : overviewWidthValue;
 
     // Controls
     const controlDiv = document.createElement('div');
@@ -169,7 +177,7 @@ export default function GenotypeRenderer() {
 
     addStyleSheet();
 
-    canvasController = new CanvasController(genotypeCanvas, overviewCanvas);
+    canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, widthValue === null, overviewWidthValue === null, minGenotypeAutoWidth, minOverviewAutoWidth);
   }
 
   function addRadioButton(name, id, text, checked, parent) {
@@ -422,9 +430,11 @@ export default function GenotypeRenderer() {
     authToken,
     overviewWidth,
     overviewHeight,
+    minGenotypeAutoWidth,
+    minOverviewAutoWidth
   }) {
     clearParent(domParent)
-    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight);
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth);
     let germplasmData;
 
     const client = axios.create({ baseURL: server });
@@ -514,9 +524,11 @@ export default function GenotypeRenderer() {
     authToken,
     overviewWidth,
     overviewHeight,
+    minGenotypeAutoWidth,
+    minOverviewAutoWidth
   ) {
     clearParent(domParent);
-    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight);
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth);
 
     let mapFile;
     let genotypeFile;
@@ -621,9 +633,11 @@ export default function GenotypeRenderer() {
     genotypeFileDom,
     overviewWidth,
     overviewHeight,
+    minGenotypeAutoWidth,
+    minOverviewAutoWidth
   ) {
     clearParent(domParent);
-    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight);
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth);
     // let qtls = [];
     let germplasmData;
 
