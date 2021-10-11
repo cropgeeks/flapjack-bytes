@@ -8,6 +8,7 @@ export default class GenotypeCanvas {
     this.canvas = document.createElement('canvas');
     this.canvas.width = width;
     this.canvas.height = height;
+    this.canvas.style.display = "block";
     this.drawingContext = this.canvas.getContext('2d');
 
     this.backBuffer = document.createElement('canvas');
@@ -629,8 +630,6 @@ export default class GenotypeCanvas {
     this.moveX(diffX);
     this.moveY(diffY);
 
-    console.log(this.translatedX, this.translatedY);
-
     this.prerender(true);
     return this.currentPosition();
   }
@@ -807,9 +806,8 @@ export default class GenotypeCanvas {
   setChromosome(chromosomeIndex) {
     this.selectedChromosome = chromosomeIndex;
 
-    // Reset to the left
-    this.moveX(-this.translatedX);
-    this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
+    // Reset the position
+    this.moveToPosition(0, 0);
 
     this.lineSort.setChromosomes([chromosomeIndex]);
     this.sortLines();  // This redraws too
@@ -817,7 +815,6 @@ export default class GenotypeCanvas {
 
   sortLines(){
     // Save the color comparison line to restore it later
-    // TODO : Use a line name instead of index in the color scheme to improve stability
     let colorComparisonName = this.dataSet.germplasmList[this.colorComparisonLineIndex].name;
     this.lineSort.sort(this.dataSet)
     this.setColorComparisonLine(colorComparisonName);

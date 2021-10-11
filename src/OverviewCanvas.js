@@ -8,6 +8,7 @@ export default class OverviewCanvas {
     this.canvas = document.createElement('canvas');
     this.canvas.width = width;
     this.canvas.height = height;
+    this.canvas.style.display = "block";
     this.drawingContext = this.canvas.getContext('2d');
 
     this.backBuffer = document.createElement('canvas');
@@ -138,7 +139,12 @@ export default class OverviewCanvas {
     tmpContext.fillStyle = 'white';
     tmpContext.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
 
-    this.renderImage(tmpContext, tmpCanvas.width, tmpCanvas.height);
+    try {
+      this.renderImage(tmpContext, tmpCanvas.width, tmpCanvas.height);
+    } catch (error) {
+      window.alert("Overview export failed : the image is probably too large");
+      console.error(error);
+    }
     return tmpCanvas.toDataURL(type, encoderOptions);
   }
 }

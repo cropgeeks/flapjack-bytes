@@ -78,6 +78,30 @@ export default class GenotypeImporter {
     }
   }
 
+  /*parseFile(fileContents, advancementCallback, completionCallback) {
+    var b4 = Date.now();
+
+    // Pre-mapping the marker names to their position for faster loading
+    let markerNameMap = new Map();
+    this.genomeMap.chromosomes.forEach((chromosome, chromosomeIndex) => {
+      chromosome.markers.forEach((marker, markerIndex) => {
+        markerNameMap.set(marker.name, {chromosome: chromosomeIndex, markerIndex});
+      });
+    });
+
+    this.processedLines = 0;
+    const lines = fileContents.split(/\r?\n/);
+    this.totalLineCount = lines.length;
+    for (let line = 0; line < this.totalLineCount; line += 1) {
+      this.processFileLine(lines[line], markerNameMap);
+      this.processedLines = line;
+      if (advancementCallback) advancementCallback((line + 1) / this.totalLineCount);
+    }
+    console.log("parseFile took " + (Date.now() - b4) + "ms");
+    if (completionCallback) completionCallback();
+    return this.germplasmList;
+  }*/
+
   parseFile(fileContents, advancementCallback, completionCallback) {
     var b4 = Date.now();
 
@@ -90,17 +114,37 @@ export default class GenotypeImporter {
     });
 
     this.processedLines = 0;
-    this.totalLineCount = 0;
     const lines = fileContents.split(/\r?\n/);
     this.totalLineCount = lines.length;
-    for (let line = 0; line < this.totalLineCount; line += 1) {
-      this.processFileLine(lines[line], markerNameMap);
-      this.processedLines = line;
-      if (advancementCallback) advancementCallback((line + 1) / this.totalLineCount);
+    let currentLine = 0;
+    let self = this;
+
+    // Give the browser some time to keep the page alive between the parsing of each line
+    // Avoid a complete freeze during a large file load
+    function doLine(line) {
+      return new Promise(function (resolve, reject){
+        self.processFileLine(lines[line], markerNameMap);
+        self.processedLines += 1;
+        if (advancementCallback)
+          advancementCallback(self.processedLines / self.totalLineCount);
+        
+        if (line + 1 < self.totalLineCount){
+          // Let the browser do its things for a few milliseconds, run the next lines (recursively),
+          // and return once they are done
+          setTimeout(function (){
+            doLine(line + 1).then(resolve);
+          }, 10);
+        } else {
+          resolve();
+        }
+      });
     }
-    console.log("parseFile took " + (Date.now() - b4) + "ms");
-    if (completionCallback) completionCallback();
-    return this.germplasmList;
+
+    return doLine(0).then(function (results){
+      if (completionCallback) completionCallback();
+      console.log("parseFile took " + (Date.now() - b4) + "ms");
+      return self.germplasmList;
+    })
   }
 
   getImportProgressPercentage() {

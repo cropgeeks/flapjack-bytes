@@ -63,33 +63,6 @@ export default function GenotypeRenderer() {
     // Canvas
     const canvasHolder = document.getElementById(domParent.slice(1));
 
-    /*progressBarBackground = document.createElement("div");
-    progressBarBackground.style.width = width + "px";
-    progressBarBackground.style.backgroundColor = "grey";
-
-    progressBar = document.createElement("div");
-    progressBar.style.width = "1%";
-    progressBar.style.height = "30px";
-    progressBar.style.backgroundColor = "green";
-
-    progressBarBackground.append(progressBar);
-    canvasHolder.append(progressBarBackground)*/
-
-    genotypeCanvas = new GenotypeCanvas(width, height, boxSize, defaultLineSort);
-    canvasHolder.append(genotypeCanvas.canvas);
-
-    // FIXME ?
-    if (!overviewWidth) overviewWidth = width;
-    if (!overviewHeight) overviewHeight = 200;
-
-    overviewCanvas = new OverviewCanvas(overviewWidth, overviewHeight);
-    canvasHolder.append(overviewCanvas.canvas);
-
-    // Form
-    const form = document.createElement('div');
-    const formRow = document.createElement('div');
-    formRow.classList.add('row');
-    
     // Controls
     const controlDiv = document.createElement('div');
     controlDiv.id = 'zoom-holder';
@@ -144,6 +117,39 @@ export default function GenotypeRenderer() {
       zoom(range.value);
     });
 
+    controlFieldSet.appendChild(controlLegend);
+    controlFieldSet.appendChild(chromosomeContainer);
+    controlFieldSet.appendChild(zoomContainer);
+    canvasHolder.appendChild(controlFieldSet);
+
+    // Progress bar
+    progressBarBackground = document.createElement("div");
+    progressBarBackground.style.width = width + "px";
+    progressBarBackground.style.backgroundColor = "grey";
+
+    progressBar = document.createElement("div");
+    progressBar.style.width = "1%";
+    progressBar.style.height = "30px";
+    progressBar.style.backgroundColor = "cyan";
+
+    progressBarBackground.append(progressBar);
+    canvasHolder.append(progressBarBackground)
+
+    genotypeCanvas = new GenotypeCanvas(width, height, boxSize, defaultLineSort);
+    canvasHolder.append(genotypeCanvas.canvas);
+
+    // FIXME ?
+    if (!overviewWidth) overviewWidth = width;
+    if (!overviewHeight) overviewHeight = 200;
+
+    overviewCanvas = new OverviewCanvas(overviewWidth, overviewHeight);
+    canvasHolder.append(overviewCanvas.canvas);
+
+    // Form
+    const form = document.createElement('div');
+    const formRow = document.createElement('div');
+    formRow.classList.add('row');
+
     /*const colorButton = document.createElement('button');
     colorButton.id = 'colorButton';
     const textnode = document.createTextNode('Color schemes...');
@@ -152,13 +158,6 @@ export default function GenotypeRenderer() {
     const colorFieldSet = createColorSchemeFieldset();
     const sortFieldSet = createSortFieldSet();
     const exportFieldSet = createExportFieldSet();
-
-    controlFieldSet.appendChild(controlLegend);
-    controlFieldSet.appendChild(chromosomeContainer);
-    controlFieldSet.appendChild(zoomContainer);
-    formControlDiv.appendChild(controlFieldSet);
-    controlCol.appendChild(formControlDiv);
-    formRow.appendChild(controlCol);
 
     formRow.appendChild(colorFieldSet);
     formRow.appendChild(sortFieldSet);
@@ -352,7 +351,7 @@ export default function GenotypeRenderer() {
     return formCol;
   }
 
-  /*function setAdvancement(ratio) {
+  function setAdvancement(ratio) {
     progressBar.style.width = Math.floor(100 * ratio) + "%";
     console.log(ratio);
   }
@@ -360,7 +359,7 @@ export default function GenotypeRenderer() {
   function removeAdvancement() {
     progressBar.remove();
     progressBarBackground.remove();
-  }*/
+  }
 
   function processMarkerPositionsCall(client, url, params, markerpositions = []) {
     return client.get(url, params)
@@ -517,26 +516,32 @@ export default function GenotypeRenderer() {
     let mapFile;
     let genotypeFile;
 
-    axios.get(mapFileURL, {}, { headers: { 'Content-Type': 'text/plain' } }).then((response) => {
+    const mapPromise = axios.get(mapFileURL, {}, { headers: { 'Content-Type': 'text/plain' } }).then((response) => {
       mapFile = response.data;
     }).catch((error) => {
-      console.log(error)
-    }).then(() => {
+      console.error(error);
+    })
+
+    const genotypePromise = axios.get(genotypeFileURL, {}, { headers: { 'Content-Type': 'text/plain' } }).then((response) => {
+      genotypeFile = response.data;
+    }).catch((error) => {
+      console.error(error);
+    })
+
+    Promise.all([mapPromise, genotypePromise]).then(() => {
       if (mapFile !== undefined) {
         const mapImporter = new MapImporter();
         genomeMap = mapImporter.parseFile(mapFile);
       }
 
-      axios.get(genotypeFileURL, {}, { headers: { 'Content-Type': 'text/plain' } }).then((response) => {
-        genotypeFile = response.data;
-      }).then(() => {
-        genotypeImporter = new GenotypeImporter(genomeMap);
+      genotypeImporter = new GenotypeImporter(genomeMap);
 
-        if (genomeMap === undefined) {
-          genomeMap = genotypeImporter.createFakeMap(genotypeFile);
-        }
+      if (genomeMap === undefined) {
+        genomeMap = genotypeImporter.createFakeMap(genotypeFile);
+      }
 
-        const germplasmData = genotypeImporter.parseFile(genotypeFile);  //, setAdvancement, removeAdvancement);
+      genotypeImporter.parseFile(genotypeFile, setAdvancement, removeAdvancement).then(function (germplasmList) {
+        germplasmData = germplasmList;
         const { stateTable } = genotypeImporter;
 
         dataSet = new DataSet(genomeMap, germplasmData, stateTable);
@@ -550,11 +555,11 @@ export default function GenotypeRenderer() {
         // Tells the dom parent that Flapjack has finished loading. Allows spinners
         // or similar to be disabled
         sendEvent('FlapjackFinished', domParent);
-      }).catch((error) => {
-        sendEvent('FlapjackError', domParent);
-        // eslint-disable-next-line no-console
-        console.log(error);
       });
+    }).catch((error) => {
+      sendEvent('FlapjackError', domParent);
+      // eslint-disable-next-line no-console
+      console.log(error);
     });
     return genotypeRenderer;
   };
@@ -648,16 +653,18 @@ export default function GenotypeRenderer() {
         genomeMap = genotypeImporter.createFakeMap(result);
       }
 
-      germplasmData = genotypeImporter.parseFile(result);  //, setAdvancement, removeAdvancement);
-      const { stateTable } = genotypeImporter;
+      genotypeImporter.parseFile(result, setAdvancement, removeAdvancement).then(function (germplasmList){
+        germplasmData = germplasmList;
+        const { stateTable } = genotypeImporter;
 
-      dataSet = new DataSet(genomeMap, germplasmData, stateTable);
-      colorScheme = new NucleotideColorScheme(dataSet);
+        dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+        colorScheme = new NucleotideColorScheme(dataSet);
 
-      populateLineSelect();
-      populateChromosomeSelect();
+        populateLineSelect();
+        populateChromosomeSelect();
 
-      canvasController.init(dataSet, colorScheme);
+        canvasController.init(dataSet, colorScheme);
+      });
     });
 
     return genotypeRenderer;
