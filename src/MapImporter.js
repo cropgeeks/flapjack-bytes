@@ -37,7 +37,9 @@ export default class MapImporter {
     this.chromosomeNames.forEach((name) => {
       const chromosomeMarkers = this.markerData.filter(m => m.chromosome === name);
       const markerPositions = chromosomeMarkers.map(marker => marker.position);
-      const chromosomeEnd = Math.max(...markerPositions);
+      //const chromosomeEnd = Math.max(...markerPositions);
+      // Use reduce instead of apply to avoid exceeding call stack size by passing too many arguments
+      const chromosomeEnd = markerPositions.reduce((a, b) => Math.max(a, b));
       const chromosome = new Chromosome(name, chromosomeEnd, chromosomeMarkers);
       chromosomes.push(chromosome);
     });

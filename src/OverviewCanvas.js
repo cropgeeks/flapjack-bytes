@@ -16,6 +16,7 @@ export default class OverviewCanvas {
     this.backBuffer.height = height;
     this.backContext = this.backBuffer.getContext('2d');
 
+    // Coordinates of the visibility window (pixels)
     this.windowRect = {x: 0, y: 0, width: 0, height: 0};
 
     this.dataSet = undefined;
@@ -39,19 +40,22 @@ export default class OverviewCanvas {
     this.renderWindow();
   }
 
+  // Draw the genotype canvas' visibility window
   renderWindow (){
     this.drawingContext.save();
+
     this.drawingContext.fillStyle = 'rgba(0,0,0,0.2)';
     this.drawingContext.strokeStyle = 'rgba(255,0,0,0.8)';
     this.drawingContext.lineWidth = 1;
     this.drawingContext.fillRect(this.windowRect.x, this.windowRect.y, this.windowRect.width, this.windowRect.height);
     this.drawingContext.strokeRect(this.windowRect.x, this.windowRect.y, this.windowRect.width, this.windowRect.height);
+
     this.drawingContext.restore();
   }
 
 
   renderImage (context, width, height){
-    const imageData = this.createImage(context.createImageData(width, height), width, height);
+    const imageData = this.createImage(context.createImageData(width, height));
     context.putImageData(imageData, 0, 0);
   }
 
@@ -63,17 +67,20 @@ export default class OverviewCanvas {
     }
   }
 
-  createImage (imageData, width, height){
-    const scale = this.renderingScale(width, height);
-    const germplasmsPerPixel = this.dataSet.germplasmList.length / height;
-    const markersPerPixel = this.dataSet.markerCountOn(this.selectedChromosome) / width;
-    for (let x = 0; x < width; x += 1){
-      for (let y = 0; y < height; y += 1){
+  // Generate the overview image, squished within a given size
+  // Modeled on the desktop version
+  createImage (imageData){
+    const scale = this.renderingScale(imageData.width, imageData.height);
+    const germplasmsPerPixel = this.dataSet.germplasmList.length / imageData.height;
+    const markersPerPixel = this.dataSet.markerCountOn(this.selectedChromosome) / imageData.width;
+
+    for (let x = 0; x < imageData.width; x += 1){
+      for (let y = 0; y < imageData.height; y += 1){
         const marker = Math.floor(x * scale.markersPerPixel);
         const germplasm = Math.floor(y * scale.germplasmsPerPixel);
         const color = this.colorScheme.getColor(germplasm, this.selectedChromosome, marker);
 
-        const pixelIndex = (y * width + x) * 4;
+        const pixelIndex = (y * imageData.width + x) * 4;
         imageData.data[pixelIndex] = color[0];
         imageData.data[pixelIndex + 1] = color[1];
         imageData.data[pixelIndex + 2] = color[2];
@@ -83,6 +90,7 @@ export default class OverviewCanvas {
     return imageData;
   }
 
+  // Get the visibility window pixel coordinates from its data coordinates
   windowFromPosition (marker, germplasm, visibilityWindow){
     const scale = this.renderingScale(this.width, this.height);
 
@@ -94,6 +102,7 @@ export default class OverviewCanvas {
     return {x: cornerX, y: cornerY, width: windowWidth, height: windowHeight};
   }
 
+  // Set the center of the visibility window to (mouseX, mouseY)
   mouseDrag (mouseX, mouseY, visibilityWindow){
     const scale = this.renderingScale(this.width, this.height);
     const centerMarker = mouseX * scale.markersPerPixel;
@@ -109,6 +118,7 @@ export default class OverviewCanvas {
     return {marker: cornerMarker, germplasm: cornerGermplasm};
   }
 
+  // Set the visibility window, given its data coordinates
   moveToPosition (marker, germplasm, visibilityWindow){
     this.windowRect = this.windowFromPosition(marker, germplasm, visibilityWindow);
     this.prerender(false);
@@ -130,6 +140,12 @@ export default class OverviewCanvas {
     return `overview-${this.dataSet.genomeMap.chromosomes[this.selectedChromosome].name}`;
   }
 
+  // Export the overview to an image
+  // FIXME : There's a limit on the size and area of canvas.
+  //         Beyond these limits, the browser either throws an error or simply makes the canvas unresponsive
+  //         These limits and this behaviour are not standard
+  //         Possible solution : Using a third-party library to handle the image manipulation
+  //         Current implementation : Catch the error and warn the user if we are able to detect this case
   toDataURL (type, encoderOptions){
     const tmpCanvas = document.createElement('canvas')
     tmpCanvas.width = this.dataSet.markerCountOn(this.selectedChromosome);
@@ -139,12 +155,21 @@ export default class OverviewCanvas {
     tmpContext.fillStyle = 'white';
     tmpContext.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
 
+    // Ugly, but only way we have to check whether the export can succeed on browser that fail silently
+    // Check if the data part of the data URL (after "data:") is empty
+    const checkDataURL = tmpCanvas.toDataURL(type, encoderOptions);
+    if (checkDataURL.slice(5).length == 0 || checkDataURL.split(/,$/g).pop().length == 0){
+      window.alert("Overview export failed : the image is probably too large");
+      return undefined;
+    }
+
     try {
       this.renderImage(tmpContext, tmpCanvas.width, tmpCanvas.height);
+      return tmpCanvas.toDataURL(type, encoderOptions);
     } catch (error) {
       window.alert("Overview export failed : the image is probably too large");
       console.error(error);
+      return undefined;
     }
-    return tmpCanvas.toDataURL(type, encoderOptions);
   }
 }

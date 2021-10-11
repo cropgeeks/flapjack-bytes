@@ -52,7 +52,6 @@ export default class CanvasController {
     });
 
     // Sort
-
     const importingOrderRadio = document.getElementById('importingOrderSort');
     importingOrderRadio.addEventListener('change', () => {
       const sortLineSelect = document.getElementById('sortLineSelect');
@@ -92,6 +91,10 @@ export default class CanvasController {
     this.genotypeCanvas.prerender(true);
     this.overviewCanvas.init(dataSet, colorScheme, this.genotypeCanvas.visibilityWindow());
     this.overviewCanvas.prerender(true);
+
+    // Set the canvas controls only once we have a valid data set and color scheme
+    // If they are set in the constructor, moving the mouse above the canvas before
+    // the loading is complete throws errors
 
     // Genotype canvas control
     this.genotypeCanvas.canvas.addEventListener('mousedown', (e) => {
@@ -225,6 +228,8 @@ export default class CanvasController {
     this.overviewCanvas.moveToPosition(newPosition.marker, newPosition.germplasm, this.genotypeCanvas.visibilityWindow());
   }
 
+  // Set the position of the visibility window on the overview canvas
+  // The coordinates of the mouse are the center of the window
   setOverviewPosition(clientX, clientY) {
     const mousePos = this.getOverviewMouseLocation(clientX, clientY);
     const genotypePosition = this.overviewCanvas.mouseDrag(mousePos.x, mousePos.y, this.genotypeCanvas.visibilityWindow());

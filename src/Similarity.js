@@ -1,4 +1,5 @@
 
+// Enumeration of the various similarity cases
 const similarityCases = {
   misMatch: 0,
   comparisonLine: 1,
@@ -8,6 +9,7 @@ const similarityCases = {
   missing: 5,
 };
 
+// Associate the similarity cases to the similarity score they represent
 const similarityScores = new Map([
   [similarityCases.misMatch, 0],
   [similarityCases.comparisonLine, 1],
@@ -17,11 +19,10 @@ const similarityScores = new Map([
   [similarityCases.missing, 0],
 ]);
 
-/**
- * Build a lookup table for genotypes similarity
- * All existing genotypes are identified once in the stateTable, as a genotype -> index mapping, where indices are sequential
- * This builds a matrix that gives the similarity case from two genotype indices
- * */
+
+// Build a lookup table for genotypes similarity
+// All existing genotypes are identified once within the stateTable, as a genotype -> index mapping, where indices are sequential
+// This builds a matrix that gives the similarity case from two genotype indices
 function buildSimilarityLookupTable(stateTable){
   const length = stateTable.size;
   const table = Array.from(Array(length), () => new Array(length));
@@ -46,7 +47,7 @@ function buildSimilarityLookupTable(stateTable){
       } else if (i === j) {
         table[i][j] = similarityCases.fullMatch;
       } else {
-        // Our state is homozygous and the comparison state is heterozygous 
+        // Our state is homozygous and the comparison state is heterozygous
         if (iStateKey.isHomozygous && !jStateKey.isHomozygous) {
           if (iStateKey.allele1 === jStateKey.allele1){
             table[i][j] = similarityCases.heterozygote1Match;
@@ -78,7 +79,7 @@ function buildSimilarityLookupTable(stateTable){
   return table;
 }
 
-// Calculate the similarity score for two full germplasms
+// Calculate the similarity score for two full germplasms on the given chromosomes
 function germplasmSimilarityScore(dataSet, referenceIndex, comparedIndex, chromosomes){
   if (!chromosomes || chromosomes.length == 0) return 0;
   let score = 0;

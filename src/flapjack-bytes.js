@@ -319,13 +319,16 @@ export default function GenotypeRenderer() {
     exportViewButton.appendChild(exportViewText);
 
     exportViewButton.addEventListener('click', function(e) {
-      const element = document.createElement('a');
-      element.setAttribute('href', genotypeCanvas.toDataURL('image/png'));
-      element.setAttribute('download', genotypeCanvas.exportName() + '.png');
-      element.style.display = 'none';
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
+      const dataURL = genotypeCanvas.toDataURL('image/png');
+      if (dataURL){  // Export succeeded
+        const element = document.createElement('a');
+        element.setAttribute('href', dataURL);
+        element.setAttribute('download', genotypeCanvas.exportName() + '.png');
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      }
     });
 
     const exportOverviewButton = document.createElement('button');
@@ -333,13 +336,16 @@ export default function GenotypeRenderer() {
     exportOverviewButton.appendChild(exportOverviewText);
 
     exportOverviewButton.addEventListener('click', function(e) {
-      const element = document.createElement('a');
-      element.setAttribute('href', overviewCanvas.toDataURL('image/png'));
-      element.setAttribute('download', overviewCanvas.exportName() + '.png');
-      element.style.display = 'none';
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
+      const dataURL = overviewCanvas.toDataURL('image/png');
+      if (dataURL){  // Export succeeded
+        const element = document.createElement('a');
+        element.setAttribute('href', dataURL);
+        element.setAttribute('download', overviewCanvas.exportName() + '.png');
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      }
     });
 
     fieldset.appendChild(legend);
@@ -353,7 +359,6 @@ export default function GenotypeRenderer() {
 
   function setAdvancement(ratio) {
     progressBar.style.width = Math.floor(100 * ratio) + "%";
-    console.log(ratio);
   }
 
   function removeAdvancement() {
@@ -633,6 +638,7 @@ export default function GenotypeRenderer() {
       const mapImporter = new MapImporter();
       genomeMap = mapImporter.parseFile(result);
     }).catch(reason => {
+      console.error(reason);
       genomeMap = undefined;
     });
 

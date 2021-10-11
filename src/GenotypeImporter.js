@@ -16,8 +16,6 @@ export default class GenotypeImporter {
     this.genomeMap = genomeMap;
     this.markerIndices = new Map();
     this.germplasmList = [];
-    this.processedLines;
-    this.totalLineCount;
   }
 
   getState(genoString) {
@@ -55,7 +53,7 @@ export default class GenotypeImporter {
     if (line.startsWith('Accession') || line.startsWith('\t')) {
       const markerNames = line.split('\t');
 
-      // Get the position from the precalculated name -> position map 
+      // Get the position from the precomputed name -> position map 
       markerNames.slice(1).forEach((name, idx) => {
         const indices = markerNameMap.get(name);
         this.markerIndices.set(idx, indices);
@@ -78,30 +76,6 @@ export default class GenotypeImporter {
     }
   }
 
-  /*parseFile(fileContents, advancementCallback, completionCallback) {
-    var b4 = Date.now();
-
-    // Pre-mapping the marker names to their position for faster loading
-    let markerNameMap = new Map();
-    this.genomeMap.chromosomes.forEach((chromosome, chromosomeIndex) => {
-      chromosome.markers.forEach((marker, markerIndex) => {
-        markerNameMap.set(marker.name, {chromosome: chromosomeIndex, markerIndex});
-      });
-    });
-
-    this.processedLines = 0;
-    const lines = fileContents.split(/\r?\n/);
-    this.totalLineCount = lines.length;
-    for (let line = 0; line < this.totalLineCount; line += 1) {
-      this.processFileLine(lines[line], markerNameMap);
-      this.processedLines = line;
-      if (advancementCallback) advancementCallback((line + 1) / this.totalLineCount);
-    }
-    console.log("parseFile took " + (Date.now() - b4) + "ms");
-    if (completionCallback) completionCallback();
-    return this.germplasmList;
-  }*/
-
   parseFile(fileContents, advancementCallback, completionCallback) {
     var b4 = Date.now();
 
@@ -121,6 +95,9 @@ export default class GenotypeImporter {
 
     // Give the browser some time to keep the page alive between the parsing of each line
     // Avoid a complete freeze during a large file load
+    // This leaves a few milliseconds between the parsing of each line for the browser to refresh itself
+    // This calls recursively and asynchronously the parsing of the following line
+    // In order to get a single promise that returns only once all the lines have been parsed
     function doLine(line) {
       return new Promise(function (resolve, reject){
         self.processFileLine(lines[line], markerNameMap);
@@ -134,7 +111,7 @@ export default class GenotypeImporter {
           setTimeout(function (){
             doLine(line + 1).then(resolve);
           }, 10);
-        } else {
+        } else {  // Finish
           resolve();
         }
       });
@@ -145,10 +122,6 @@ export default class GenotypeImporter {
       console.log("parseFile took " + (Date.now() - b4) + "ms");
       return self.germplasmList;
     })
-  }
-
-  getImportProgressPercentage() {
-    return parseInt(this.processedLines + " / " + this.totalLineCount);
   }
 
   // In situations where a map hasn't been provided, we want to create a fake or
