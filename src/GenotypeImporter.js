@@ -78,7 +78,7 @@ export default class GenotypeImporter {
     }
   }
 
-  parseFile(fileContents) {
+  parseFile(fileContents, advancementCallback, completionCallback) {
     var b4 = Date.now();
 
     // Pre-mapping the marker names to their position for faster loading
@@ -96,8 +96,10 @@ export default class GenotypeImporter {
     for (let line = 0; line < this.totalLineCount; line += 1) {
       this.processFileLine(lines[line], markerNameMap);
       this.processedLines = line;
+      if (advancementCallback) advancementCallback((line + 1) / this.totalLineCount);
     }
     console.log("parseFile took " + (Date.now() - b4) + "ms");
+    if (completionCallback) completionCallback();
     return this.germplasmList;
   }
 

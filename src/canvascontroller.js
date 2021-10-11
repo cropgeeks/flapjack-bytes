@@ -194,7 +194,9 @@ export default class CanvasController {
     // Calculate the y coordinate of the mouse on the allele canvas
     const y = (clientY - rectTop) / (rect.bottom - rectTop) * alleleCanvasHeight;
     // Move the vertical scrollbar to coorodinate y
-    this.genotypeCanvas.dragVerticalScrollbar(y);
+    const newPosition = this.genotypeCanvas.dragVerticalScrollbar(y);
+
+    this.overviewCanvas.moveToPosition(newPosition.marker, newPosition.germplasm, this.genotypeCanvas.visibilityWindow());
   }
 
   dragHorizontalScrollbar(clientX) {
@@ -207,7 +209,9 @@ export default class CanvasController {
     // Calculate the x coordinate of the mouse on the allele canvas
     const x = (clientX - rectLeft) / (rect.right - rectLeft) * alleleCanvasWidth;
     // Move the vertical scrollbar to coorodinate x
-    this.genotypeCanvas.dragHorizontalScrollbar(x);
+    const newPosition = this.genotypeCanvas.dragHorizontalScrollbar(x);
+
+    this.overviewCanvas.moveToPosition(newPosition.marker, newPosition.germplasm, this.genotypeCanvas.visibilityWindow())
   }
 
   dragCanvas(x, y) {
@@ -216,7 +220,9 @@ export default class CanvasController {
     this.dragStartX = x;
     this.dragStartY = y;
 
-    this.genotypeCanvas.move(diffX, diffY);
+    const newPosition = this.genotypeCanvas.move(diffX, diffY);
+
+    this.overviewCanvas.moveToPosition(newPosition.marker, newPosition.germplasm, this.genotypeCanvas.visibilityWindow());
   }
 
   setOverviewPosition(clientX, clientY) {

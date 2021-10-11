@@ -22,6 +22,10 @@ export default function GenotypeRenderer() {
   // eslint-disable-next-line no-unused-vars
   let canvasController;
 
+  // Genotype import progress bar
+  let progressBar;
+  let progressBarBackground;
+
   const boxSize = 16;
 
   let colorScheme;
@@ -57,6 +61,18 @@ export default function GenotypeRenderer() {
   function createRendererComponents(domParent, width, height, overviewWidth, overviewHeight) {
     // Canvas
     const canvasHolder = document.getElementById(domParent.slice(1));
+
+    /*progressBarBackground = document.createElement("div");
+    progressBarBackground.style.width = width + "px";
+    progressBarBackground.style.backgroundColor = "grey";
+
+    progressBar = document.createElement("div");
+    progressBar.style.width = "1%";
+    progressBar.style.height = "30px";
+    progressBar.style.backgroundColor = "green";
+
+    progressBarBackground.append(progressBar);
+    canvasHolder.append(progressBarBackground)*/
 
     genotypeCanvas = new GenotypeCanvas(width, height, boxSize, defaultLineSort);
     canvasHolder.append(genotypeCanvas.canvas);
@@ -335,6 +351,16 @@ export default function GenotypeRenderer() {
     return formCol;
   }
 
+  /*function setAdvancement(ratio) {
+    progressBar.style.width = Math.floor(100 * ratio) + "%";
+    console.log(ratio);
+  }
+
+  function removeAdvancement() {
+    progressBar.remove();
+    progressBarBackground.remove();
+  }*/
+
   function processMarkerPositionsCall(client, url, params, markerpositions = []) {
     return client.get(url, params)
       .then((response) => {
@@ -509,7 +535,7 @@ export default function GenotypeRenderer() {
           genomeMap = genotypeImporter.createFakeMap(genotypeFile);
         }
 
-        const germplasmData = genotypeImporter.parseFile(genotypeFile);
+        const germplasmData = genotypeImporter.parseFile(genotypeFile);  //, setAdvancement, removeAdvancement);
         const { stateTable } = genotypeImporter;
 
         dataSet = new DataSet(genomeMap, germplasmData, stateTable);
@@ -621,7 +647,7 @@ export default function GenotypeRenderer() {
         genomeMap = genotypeImporter.createFakeMap(result);
       }
 
-      germplasmData = genotypeImporter.parseFile(result);
+      germplasmData = genotypeImporter.parseFile(result);  //, setAdvancement, removeAdvancement);
       const { stateTable } = genotypeImporter;
 
       dataSet = new DataSet(genomeMap, germplasmData, stateTable);

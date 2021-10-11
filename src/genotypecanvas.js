@@ -2,6 +2,9 @@ import ScrollBar from './ScrollBar';
 
 export default class GenotypeCanvas {
   constructor(width, height, boxSize, lineSort) {
+    this.width = width;
+    this.height = height;
+
     this.canvas = document.createElement('canvas');
     this.canvas.width = width;
     this.canvas.height = height;
@@ -548,6 +551,7 @@ export default class GenotypeCanvas {
       const scrollX = Math.floor(this.mapToRange(this.translatedX, 0, xScrollMax, 0, scrollWidth));
       this.horizontalScrollbar.move(scrollX, this.horizontalScrollbar.y);
     }
+    return this.currentPosition();
   }
 
   moveY(diffY) {
@@ -567,6 +571,7 @@ export default class GenotypeCanvas {
       const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, yScrollMax, 0, scrollHeight));
       this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
     }
+    return this.currentPosition();
   }
 
   dragVerticalScrollbar(y) {
@@ -588,6 +593,7 @@ export default class GenotypeCanvas {
     }
 
     this.prerender(true);
+    return this.currentPosition();
   }
 
   dragHorizontalScrollbar(x) {
@@ -609,12 +615,13 @@ export default class GenotypeCanvas {
     }
 
     this.prerender(true);
+    return this.currentPosition();
   }
 
   moveToPosition(marker, germplasm) {
     const diffX = this.translatedX - marker * this.boxSize;
     const diffY = this.translatedY - germplasm * this.boxSize;
-    this.move(diffX, diffY)
+    return this.move(diffX, diffY);
   }
 
   move(diffX, diffY) {
@@ -622,6 +629,7 @@ export default class GenotypeCanvas {
     this.moveY(diffY);
 
     this.prerender(true);
+    return this.currentPosition();
   }
 
   mouseOver(x, y) {
@@ -742,6 +750,12 @@ export default class GenotypeCanvas {
     }
 
     this.prerender(true);
+  }
+
+  currentPosition() {
+    const marker = Math.floor(this.translatedX / this.boxSize);
+    const germplasm = Math.floor(this.translatedY / this.boxSize);
+    return {marker, germplasm};
   }
 
   visibilityWindow() {

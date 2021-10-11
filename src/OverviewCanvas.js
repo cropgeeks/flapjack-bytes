@@ -81,9 +81,19 @@ export default class OverviewCanvas {
     return imageData;
   }
 
-  mouseDrag (mouseX, mouseY, visibilityWindow){
+  windowFromPosition (marker, germplasm, visibilityWindow){
     const scale = this.renderingScale(this.width, this.height);
 
+    const cornerX = marker / scale.markersPerPixel;
+    const cornerY = germplasm / scale.germplasmsPerPixel;
+    const windowWidth = visibilityWindow.markers / scale.markersPerPixel;
+    const windowHeight = visibilityWindow.germplasms / scale.germplasmsPerPixel;
+
+    return {x: cornerX, y: cornerY, width: windowWidth, height: windowHeight};
+  }
+
+  mouseDrag (mouseX, mouseY, visibilityWindow){
+    const scale = this.renderingScale(this.width, this.height);
     const centerMarker = mouseX * scale.markersPerPixel;
     const centerGermplasm = mouseY * scale.germplasmsPerPixel;
 
@@ -91,15 +101,17 @@ export default class OverviewCanvas {
     let cornerMarker = Math.min(Math.max(0, Math.floor(centerMarker - visibilityWindow.markers / 2)), this.dataSet.markerCountOn(this.selectedChromosome) - visibilityWindow.markers);
     let cornerGermplasm = Math.min(Math.max(Math.floor(centerGermplasm - visibilityWindow.germplasms / 2), 0), this.dataSet.germplasmList.length - visibilityWindow.germplasms);
 
-    const cornerX = cornerMarker / scale.markersPerPixel;
-    const cornerY = cornerGermplasm / scale.germplasmsPerPixel;
-    const windowWidth = visibilityWindow.markers / scale.markersPerPixel;
-    const windowHeight = visibilityWindow.germplasms / scale.germplasmsPerPixel;
-
-    this.windowRect = {x: cornerX, y: cornerY, width: windowWidth, height: windowHeight};
+    this.windowRect = this.windowFromPosition(cornerMarker, cornerGermplasm, visibilityWindow);
     this.prerender(false);
 
     return {marker: cornerMarker, germplasm: cornerGermplasm};
+  }
+
+  moveToPosition (marker, germplasm, visibilityWindow){
+    this.windowRect = this.windowFromPosition(marker, germplasm, visibilityWindow);
+    this.prerender(false);
+
+    return {marker, germplasm};
   }
 
   setChromosome (chromosomeIndex){
