@@ -44,7 +44,8 @@ export default function GenotypeRenderer() {
   }
 
   function zoom(size) {
-    genotypeCanvas.zoom(size, colorScheme);
+    const newPosition = genotypeCanvas.zoom(size, colorScheme);
+    overviewCanvas.moveToPosition(newPosition.marker, newPosition.germplasm, genotypeCanvas.visibilityWindow());
   }
 
   function setChromosome(chromosomeIndex) {
