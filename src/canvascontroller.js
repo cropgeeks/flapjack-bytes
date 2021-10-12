@@ -192,6 +192,7 @@ export default class CanvasController {
     this.chromosomeIndex = chromosomeIndex;
     this.genotypeCanvas.setChromosome(chromosomeIndex);
     this.overviewCanvas.setChromosome(chromosomeIndex);
+    this.overviewCanvas.moveToPosition(0, 0, this.genotypeCanvas.visibilityWindow());
   }
 
   getGenotypeMouseLocation(clientX, clientY) {

@@ -59,7 +59,7 @@ export default function GenotypeRenderer() {
     }
   }
 
-  function createRendererComponents(domParent, widthValue, height, overviewWidthValue, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth) {
+  function createRendererComponents(domParent, widthValue, height, overviewWidthValue, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, showProgress) {
     // Canvas
     if (minGenotypeAutoWidth === undefined) minGenotypeAutoWidth = 0;
     if (minOverviewAutoWidth === undefined) minOverviewAutoWidth = 0;
@@ -69,7 +69,7 @@ export default function GenotypeRenderer() {
     const computedStyles = window.getComputedStyle(canvasHolder);
     const autoWidth = canvasHolder.clientWidth - parseInt(computedStyles.paddingLeft) - parseInt(computedStyles.paddingRight);
     const width = (widthValue === null) ? Math.max(autoWidth, minGenotypeAutoWidth) : widthValue;
-    const overviewWidth = (overviewWidthValue === null) ? Math.max(autoWidth, minOverviewAutoWidth) : overviewWidthValue;
+    let overviewWidth = (overviewWidthValue === null) ? Math.max(autoWidth, minOverviewAutoWidth) : overviewWidthValue;
 
     // Controls
     const controlDiv = document.createElement('div');
@@ -130,18 +130,20 @@ export default function GenotypeRenderer() {
     controlFieldSet.appendChild(zoomContainer);
     canvasHolder.appendChild(controlFieldSet);
 
-    // Progress bar
-    progressBarBackground = document.createElement("div");
-    progressBarBackground.style.width = width + "px";
-    progressBarBackground.style.backgroundColor = "grey";
+    if (showProgress){
+      // Progress bar
+      progressBarBackground = document.createElement("div");
+      progressBarBackground.style.width = width + "px";
+      progressBarBackground.style.backgroundColor = "grey";
 
-    progressBar = document.createElement("div");
-    progressBar.style.width = "1%";
-    progressBar.style.height = "30px";
-    progressBar.style.backgroundColor = "cyan";
+      progressBar = document.createElement("div");
+      progressBar.style.width = "1%";
+      progressBar.style.height = "30px";
+      progressBar.style.backgroundColor = "cyan";
 
-    progressBarBackground.append(progressBar);
-    canvasHolder.append(progressBarBackground)
+      progressBarBackground.append(progressBar);
+      canvasHolder.append(progressBarBackground);
+    }
 
     genotypeCanvas = new GenotypeCanvas(width, height, boxSize, defaultLineSort);
     canvasHolder.append(genotypeCanvas.canvas);
@@ -400,6 +402,7 @@ export default function GenotypeRenderer() {
   }
 
   function processVariantSetCall(client, url, params, variantSetCalls = []) {
+    if (params === undefined) params = {};
     return client.get(url, params)
       .then((response) => {
         const { nextPageToken } = response.data.metadata.pagination;
@@ -420,7 +423,7 @@ export default function GenotypeRenderer() {
       });
   }
 
-  genotypeRenderer.renderGenotypesBrapi = function renderGenotypesBrapi({
+  genotypeRenderer.renderGenotypesBrapi = function renderGenotypesBrapi(
     domParent,
     width,
     height,
@@ -432,9 +435,9 @@ export default function GenotypeRenderer() {
     overviewHeight,
     minGenotypeAutoWidth,
     minOverviewAutoWidth
-  }) {
+  ) {
     clearParent(domParent)
-    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth);
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, false);
     let germplasmData;
 
     const client = axios.create({ baseURL: server });
@@ -528,10 +531,11 @@ export default function GenotypeRenderer() {
     minOverviewAutoWidth
   ) {
     clearParent(domParent);
-    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth);
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, true);
 
     let mapFile;
     let genotypeFile;
+    let germplasmData;
 
     const mapPromise = axios.get(mapFileURL, {}, { headers: { 'Content-Type': 'text/plain' } }).then((response) => {
       mapFile = response.data;
@@ -637,7 +641,7 @@ export default function GenotypeRenderer() {
     minOverviewAutoWidth
   ) {
     clearParent(domParent);
-    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth);
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, true);
     // let qtls = [];
     let germplasmData;
 
