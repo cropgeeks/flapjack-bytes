@@ -95,7 +95,7 @@ export default class GenotypeImporter {
 
     // Give the browser some time to keep the page alive between the parsing of each line
     // Avoid a complete freeze during a large file load
-    // This leaves a few milliseconds between the parsing of each line for the browser to refresh itself
+    // This yields control between the parsing of each line for the browser to refresh itself
     // This calls recursively and asynchronously the parsing of the following line
     // In order to get a single promise that returns only once all the lines have been parsed
     function doLine(line) {
@@ -106,11 +106,11 @@ export default class GenotypeImporter {
           advancementCallback(self.processedLines / self.totalLineCount);
         
         if (line + 1 < self.totalLineCount){
-          // Let the browser do its things for a few milliseconds, run the next lines (recursively),
+          // Yield to the browser to let it do its things, run the next lines (recursively),
           // and return once they are done
           setTimeout(function (){
             doLine(line + 1).then(resolve);
-          }, 2);
+          }, 0);
         } else {  // Finish
           resolve();
         }

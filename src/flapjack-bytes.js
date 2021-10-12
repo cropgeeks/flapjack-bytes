@@ -148,7 +148,6 @@ export default function GenotypeRenderer() {
     genotypeCanvas = new GenotypeCanvas(width, height, boxSize, defaultLineSort);
     canvasHolder.append(genotypeCanvas.canvas);
 
-    // FIXME ?
     if (!overviewWidth) overviewWidth = width;
     if (!overviewHeight) overviewHeight = 200;
 
@@ -159,11 +158,6 @@ export default function GenotypeRenderer() {
     const form = document.createElement('div');
     const formRow = document.createElement('div');
     formRow.classList.add('row');
-
-    /*const colorButton = document.createElement('button');
-    colorButton.id = 'colorButton';
-    const textnode = document.createTextNode('Color schemes...');
-    colorButton.appendChild(textnode);*/
 
     const colorFieldSet = createColorSchemeFieldset();
     const sortFieldSet = createSortFieldSet();
@@ -182,7 +176,7 @@ export default function GenotypeRenderer() {
     canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, widthValue === null, overviewWidthValue === null, minGenotypeAutoWidth, minOverviewAutoWidth);
   }
 
-  function addRadioButton(name, id, text, checked, parent) {
+  function addRadioButton(name, id, text, checked, parent, subcontrol) {
     const formCheck = document.createElement('div');
     formCheck.classList.add('form-check');
     const radio = document.createElement('input');
@@ -195,11 +189,12 @@ export default function GenotypeRenderer() {
     const radioLabel = document.createElement('label');
     radioLabel.htmlFor = id;
     radioLabel.classList.add('form-check-label');
-    const labelText = document.createTextNode(text);
+    const labelText = document.createTextNode(text + " ");
     radioLabel.appendChild(labelText);
 
     formCheck.appendChild(radio);
     formCheck.appendChild(radioLabel);
+    if (subcontrol) formCheck.appendChild(subcontrol);
     parent.appendChild(formCheck);
   }
 
@@ -244,25 +239,25 @@ export default function GenotypeRenderer() {
     const legendText = document.createTextNode('Color Schemes');
     legend.appendChild(legendText);
 
-    const radioCol = document.createElement('div');
-    radioCol.classList.add('col');
-    addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, radioCol);
-    addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line', false, radioCol);
-
-    const selectLabel = document.createElement('label');
-    selectLabel.htmlFor = 'colorLineSelect';
-    selectLabel.classList.add('col-form-label');
-    const labelText = document.createTextNode('Comparison line:');
-    selectLabel.appendChild(labelText);
-
     const lineSelect = document.createElement('select');
     lineSelect.id = 'colorLineSelect';
     lineSelect.disabled = true;
 
+    const radioCol = document.createElement('div');
+    radioCol.classList.add('col');
+    addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, radioCol);
+    addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line', false, radioCol, lineSelect);
+
+    /*const selectLabel = document.createElement('label');
+    selectLabel.htmlFor = 'colorLineSelect';
+    selectLabel.classList.add('col-form-label');
+    const labelText = document.createTextNode('Comparison line:');
+    selectLabel.appendChild(labelText);*/
+
     fieldset.appendChild(legend);
     fieldset.appendChild(radioCol);
-    fieldset.appendChild(selectLabel);
-    fieldset.appendChild(lineSelect);
+    //fieldset.appendChild(selectLabel);
+    //fieldset.appendChild(lineSelect);
     formGroup.appendChild(fieldset);
 
     formCol.appendChild(formGroup);
@@ -284,26 +279,26 @@ export default function GenotypeRenderer() {
     const legendText = document.createTextNode('Sort lines');
     legend.appendChild(legendText);
 
-    const radioCol = document.createElement('div');
-    radioCol.classList.add('col');
-    addRadioButton('selectedSort', 'importingOrderSort', 'By importing order', true, radioCol);
-    addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
-    addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol);
-
-    const lineSelectLabel = document.createElement('label');
-    lineSelectLabel.htmlFor = 'sortLineSelect';
-    lineSelectLabel.classList.add('col-form-label');
-    const lineSelectLabelText = document.createTextNode('Comparison line:');
-    lineSelectLabel.appendChild(lineSelectLabelText);
-
     const lineSelect = document.createElement('select');
     lineSelect.id = 'sortLineSelect';
     lineSelect.disabled = true;
 
+    const radioCol = document.createElement('div');
+    radioCol.classList.add('col');
+    addRadioButton('selectedSort', 'importingOrderSort', 'By importing order', true, radioCol);
+    addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
+    addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol, lineSelect);
+
+    /*const lineSelectLabel = document.createElement('label');
+    lineSelectLabel.htmlFor = 'sortLineSelect';
+    lineSelectLabel.classList.add('col-form-label');
+    const lineSelectLabelText = document.createTextNode('Comparison line:');
+    lineSelectLabel.appendChild(lineSelectLabelText);*/
+
     fieldset.appendChild(legend);
     fieldset.appendChild(radioCol);
-    fieldset.appendChild(lineSelectLabel);
-    fieldset.appendChild(lineSelect);
+    //fieldset.appendChild(lineSelectLabel);
+    //fieldset.appendChild(lineSelect);
     formGroup.appendChild(fieldset);
 
     formCol.appendChild(formGroup);
