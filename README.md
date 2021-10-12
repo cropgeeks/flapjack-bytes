@@ -24,11 +24,14 @@ API can be found at: http://bioinf.hutton.ac.uk/gobii-flapjack-bytes.
 not.
 - Load data from [BrAPI](https://brapi.org) enabled resources, files on your
 local computer, or via URL.
-- Multiple colour schemes; the default Nucelotride colour scheme, a similarity
+- Multiple colour schemes; the default Nucleotide colour scheme, a similarity
 colour scheme where each line is coloured on a basis of its match to a user
 selectable comparison line.
+- Multiple sorting options; importing order, alphabetic or by similarity rate
 - Highlight of the line and marker under the mouse.
 - Zoomable and scrollable view of the data.
+- Genotype data overview
+- Export the view or overview as images
 
 ## Examples
 
@@ -69,12 +72,14 @@ deployed at: http://bioinf.hutton.ac.uk/gobii-flapjack-bytes.
 var renderer = GenotypeRenderer();
 renderer.renderGenotypesBrapi(
   "#bytes-div",
-  800,
-  600,
-  this.baseUrl,
+  800,  // Genotype view width
+  600,   // Genotype view height
+  this.baseUrl,    // BrAPI base URL
   this.callSetId,
   this.mapId,
   this.authToken
+  800,  // Overview width
+  200,   // Overview height
 );
 ```
 
@@ -85,12 +90,20 @@ resource doesn't require authentication.
 
 The parameters are as follows:
 - the target div which we inject the library's canvas into
-- the width of the canvas the library will create
+- the width of the canvas the library will create 
+    - can be set to `null` to automatically resize the canvas to fit the available width
 - the height of the canvas the library will create
 - the base url of the BrAPI server we're communicating with
 - the ID of the callSet (genotype dataset) to load from the BrAPI server
 - the ID of the map to load from the BrAPI server (or null)
 - the authentication token required to talk to the BrAPI server (or null)
+- the width of the overview the library will create
+    - can be set to `null` to automatically resize the canvas to fit the available width
+    - If undefined, use the same width as the genotype view
+- the height of the overview the library will create (if undefined, use a default height)
+- the minimum width for the genotype view (auto-width mode only, optional)
+- the minimum height for the genotype view (auto-width mode only, optional)
+
 
 ### Local File
 
@@ -124,7 +137,7 @@ into the flapjack-bytes library.
   $(document).ready(function(){
     $("#submit").click(function(){
       var renderer = GenotypeRenderer();
-      renderer.renderGenotypesFile("#canvas-holder", 800, 600, "#mapfile", "#genofile");
+      renderer.renderGenotypesFile("#canvas-holder", null, 600, "#mapfile", "#genofile", null, 200, 600, 600);
       return false;
     });
 });
@@ -136,16 +149,23 @@ button. The meat of the code is the following two lines:
 
 ```javascript
 var renderer = GenotypeRenderer();
-renderer.renderGenotypesFile("#canvas-holder", 800, 600, "#mapfile", "#genofile");
+renderer.renderGenotypesFile("#canvas-holder", null, 600, "#mapfile", "#genofile", null, 200, 600, 600);
 ```
 
 Where the parameters are as follows:
 - the id of the canvas to inject the flapjack-bytes canvas into
 - the width of the canvas
+    - can be set to `null` to automatically resize the canvas to fit the available width
 - the height of the canvas
 - the id of the file input for the map file (which may or may not have been
 populated with a file)
 - the id of the file input for the genotype file
+- the width of the overview
+    - can be set to `null` to automatically resize the canvas to fit the available width
+    - If undefined, use the same width as the genotype view
+- the height of the overview (if undefined, use a default height)
+- the minimum width for the genotype view (auto-width mode only, optional)
+- the minimum height for the genotype view (auto-width mode only, optional)
 
 The map file and genotype file should be in their respective [Flapjack formats](http://flapjack.hutton.ac.uk/en/latest/projects_&_data_formats.html#data-sets-maps-and-genotypes)
 
@@ -185,7 +205,7 @@ loaded into the flapjack-bytes library.
   $(document).ready(function(){
     $("#submit").click(function(){
       var renderer = GenotypeRenderer();
-      renderer.renderGenotypesUrl("#canvas-holder", 800, 600, $('#mapfile').val(), $('#genofile').val());
+      renderer.renderGenotypesUrl("#canvas-holder", 800, 600, $('#mapfile').val(), $('#genofile').val(), 800, 200);
       return false;
     });
 });
@@ -198,12 +218,19 @@ button. The meat of the code is the following two lines:
 ```javascript
 var renderer = GenotypeRenderer();
 renderer.renderGenotypesUrl("#canvas-holder", 800, 600, $('#mapfile').val(),
-$('#genofile').val());
+$('#genofile').val(), 800, 200);
 ```
 
 Where the parameters are as follows:
 - the id of the canvas to inject the flapjack-bytes canvas into
 - the width of the canvas
+    - can be set to `null` to automatically resize the canvas to fit the available width
 - the height of the canvas
 - the value of the mapfile text input (should be a URL)
 - the value of the genotype text input (should be a URL)
+- the width of the overview
+    - can be set to `null` to automatically resize the canvas to fit the available width
+    - If undefined, use the same width as the genotype view
+- the height of the overview (if undefined, use a default height)
+- the minimum width for the genotype view (auto-width mode only, optional)
+- the minimum height for the genotype view (auto-width mode only, optional)
