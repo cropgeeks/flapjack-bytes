@@ -248,16 +248,8 @@ export default function GenotypeRenderer() {
     addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, radioCol);
     addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line', false, radioCol, lineSelect);
 
-    /*const selectLabel = document.createElement('label');
-    selectLabel.htmlFor = 'colorLineSelect';
-    selectLabel.classList.add('col-form-label');
-    const labelText = document.createTextNode('Comparison line:');
-    selectLabel.appendChild(labelText);*/
-
     fieldset.appendChild(legend);
     fieldset.appendChild(radioCol);
-    //fieldset.appendChild(selectLabel);
-    //fieldset.appendChild(lineSelect);
     formGroup.appendChild(fieldset);
 
     formCol.appendChild(formGroup);
@@ -289,16 +281,8 @@ export default function GenotypeRenderer() {
     addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
     addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol, lineSelect);
 
-    /*const lineSelectLabel = document.createElement('label');
-    lineSelectLabel.htmlFor = 'sortLineSelect';
-    lineSelectLabel.classList.add('col-form-label');
-    const lineSelectLabelText = document.createTextNode('Comparison line:');
-    lineSelectLabel.appendChild(lineSelectLabelText);*/
-
     fieldset.appendChild(legend);
     fieldset.appendChild(radioCol);
-    //fieldset.appendChild(lineSelectLabel);
-    //fieldset.appendChild(lineSelect);
     formGroup.appendChild(fieldset);
 
     formCol.appendChild(formGroup);

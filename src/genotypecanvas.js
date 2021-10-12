@@ -114,6 +114,7 @@ export default class GenotypeCanvas {
     this.renderCrosshair();
     this.highlightMarker();
     this.highlightLineName();
+    if (this.lineSort.hasScore) this.highlightLineScore();
   }
 
   calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart) {
@@ -195,14 +196,13 @@ export default class GenotypeCanvas {
   }
 
   highlightLineName() {
-    if (this.lineUnderMouse) {
+    if (this.lineUnderMouse !== undefined) {
       this.drawingContext.save();
       this.drawingContext.translate(0, this.mapCanvasHeight);
       // Prevent line name under scrollbar being highlighted
       const region = new Path2D();
       const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
-      region.rect(0, 0, this.alleleCanvasXOffset,
-        clipHeight);
+      region.rect(0, 0, this.nameCanvasWidth, clipHeight);
       this.drawingContext.clip(region);
 
       this.drawingContext.fillStyle = '#F00';
@@ -216,6 +216,33 @@ export default class GenotypeCanvas {
 
       const y = yPos + (this.boxSize - (this.fontSize / 2));
       this.drawingContext.fillText(name, 0, y);
+      this.drawingContext.restore();
+    }
+  }
+
+  highlightLineScore() {
+    if (this.lineUnderMouse !== undefined) {
+      this.drawingContext.save();
+      this.drawingContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
+      // Prevent line name under scrollbar being highlighted
+      const region = new Path2D();
+      const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+      region.rect(0, 0, this.scoreCanvasWidth, clipHeight);
+      this.drawingContext.clip(region);
+
+      this.drawingContext.fillStyle = '#F00';
+      this.drawingContext.font = this.font;
+
+      const germplasmStart = Math.floor(this.translatedY / this.boxSize);
+      const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
+      const yPos = (this.lineUnderMouse * this.boxSize) - yWiggle;
+
+      const { name } = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+
+      const y = yPos + (this.boxSize - (this.fontSize / 2));
+      const score = this.lineSort.getScore(name);
+      this.drawingContext.fillText(score.toFixed(2), 2, y);
+
       this.drawingContext.restore();
     }
   }
