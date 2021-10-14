@@ -33,7 +33,7 @@ export default class OverviewCanvas {
 
   prerender (redraw){
     if (redraw){
-      this.renderImage(this.backContext, this.width, this.height);
+      this.renderImage(this.backContext, this.width, this.height, false);
     }
 
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
@@ -54,8 +54,8 @@ export default class OverviewCanvas {
   }
 
 
-  renderImage (context, width, height){
-    const imageData = this.createImage(context.createImageData(width, height));
+  renderImage (context, width, height, highlightReference){
+    const imageData = this.createImage(context.createImageData(width, height), highlightReference);
     context.putImageData(imageData, 0, 0);
   }
 
@@ -69,7 +69,7 @@ export default class OverviewCanvas {
 
   // Generate the overview image, squished within a given size
   // Modeled on the desktop version
-  createImage (imageData){
+  createImage (imageData, highlightReference){
     const scale = this.renderingScale(imageData.width, imageData.height);
     const germplasmsPerPixel = this.dataSet.germplasmList.length / imageData.height;
     const markersPerPixel = this.dataSet.markerCountOn(this.selectedChromosome) / imageData.width;
@@ -78,7 +78,7 @@ export default class OverviewCanvas {
       for (let y = 0; y < imageData.height; y += 1){
         const marker = Math.floor(x * scale.markersPerPixel);
         const germplasm = Math.floor(y * scale.germplasmsPerPixel);
-        const color = this.colorScheme.getColor(germplasm, this.selectedChromosome, marker);
+        const color = this.colorScheme.getColor(germplasm, this.selectedChromosome, marker, highlightReference);
 
         const pixelIndex = (y * imageData.width + x) * 4;
         imageData.data[pixelIndex] = color[0];
@@ -171,7 +171,7 @@ export default class OverviewCanvas {
     }
 
     try {
-      this.renderImage(tmpContext, tmpCanvas.width, tmpCanvas.height);
+      this.renderImage(tmpContext, tmpCanvas.width, tmpCanvas.height, true);
       return tmpCanvas.toDataURL(type, encoderOptions);
     } catch (error) {
       window.alert("Overview export failed : the image is probably too large");

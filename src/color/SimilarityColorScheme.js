@@ -35,13 +35,15 @@ export default class SimilarityColorScheme {
     this.greyStamps = [size];
   }
 
-  getColor(germplasm, chromosome, marker){
+  getColor(germplasm, chromosome, marker, highlightReference){
     const compState = this.dataSet.genotypeFor(this.compIndex, chromosome, marker);
     const genoState = this.dataSet.genotypeFor(germplasm, chromosome, marker);
     const lookupValue = this.lookupTable[genoState][compState];
 
     if (genoState === 0){
       return this.colors.white;
+    } else if (this.compIndex === germplasm && highlightReference) {
+      return this.colors.compGreenLight;
     } else {
       switch (lookupValue){
         case similarityCases.misMatch:
