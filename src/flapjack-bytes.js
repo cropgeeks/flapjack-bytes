@@ -540,7 +540,6 @@ export default function GenotypeRenderer() {
     let mapPromise = axios.get(mapFileURL, {
       headers: { 'Content-Type': 'text/plain' },
       onDownloadProgress: function (progressEvent){
-        console.log(progressEvent);
         if (progressEvent.lengthComputable)
           setAdvancement(progressEvent.loaded / progressEvent.total);
       }
@@ -557,7 +556,6 @@ export default function GenotypeRenderer() {
       genotypePromise = axios.get(genotypeFileURL, {
         headers: { 'Content-Type': 'text/plain' },
         onDownloadProgress: function (progressEvent){
-          console.log(progressEvent);
           if (progressEvent.lengthComputable)
             setAdvancement(progressEvent.loaded / progressEvent.total);
         }
