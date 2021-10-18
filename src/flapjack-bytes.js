@@ -1,10 +1,14 @@
 import axios from 'axios';
 import GenotypeCanvas from './genotypecanvas';
+import OverviewCanvas from './OverviewCanvas';
 import CanvasController from './canvascontroller';
 import GenotypeImporter from './GenotypeImporter';
-import NucleotideColorScheme from './NucleotideColorScheme';
+import NucleotideColorScheme from './color/NucleotideColorScheme';
 import MapImporter from './MapImporter';
 import DataSet from './DataSet';
+import ImportingOrderLineSort from './sort/ImportingOrderLineSort'
+
+const defaultLineSort = new ImportingOrderLineSort();
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -12,10 +16,16 @@ export default function GenotypeRenderer() {
 
   // Variables for referring to the genotype canvas
   let genotypeCanvas;
+  let overviewCanvas;
   // TODO: need to investigate a proper clean way to implement this controller
   // functionality
   // eslint-disable-next-line no-unused-vars
   let canvasController;
+
+  // Genotype import progress bar
+  let progressBar;
+  let progressBarLabel;
+  let progressBarBackground;
 
   const boxSize = 16;
 
@@ -35,42 +45,78 @@ export default function GenotypeRenderer() {
   }
 
   function zoom(size) {
-    genotypeCanvas.zoom(size, colorScheme);
+    const newPosition = genotypeCanvas.zoom(size, colorScheme);
+    overviewCanvas.moveToPosition(newPosition.marker, newPosition.germplasm, genotypeCanvas.visibilityWindow());
   }
 
-  function createRendererComponents(domParent, width, height) {
+  function setChromosome(chromosomeIndex) {
+    canvasController.setChromosome(chromosomeIndex);
+  }
+
+  function clearParent(domParent) {
     const canvasHolder = document.getElementById(domParent.slice(1));
+    while (canvasHolder.firstChild){
+      canvasHolder.removeChild(canvasHolder.firstChild);
+    }
+  }
 
-    genotypeCanvas = new GenotypeCanvas(width, height, boxSize);
-    canvasHolder.append(genotypeCanvas.canvas);
+  function createRendererComponents(domParent, widthValue, height, overviewWidthValue, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, showProgress) {
+    // Canvas
+    if (minGenotypeAutoWidth === undefined) minGenotypeAutoWidth = 0;
+    if (minOverviewAutoWidth === undefined) minOverviewAutoWidth = 0;
 
-    const zoomDiv = document.createElement('div');
-    zoomDiv.id = 'zoom-holder';
+    const canvasHolder = document.getElementById(domParent.slice(1));
+    
+    const computedStyles = window.getComputedStyle(canvasHolder);
+    const autoWidth = canvasHolder.clientWidth - parseInt(computedStyles.paddingLeft) - parseInt(computedStyles.paddingRight);
+    const width = (widthValue === null) ? Math.max(autoWidth, minGenotypeAutoWidth) : widthValue;
+    let overviewWidth = (overviewWidthValue === null) ? Math.max(autoWidth, minOverviewAutoWidth) : overviewWidthValue;
 
-    const form = document.createElement('form');
-    const formRow = document.createElement('div');
-    formRow.classList.add('row');
-    const zoomCol = document.createElement('div');
-    zoomCol.classList.add('col');
-    const formZoomDiv = document.createElement('div');
-    formZoomDiv.classList.add('form-group');
+    // Controls
+    const controlDiv = document.createElement('div');
+    controlDiv.id = 'zoom-holder';
+    const controlCol = document.createElement('div');
+    controlCol.classList.add('col');
+    const formControlDiv = document.createElement('div');
+    formControlDiv.classList.add('form-group');
 
-    const zoomFieldSet = document.createElement('fieldset');
-    zoomFieldSet.classList.add('bytes-fieldset');
+    const controlFieldSet = document.createElement('fieldset');
+    controlFieldSet.classList.add('bytes-fieldset');
 
-    const zoomLegend = document.createElement('legend');
-    const zoomLegendText = document.createTextNode('Controls');
-    zoomLegend.appendChild(zoomLegendText);
+    const controlLegend = document.createElement('legend');
+    const controlLegendText = document.createTextNode('Controls');
+    controlLegend.appendChild(controlLegendText);
 
+    // Chromosome
+    const chromosomeLabel = document.createElement('label');
+    chromosomeLabel.setAttribute('for', 'chromosomeSelect')
+    chromosomeLabel.innerHTML = 'Chromosome: ';
+
+    const chromosomeSelect = document.createElement('select');
+    chromosomeSelect.id = 'chromosomeSelect';
+    chromosomeSelect.addEventListener('change', (event) => {
+      setChromosome(event.target.selectedIndex);
+    });
+
+    const chromosomeContainer = document.createElement('div');
+    chromosomeContainer.append(chromosomeLabel);
+    chromosomeContainer.append(chromosomeSelect);
+
+    // Zoom
     const zoomLabel = document.createElement('label');
     zoomLabel.setAttribute('for', 'zoom-control');
     zoomLabel.innerHTML = 'Zoom:';
 
     const range = document.createElement('input');
+    range.id = 'zoom-control';
     range.setAttribute('type', 'range');
     range.min = 2;
     range.max = 64;
     range.value = 16;
+
+    const zoomContainer = document.createElement('div');
+    zoomContainer.append(zoomLabel);
+    zoomContainer.append(range);
 
     range.addEventListener('change', () => {
       zoom(range.value);
@@ -80,32 +126,71 @@ export default function GenotypeRenderer() {
       zoom(range.value);
     });
 
-    const colorButton = document.createElement('button');
-    colorButton.id = 'colorButton';
-    const textnode = document.createTextNode('Color schemes...');
-    colorButton.appendChild(textnode);
+    controlFieldSet.appendChild(controlLegend);
+    controlFieldSet.appendChild(chromosomeContainer);
+    controlFieldSet.appendChild(zoomContainer);
+    canvasHolder.appendChild(controlFieldSet);
+
+    if (showProgress){
+      // Progress bar
+      progressBarBackground = document.createElement("div");
+      progressBarBackground.style.width = width + "px";
+      progressBarBackground.style.backgroundColor = "grey";
+      progressBarBackground.style.position = "relative";
+
+      progressBar = document.createElement("div");
+      progressBar.style.width = "1%";
+      progressBar.style.height = "30px";
+      progressBar.style.backgroundColor = "cyan";
+
+      const labelContainer = document.createElement("div");
+      labelContainer.style.position = "absolute";
+      labelContainer.style.display = "inline";
+      labelContainer.style.top = "0px";
+      labelContainer.style.left = "15px";
+      labelContainer.style.height = "30px";
+      labelContainer.style.lineHeight = "30px";
+
+      progressBarLabel = document.createTextNode("");
+      labelContainer.appendChild(progressBarLabel);
+
+      progressBarBackground.appendChild(progressBar);
+      progressBarBackground.appendChild(labelContainer);
+      canvasHolder.append(progressBarBackground);
+    }
+
+    genotypeCanvas = new GenotypeCanvas(width, height, boxSize, defaultLineSort);
+    canvasHolder.append(genotypeCanvas.canvas);
+
+    if (!overviewWidth) overviewWidth = width;
+    if (!overviewHeight) overviewHeight = 200;
+
+    overviewCanvas = new OverviewCanvas(overviewWidth, overviewHeight);
+    canvasHolder.append(overviewCanvas.canvas);
+
+    // Form
+    const form = document.createElement('div');
+    const formRow = document.createElement('div');
+    formRow.classList.add('row');
 
     const colorFieldSet = createColorSchemeFieldset();
-
-    zoomFieldSet.appendChild(zoomLegend);
-    zoomFieldSet.appendChild(zoomLabel);
-    zoomFieldSet.appendChild(range);
-    formZoomDiv.appendChild(zoomFieldSet);
-    zoomCol.appendChild(formZoomDiv);
-    formRow.appendChild(zoomCol);
+    const sortFieldSet = createSortFieldSet();
+    const exportFieldSet = createExportFieldSet();
 
     formRow.appendChild(colorFieldSet);
+    formRow.appendChild(sortFieldSet);
+    formRow.appendChild(exportFieldSet);
     form.appendChild(formRow);
-    zoomDiv.appendChild(form);
+    controlDiv.appendChild(form);
     
-    canvasHolder.appendChild(zoomDiv);
+    canvasHolder.appendChild(controlDiv);
 
     addStyleSheet();
 
-    canvasController = new CanvasController(genotypeCanvas);
+    canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, widthValue === null, overviewWidthValue === null, minGenotypeAutoWidth, minOverviewAutoWidth);
   }
 
-  function addRadioButton(name, id, text, checked, parent) {
+  function addRadioButton(name, id, text, checked, parent, subcontrol) {
     const formCheck = document.createElement('div');
     formCheck.classList.add('form-check');
     const radio = document.createElement('input');
@@ -118,11 +203,12 @@ export default function GenotypeRenderer() {
     const radioLabel = document.createElement('label');
     radioLabel.htmlFor = id;
     radioLabel.classList.add('form-check-label');
-    const labelText = document.createTextNode(text);
+    const labelText = document.createTextNode(text + " ");
     radioLabel.appendChild(labelText);
 
     formCheck.appendChild(radio);
     formCheck.appendChild(radioLabel);
+    if (subcontrol) formCheck.appendChild(subcontrol);
     parent.appendChild(formCheck);
   }
 
@@ -167,30 +253,123 @@ export default function GenotypeRenderer() {
     const legendText = document.createTextNode('Color Schemes');
     legend.appendChild(legendText);
 
+    const lineSelect = document.createElement('select');
+    lineSelect.id = 'colorLineSelect';
+    lineSelect.disabled = true;
+
     const radioCol = document.createElement('div');
     radioCol.classList.add('col');
     addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, radioCol);
-    addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line', false, radioCol);
-
-    const selectLabel = document.createElement('label');
-    selectLabel.htmlFor = 'lineSelect';
-    selectLabel.classList.add('col-form-label');
-    const labelText = document.createTextNode('Comparison line:');
-    selectLabel.appendChild(labelText);
-
-    const lineSelect = document.createElement('select');
-    lineSelect.id = 'lineSelect';
-    lineSelect.disabled = true;
+    addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line', false, radioCol, lineSelect);
 
     fieldset.appendChild(legend);
     fieldset.appendChild(radioCol);
-    fieldset.appendChild(selectLabel);
-    fieldset.appendChild(lineSelect);
     formGroup.appendChild(fieldset);
 
     formCol.appendChild(formGroup);
 
     return formCol;
+  }
+
+  function createSortFieldSet() {
+    const formCol = document.createElement('div');
+    formCol.classList.add('col');
+
+    const formGroup = document.createElement('div');
+    formGroup.classList.add('form-group');
+
+    const fieldset = document.createElement('fieldset');
+    fieldset.classList.add('bytes-fieldset');
+
+    const legend = document.createElement('legend');
+    const legendText = document.createTextNode('Sort lines');
+    legend.appendChild(legendText);
+
+    const lineSelect = document.createElement('select');
+    lineSelect.id = 'sortLineSelect';
+    lineSelect.disabled = true;
+
+    const radioCol = document.createElement('div');
+    radioCol.classList.add('col');
+    addRadioButton('selectedSort', 'importingOrderSort', 'By importing order', true, radioCol);
+    addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
+    addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol, lineSelect);
+
+    fieldset.appendChild(legend);
+    fieldset.appendChild(radioCol);
+    formGroup.appendChild(fieldset);
+
+    formCol.appendChild(formGroup);
+    return formCol;
+  }
+
+  function createExportFieldSet() {
+    const formCol = document.createElement('div');
+    formCol.classList.add('col');
+
+    const formGroup = document.createElement('div');
+    formGroup.classList.add('form-group');
+
+    const fieldset = document.createElement('fieldset');
+    fieldset.classList.add('bytes-fieldset');
+
+    const legend = document.createElement('legend');
+    const legendText = document.createTextNode('Export');
+    legend.appendChild(legendText);
+
+    const exportViewButton = document.createElement('button')
+    const exportViewText = document.createTextNode('Export view');
+    exportViewButton.appendChild(exportViewText);
+
+    exportViewButton.addEventListener('click', function(e) {
+      const dataURL = genotypeCanvas.toDataURL('image/png');
+      if (dataURL){  // Export succeeded
+        const element = document.createElement('a');
+        element.setAttribute('href', dataURL);
+        element.setAttribute('download', genotypeCanvas.exportName() + '.png');
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      }
+    });
+
+    const exportOverviewButton = document.createElement('button');
+    const exportOverviewText = document.createTextNode('Export overview');
+    exportOverviewButton.appendChild(exportOverviewText);
+
+    exportOverviewButton.addEventListener('click', function(e) {
+      const dataURL = overviewCanvas.toDataURL('image/png');
+      if (dataURL){  // Export succeeded
+        const element = document.createElement('a');
+        element.setAttribute('href', dataURL);
+        element.setAttribute('download', overviewCanvas.exportName() + '.png');
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
+      }
+    });
+
+    fieldset.appendChild(legend);
+    fieldset.appendChild(exportViewButton);
+    fieldset.appendChild(exportOverviewButton);
+    formGroup.appendChild(fieldset);
+
+    formCol.appendChild(formGroup);
+    return formCol;
+  }
+
+  function setProgressBarLabel(newLabel) {
+    progressBarLabel.data = newLabel;
+  }
+
+  function setAdvancement(ratio) {
+    progressBar.style.width = Math.floor(100 * ratio) + "%";
+  }
+
+  function removeAdvancement() {
+    progressBarBackground.remove();
   }
 
   function processMarkerPositionsCall(client, url, params, markerpositions = []) {
@@ -219,6 +398,7 @@ export default function GenotypeRenderer() {
   }
 
   function processVariantSetCall(client, url, params, variantSetCalls = []) {
+    if (params === undefined) params = {};
     return client.get(url, params)
       .then((response) => {
         const { nextPageToken } = response.data.metadata.pagination;
@@ -247,8 +427,13 @@ export default function GenotypeRenderer() {
     matrixId,
     mapId,
     authToken,
+    overviewWidth,
+    overviewHeight,
+    minGenotypeAutoWidth,
+    minOverviewAutoWidth
   ) {
-    createRendererComponents(domParent, width, height);
+    clearParent(domParent)
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, false);
     let germplasmData;
 
     const client = axios.create({ baseURL: server });
@@ -277,9 +462,9 @@ export default function GenotypeRenderer() {
               colorScheme = new NucleotideColorScheme(dataSet);
 
               populateLineSelect();
+              populateChromosomeSelect();
 
-              genotypeCanvas.init(dataSet, colorScheme);
-              genotypeCanvas.prerender();
+              canvasController.init(dataSet, colorScheme);
 
               // Tells the dom parent that Flapjack has finished loading. Allows spinners
               // or similar to be disabled
@@ -312,9 +497,9 @@ export default function GenotypeRenderer() {
           colorScheme = new NucleotideColorScheme(dataSet);
 
           populateLineSelect();
+          populateChromosomeSelect();
 
-          genotypeCanvas.init(dataSet, colorScheme);
-          genotypeCanvas.prerender();
+          canvasController.init(dataSet, colorScheme);
 
           // Tells the dom parent that Flapjack has finished loading. Allows spinners
           // or similar to be disabled
@@ -336,51 +521,89 @@ export default function GenotypeRenderer() {
     mapFileURL,
     genotypeFileURL,
     authToken,
+    overviewWidth,
+    overviewHeight,
+    minGenotypeAutoWidth,
+    minOverviewAutoWidth
   ) {
-    createRendererComponents(domParent, width, height);
+    clearParent(domParent);
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, true);
 
     let mapFile;
     let genotypeFile;
+    let germplasmData;
+    let genotypePromise;
 
-    axios.get(mapFileURL, {}, { headers: { 'Content-Type': 'text/plain' } }).then((response) => {
+    setProgressBarLabel("Downloading the genome map...");
+    setAdvancement(0);
+
+    let mapPromise = axios.get(mapFileURL, {
+      headers: { 'Content-Type': 'text/plain' },
+      onDownloadProgress: function (progressEvent){
+        if (progressEvent.lengthComputable)
+          setAdvancement(progressEvent.loaded / progressEvent.total);
+      }
+    }).then((response) => {
       mapFile = response.data;
     }).catch((error) => {
-      console.log(error)
-    }).then(() => {
-      if (mapFile !== undefined) {
-        const mapImporter = new MapImporter();
-        genomeMap = mapImporter.parseFile(mapFile);
-      }
+      console.error(error);
+    });
 
-      axios.get(genotypeFileURL, {}, { headers: { 'Content-Type': 'text/plain' } }).then((response) => {
+    mapPromise = mapPromise.then(function (){
+      setProgressBarLabel("Downloading the genotypes...");
+      setAdvancement(0);
+
+      genotypePromise = axios.get(genotypeFileURL, {
+        headers: { 'Content-Type': 'text/plain' },
+        onDownloadProgress: function (progressEvent){
+          if (progressEvent.lengthComputable)
+            setAdvancement(progressEvent.loaded / progressEvent.total);
+        }
+      }).then((response) => {
         genotypeFile = response.data;
-      }).then(() => {
+      }).catch((error) => {
+        console.error(error);
+      });
+
+      genotypePromise = genotypePromise.then(function (){
+        setAdvancement(0);
+        setProgressBarLabel("Processing the genome map...")
+
+        if (mapFile !== undefined) {
+          const mapImporter = new MapImporter();
+          genomeMap = mapImporter.parseFile(mapFile);
+        }
+
+        setProgressBarLabel("Processing the genotypes...");
         genotypeImporter = new GenotypeImporter(genomeMap);
 
         if (genomeMap === undefined) {
           genomeMap = genotypeImporter.createFakeMap(genotypeFile);
         }
 
-        const germplasmData = genotypeImporter.parseFile(genotypeFile);
-        const { stateTable } = genotypeImporter;
+        genotypeImporter.parseFile(genotypeFile, setAdvancement, removeAdvancement).then(function (germplasmList) {
+          germplasmData = germplasmList;
+          const { stateTable } = genotypeImporter;
 
-        dataSet = new DataSet(genomeMap, germplasmData, stateTable);
-        colorScheme = new NucleotideColorScheme(dataSet);
+          dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+          colorScheme = new NucleotideColorScheme(dataSet);
 
-        populateLineSelect();
+          populateLineSelect();
+          populateChromosomeSelect();
 
-        genotypeCanvas.init(dataSet, colorScheme);
-        genotypeCanvas.prerender();
+          canvasController.init(dataSet, colorScheme);
 
-        // Tells the dom parent that Flapjack has finished loading. Allows spinners
-        // or similar to be disabled
-        sendEvent('FlapjackFinished', domParent);
+          // Tells the dom parent that Flapjack has finished loading. Allows spinners
+          // or similar to be disabled
+          sendEvent('FlapjackFinished', domParent);
+        });
       }).catch((error) => {
         sendEvent('FlapjackError', domParent);
         // eslint-disable-next-line no-console
         console.log(error);
       });
     });
+
     return genotypeRenderer;
   };
 
@@ -400,13 +623,32 @@ export default function GenotypeRenderer() {
   }
 
   function populateLineSelect() {
-    const lineSelect = document.getElementById('lineSelect');
-    dataSet.germplasmList.forEach((germplasm, idx) => {
+    const colorLineSelect = document.getElementById('colorLineSelect');
+    const sortLineSelect = document.getElementById('sortLineSelect');
+
+    let optList = dataSet.germplasmList.slice();  // Shallow copy
+    optList.sort((a, b) => (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0)));  // Alphabetic sort
+    optList.forEach(germplasm => {
       const opt = document.createElement('option');
-      opt.value = idx;
+      opt.value = germplasm.name;
       opt.text = germplasm.name;
-      lineSelect.add(opt);
+      colorLineSelect.add(opt);
+      sortLineSelect.add(opt.cloneNode(true));
     });
+  }
+
+  function populateChromosomeSelect() {
+    const chromosomeSelect = document.getElementById('chromosomeSelect');
+
+    dataSet.genomeMap.chromosomes.forEach((chromosome, index) => {
+      const opt = document.createElement('option');
+      opt.value = index;
+      opt.text = chromosome.name;
+      opt.selected = true;
+      chromosomeSelect.add(opt);
+    });
+
+    chromosomeSelect.selectedIndex = 0;
   }
 
   genotypeRenderer.renderGenotypesFile = function renderGenotypesFile(
@@ -415,21 +657,31 @@ export default function GenotypeRenderer() {
     height,
     mapFileDom,
     genotypeFileDom,
+    overviewWidth,
+    overviewHeight,
+    minGenotypeAutoWidth,
+    minOverviewAutoWidth
   ) {
-    createRendererComponents(domParent, width, height);
+    clearParent(domParent);
+    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, true);
     // let qtls = [];
     let germplasmData;
 
+    setProgressBarLabel("Loading file contents...");
+
     const mapFile = document.getElementById(mapFileDom.slice(1)).files[0];
-    const mapPromise = loadFromFile(mapFile);
+    let mapPromise = loadFromFile(mapFile);
     // const qtlPromise = loadFromFile(qtlFileDom);
     const genotypeFile = document.getElementById(genotypeFileDom.slice(1)).files[0];
-    const genotypePromise = loadFromFile(genotypeFile);
+    let genotypePromise = loadFromFile(genotypeFile);
 
     // Load map data
-    mapPromise.then((result) => {
+    mapPromise = mapPromise.then((result) => {
       const mapImporter = new MapImporter();
       genomeMap = mapImporter.parseFile(result);
+    }).catch(reason => {
+      console.error(reason);
+      genomeMap = undefined;
     });
 
     // // Then QTL data
@@ -440,30 +692,37 @@ export default function GenotypeRenderer() {
     // });
 
     // Then genotype data
-    genotypePromise.then((result) => {
+    // Must be executed after the map file has been parsed *and* the genotype file has been read
+    Promise.all([mapPromise, genotypePromise]).then((results) => {
+      let result = results[1];
       genotypeImporter = new GenotypeImporter(genomeMap);
 
       if (genomeMap === undefined) {
         genomeMap = genotypeImporter.createFakeMap(result);
       }
 
-      germplasmData = genotypeImporter.parseFile(result);
-      const { stateTable } = genotypeImporter;
+      setProgressBarLabel("Processing genotypes...");
+      setAdvancement(0);
 
-      dataSet = new DataSet(genomeMap, germplasmData, stateTable);
-      colorScheme = new NucleotideColorScheme(dataSet);
+      genotypeImporter.parseFile(result, setAdvancement, removeAdvancement).then(function (germplasmList){
+        germplasmData = germplasmList;
+        const { stateTable } = genotypeImporter;
 
-      populateLineSelect();
+        dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+        colorScheme = new NucleotideColorScheme(dataSet);
 
-      genotypeCanvas.init(dataSet, colorScheme);
-      genotypeCanvas.prerender();
+        populateLineSelect();
+        populateChromosomeSelect();
+
+        canvasController.init(dataSet, colorScheme);
+      });
     });
 
     return genotypeRenderer;
   };
 
   genotypeRenderer.getRenderingProgressPercentage = function getRenderingProgressPercentage() {
-	return genotypeImporter == null ? -1 : genotypeImporter.getImportProgressPercentage();
+    return genotypeImporter == null ? -1 : genotypeImporter.getImportProgressPercentage();
   };
 
   return genotypeRenderer;

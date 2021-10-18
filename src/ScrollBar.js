@@ -23,6 +23,17 @@ export default class ScrollBar {
     this.widget.render(ctx);
   }
 
+  setPosition(x, y){
+    this.x = x;
+    this.y = y;
+
+    if (this.vertical){
+      this.widget.setPosition(x, this.widget.widgetY);
+    } else {
+      this.widget.setPosition(this.widget.widgetX, y);
+    }
+  }
+
   move(newX, newY) {
     this.widget.move(newX, newY);
   }
