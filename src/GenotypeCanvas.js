@@ -940,8 +940,17 @@ export default class GenotypeCanvas {
   }
 
   setSortComparisonLine(comparedName) {
-    this.lineSort.setComparisonLine(comparedName);
-    this.sortLines();
+    if (this.lineSort.setComparisonLine !== undefined){
+      this.lineSort.setComparisonLine(comparedName);
+      this.sortLines();
+    }
+  }
+
+  setSortTrait(comparedTrait) {
+    if (this.lineSort.setTrait !== undefined){
+      this.lineSort.setTrait(comparedTrait);
+      this.sortLines();
+    }
   }
 
   setChromosome(chromosomeIndex) {
@@ -950,7 +959,9 @@ export default class GenotypeCanvas {
     // Reset the position
     this.moveToPosition(0, 0);
 
-    this.lineSort.setChromosomes([chromosomeIndex]);
+    if (this.lineSort.setChromosomes !== undefined){
+      this.lineSort.setChromosomes([chromosomeIndex]);
+    }
     this.sortLines();  // This redraws too
   }
 

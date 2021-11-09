@@ -1,7 +1,7 @@
 import axios from 'axios';
-import GenotypeCanvas from './genotypecanvas';
+import GenotypeCanvas from './GenotypeCanvas';
 import OverviewCanvas from './OverviewCanvas';
-import CanvasController from './canvascontroller';
+import CanvasController from './CanvasController';
 import NucleotideColorScheme from './color/NucleotideColorScheme';
 import MapImporter from './MapImporter';
 import GenotypeImporter from './GenotypeImporter';
@@ -63,17 +63,17 @@ export default function GenotypeRenderer() {
     }
   }
 
-  function createRendererComponents(domParent, widthValue, height, overviewWidthValue, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, showProgress) {
+  function createRendererComponents(config, showProgress) {
     // Canvas
-    if (minGenotypeAutoWidth === undefined) minGenotypeAutoWidth = 0;
-    if (minOverviewAutoWidth === undefined) minOverviewAutoWidth = 0;
+    if (config.minGenotypeAutoWidth === undefined) config.minGenotypeAutoWidth = 0;
+    if (config.minOverviewAutoWidth === undefined) config.minOverviewAutoWidth = 0;
 
-    const canvasHolder = document.getElementById(domParent.slice(1));
+    const canvasHolder = document.getElementById(config.domParent.slice(1));
     
     const computedStyles = window.getComputedStyle(canvasHolder);
     const autoWidth = canvasHolder.clientWidth - parseInt(computedStyles.paddingLeft) - parseInt(computedStyles.paddingRight);
-    const width = (widthValue === null) ? Math.max(autoWidth, minGenotypeAutoWidth) : widthValue;
-    let overviewWidth = (overviewWidthValue === null) ? Math.max(autoWidth, minOverviewAutoWidth) : overviewWidthValue;
+    const width = (config.width === null) ? Math.max(autoWidth, config.minGenotypeAutoWidth) : config.width;
+    let overviewWidth = (config.overviewWidth === null) ? Math.max(autoWidth, config.minOverviewAutoWidth) : config.overviewWidth;
 
     // Controls
     const controlDiv = document.createElement('div');
@@ -162,13 +162,13 @@ export default function GenotypeRenderer() {
       canvasHolder.append(progressBarBackground);
     }
 
-    genotypeCanvas = new GenotypeCanvas(width, height, boxSize, defaultLineSort);
+    genotypeCanvas = new GenotypeCanvas(width, config.height, boxSize, defaultLineSort);
     canvasHolder.append(genotypeCanvas.canvas);
 
     if (!overviewWidth) overviewWidth = width;
-    if (!overviewHeight) overviewHeight = 200;
+    if (!config.overviewHeight) config.overviewHeight = 200;
 
-    overviewCanvas = new OverviewCanvas(overviewWidth, overviewHeight);
+    overviewCanvas = new OverviewCanvas(overviewWidth, config.overviewHeight);
     canvasHolder.append(overviewCanvas.canvas);
 
     // Form
@@ -176,9 +176,9 @@ export default function GenotypeRenderer() {
     const formRow = document.createElement('div');
     formRow.classList.add('row');
 
-    const colorFieldSet = createColorSchemeFieldset();
-    const sortFieldSet = createSortFieldSet();
-    const exportFieldSet = createExportFieldSet();
+    const colorFieldSet = createColorSchemeFieldset(config);
+    const sortFieldSet = createSortFieldSet(config);
+    const exportFieldSet = createExportFieldSet(config);
 
     formRow.appendChild(colorFieldSet);
     formRow.appendChild(sortFieldSet);
@@ -190,7 +190,7 @@ export default function GenotypeRenderer() {
 
     addStyleSheet();
 
-    canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, widthValue === null, overviewWidthValue === null, minGenotypeAutoWidth, minOverviewAutoWidth);
+    canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, config.width === null, config.overviewWidth === null, config.minGenotypeAutoWidth, config.minOverviewAutoWidth);
   }
 
   function addRadioButton(name, id, text, checked, parent, subcontrol) {
@@ -242,7 +242,7 @@ export default function GenotypeRenderer() {
     // addCSSRule(sheet, 'input', 'margin: .4rem;');
   }
 
-  function createColorSchemeFieldset() {
+  function createColorSchemeFieldset(config) {
     const formCol = document.createElement('div');
     formCol.classList.add('col');
 
@@ -274,7 +274,7 @@ export default function GenotypeRenderer() {
     return formCol;
   }
 
-  function createSortFieldSet() {
+  function createSortFieldSet(config) {
     const formCol = document.createElement('div');
     formCol.classList.add('col');
 
@@ -298,6 +298,13 @@ export default function GenotypeRenderer() {
     addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
     addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol, lineSelect);
 
+    if (config.phenotypeFileDom !== undefined || config.phenotypeURL !== undefined){
+      const traitSelect = document.createElement('select');
+      traitSelect.id = 'sortTraitSelect';
+      traitSelect.disabled = true;
+      addRadioButton('selectedSort', 'traitSort', 'By trait', false, radioCol, traitSelect);
+    }
+
     fieldset.appendChild(legend);
     fieldset.appendChild(radioCol);
     formGroup.appendChild(fieldset);
@@ -306,7 +313,7 @@ export default function GenotypeRenderer() {
     return formCol;
   }
 
-  function createExportFieldSet() {
+  function createExportFieldSet(config) {
     const formCol = document.createElement('div');
     formCol.classList.add('col');
 
@@ -448,7 +455,7 @@ export default function GenotypeRenderer() {
     }
 
     clearParent(config.domParent)
-    createRendererComponents(config.domParent, config.width, config.height, config.overviewWidth, config.overviewHeight, config.minGenotypeAutoWidth, config.minOverviewAutoWidth, false);
+    createRendererComponents(config, false);
     let germplasmData;
 
     const client = axios.create({ baseURL: config.server });
@@ -557,7 +564,7 @@ export default function GenotypeRenderer() {
     }
 
     clearParent(config.domParent);
-    createRendererComponents(config.domParent, config.width, config.height, config.overviewWidth, config.overviewHeight, config.minGenotypeAutoWidth, config.minOverviewAutoWidth, true);
+    createRendererComponents(config, true);
 
     let mapFile;
     let genotypeFile;
@@ -667,6 +674,17 @@ export default function GenotypeRenderer() {
     });
   }
 
+  function populateTraitSelect() {
+    const traitSelect = document.getElementById('sortTraitSelect');
+
+    dataSet.traitNames.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.text = name;
+      traitSelect.add(opt);
+    });
+  }
+
   function populateChromosomeSelect() {
     const chromosomeSelect = document.getElementById('chromosomeSelect');
 
@@ -706,7 +724,7 @@ export default function GenotypeRenderer() {
     }
 
     clearParent(config.domParent);
-    createRendererComponents(config.domParent, config.width, config.height, config.overviewWidth, config.overviewHeight, config.minGenotypeAutoWidth, config.minOverviewAutoWidth, true);
+    createRendererComponents(config, true);
     // let qtls = [];
     let germplasmData;
 
@@ -780,6 +798,7 @@ export default function GenotypeRenderer() {
         colorScheme = new NucleotideColorScheme(dataSet);
 
         populateLineSelect();
+        populateTraitSelect();
         populateChromosomeSelect();
 
         canvasController.init(dataSet, colorScheme);
