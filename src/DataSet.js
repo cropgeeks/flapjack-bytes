@@ -1,14 +1,31 @@
 import {buildSimilarityLookupTable} from './Similarity'
 
 export default class DataSet {
-  constructor(genomeMap, germplasmList, stateTable) {
+  constructor(genomeMap, germplasmList, stateTable, traits, phenotypes) {
     this.genomeMap = genomeMap;
     this.germplasmList = germplasmList;
+    this.stateTable = stateTable;
+    this.traits = traits;
+
     // Keep the importing order to allow getting back to it later on
     this.importingOrder = germplasmList.map(germplasm => germplasm.name);
-    this.stateTable = stateTable;
+
     // Pre-compute the similarity matrix
     this.similarityLookupTable = buildSimilarityLookupTable(this.stateTable);
+
+    
+    if (this.traits !== undefined){
+      // Pre-order the traits
+      this.traitNames = Array.from(this.traits.keys());
+      this.traitNames.sort();
+
+      // Set the germplasms' traits
+      this.germplasmList.forEach(germplasm => {
+        germplasm.phenotype = phenotypes.get(germplasm.name);
+      });
+    } else {
+      this.traitNames = undefined;
+    }
   }
 
   germplasmFor(germplasmStart, germplasmEnd) {
@@ -49,5 +66,13 @@ export default class DataSet {
 
   lineCount() {
     return this.germplasmList.length;
+  }
+
+  hasTraits(){
+    return this.traits !== undefined;
+  }
+
+  getTrait(traitName) {
+    return this.traits.get(traitName);
   }
 }

@@ -2,9 +2,10 @@ import axios from 'axios';
 import GenotypeCanvas from './genotypecanvas';
 import OverviewCanvas from './OverviewCanvas';
 import CanvasController from './canvascontroller';
-import GenotypeImporter from './GenotypeImporter';
 import NucleotideColorScheme from './color/NucleotideColorScheme';
 import MapImporter from './MapImporter';
+import GenotypeImporter from './GenotypeImporter';
+import PhenotypeImporter from './PhenotypeImporter'
 import DataSet from './DataSet';
 import ImportingOrderLineSort from './sort/ImportingOrderLineSort'
 
@@ -32,6 +33,8 @@ export default function GenotypeRenderer() {
   let colorScheme;
 
   let genomeMap;
+  let phenotypes;
+  let traits;
   let dataSet;
 
   function sendEvent(eventName, domParent) {
@@ -432,22 +435,34 @@ export default function GenotypeRenderer() {
     minGenotypeAutoWidth,
     minOverviewAutoWidth
   ) {
-    clearParent(domParent)
-    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, false);
+    if (!(config instanceof Object)){
+      config = {
+        domParent: config,  // Position for domParent
+        server, matrixId, mapId, authToken,
+        minGenotypeAutoWidth, minOverviewAutoWidth,
+      };
+      config.width = (width !== undefined) ? width : null;
+      config.height = (height !== undefined) ? height : 600;
+      config.overviewWidth = (overviewWidth !== undefined) ? overviewWidth : config.width;
+      config.overviewHeight = (overviewHeight !== undefined) ? overviewHeight : 200;
+    }
+
+    clearParent(config.domParent)
+    createRendererComponents(config.domParent, config.width, config.height, config.overviewWidth, config.overviewHeight, config.minGenotypeAutoWidth, config.minOverviewAutoWidth, false);
     let germplasmData;
 
-    const client = axios.create({ baseURL: server });
-    client.defaults.headers.common.Authorization = `Bearer ${authToken}`;
+    const client = axios.create({ baseURL: config.server });
+    client.defaults.headers.common.Authorization = `Bearer ${config.authToken}`;
 
     if (mapId !== null) {
       // TODO: GOBii don't have the markerpositions call implemented yet so I
       // can't load map data
-      processMarkerPositionsCall(client, `/markerpositions?mapDbId=${mapId}`)
+      processMarkerPositionsCall(client, `/markerpositions?mapDbId=${config.mapId}`)
         .then((markerpositions) => {
           const mapImporter = new MapImporter();
           genomeMap = mapImporter.parseMarkerpositions(markerpositions);
 
-          processVariantSetCall(client, `/variantsets/${matrixId}/calls`)
+          processVariantSetCall(client, `/variantsets/${config.matrixId}/calls`)
             .then((variantSetCalls) => {
               genotypeImporter = new GenotypeImporter(genomeMap);
 
@@ -468,21 +483,21 @@ export default function GenotypeRenderer() {
 
               // Tells the dom parent that Flapjack has finished loading. Allows spinners
               // or similar to be disabled
-              sendEvent('FlapjackFinished', domParent);
+              sendEvent('FlapjackFinished', config.domParent);
             })
             .catch((error) => {
-              sendEvent('FlapjackError', domParent);
+              sendEvent('FlapjackError', config.domParent);
               // eslint-disable-next-line no-console
               console.log(error);
             });
         })
         .catch((error) => {
-          sendEvent('FlapjackError', domParent);
+          sendEvent('FlapjackError', config.domParent);
           // eslint-disable-next-line no-console
           console.log(error);
         });
     } else {
-      processVariantSetCall(client, `/variantsets/${matrixId}/calls`)
+      processVariantSetCall(client, `/variantsets/${config.matrixId}/calls`)
         .then((variantSetCalls) => {
           genotypeImporter = new GenotypeImporter(genomeMap);
 
@@ -503,10 +518,10 @@ export default function GenotypeRenderer() {
 
           // Tells the dom parent that Flapjack has finished loading. Allows spinners
           // or similar to be disabled
-          sendEvent('FlapjackFinished', domParent);
+          sendEvent('FlapjackFinished', config.domParent);
         })
         .catch((error) => {
-          sendEvent('FlapjackError', domParent);
+          sendEvent('FlapjackError', config.domParent);
           // eslint-disable-next-line no-console
           console.log(error);
         });
@@ -515,7 +530,9 @@ export default function GenotypeRenderer() {
   };
 
   genotypeRenderer.renderGenotypesUrl = function renderGenotypesUrl(
-    domParent,
+    config,  // Positional : domParent
+
+    // Old positional arguments, kept for backwards compatibility
     width,
     height,
     mapFileURL,
@@ -526,8 +543,21 @@ export default function GenotypeRenderer() {
     minGenotypeAutoWidth,
     minOverviewAutoWidth
   ) {
-    clearParent(domParent);
-    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, true);
+    if (!(config instanceof Object)){
+      config = {
+        domParent: config,  // Position for domParent
+        mapFileURL, genotypeFileURL,
+        authToken,
+        minGenotypeAutoWidth, minOverviewAutoWidth,
+      };
+      config.width = (width !== undefined) ? width : null;
+      config.height = (height !== undefined) ? height : 600;
+      config.overviewWidth = (overviewWidth !== undefined) ? overviewWidth : config.width;
+      config.overviewHeight = (overviewHeight !== undefined) ? overviewHeight : 200;
+    }
+
+    clearParent(config.domParent);
+    createRendererComponents(config.domParent, config.width, config.height, config.overviewWidth, config.overviewHeight, config.minGenotypeAutoWidth, config.minOverviewAutoWidth, true);
 
     let mapFile;
     let genotypeFile;
@@ -537,7 +567,7 @@ export default function GenotypeRenderer() {
     setProgressBarLabel("Downloading the genome map...");
     setAdvancement(0);
 
-    let mapPromise = axios.get(mapFileURL, {
+    let mapPromise = axios.get(config.mapFileURL, {
       headers: { 'Content-Type': 'text/plain' },
       onDownloadProgress: function (progressEvent){
         if (progressEvent.lengthComputable)
@@ -553,7 +583,7 @@ export default function GenotypeRenderer() {
       setProgressBarLabel("Downloading the genotypes...");
       setAdvancement(0);
 
-      genotypePromise = axios.get(genotypeFileURL, {
+      genotypePromise = axios.get(config.genotypeFileURL, {
         headers: { 'Content-Type': 'text/plain' },
         onDownloadProgress: function (progressEvent){
           if (progressEvent.lengthComputable)
@@ -595,10 +625,10 @@ export default function GenotypeRenderer() {
 
           // Tells the dom parent that Flapjack has finished loading. Allows spinners
           // or similar to be disabled
-          sendEvent('FlapjackFinished', domParent);
+          sendEvent('FlapjackFinished', config.domParent);
         });
       }).catch((error) => {
-        sendEvent('FlapjackError', domParent);
+        sendEvent('FlapjackError', config.domParent);
         // eslint-disable-next-line no-console
         console.log(error);
       });
@@ -652,7 +682,8 @@ export default function GenotypeRenderer() {
   }
 
   genotypeRenderer.renderGenotypesFile = function renderGenotypesFile(
-    domParent,
+    config,  // domParent in positional
+    // Old positional arguments, kept for backwards compatibility
     width,
     height,
     mapFileDom,
@@ -662,27 +693,64 @@ export default function GenotypeRenderer() {
     minGenotypeAutoWidth,
     minOverviewAutoWidth
   ) {
-    clearParent(domParent);
-    createRendererComponents(domParent, width, height, overviewWidth, overviewHeight, minGenotypeAutoWidth, minOverviewAutoWidth, true);
+    if (!(config instanceof Object)){
+      config = {
+        domParent: config,  // Position for domParent
+        mapFileDom, genotypeFileDom,
+        minGenotypeAutoWidth, minOverviewAutoWidth,
+      };
+      config.width = (width !== undefined) ? width : null;
+      config.height = (height !== undefined) ? height : 600;
+      config.overviewWidth = (overviewWidth !== undefined) ? overviewWidth : config.width;
+      config.overviewHeight = (overviewHeight !== undefined) ? overviewHeight : 200;
+    }
+
+    clearParent(config.domParent);
+    createRendererComponents(config.domParent, config.width, config.height, config.overviewWidth, config.overviewHeight, config.minGenotypeAutoWidth, config.minOverviewAutoWidth, true);
     // let qtls = [];
     let germplasmData;
 
     setProgressBarLabel("Loading file contents...");
+    let loadingPromises = [];
 
-    const mapFile = document.getElementById(mapFileDom.slice(1)).files[0];
-    let mapPromise = loadFromFile(mapFile);
+    if (config.mapFileDom !== undefined){
+      const mapFile = document.getElementById(config.mapFileDom.slice(1)).files[0];
+      let mapPromise = loadFromFile(mapFile);
+
+       // Load map data
+      mapPromise = mapPromise.then((result) => {
+        const mapImporter = new MapImporter();
+        genomeMap = mapImporter.parseFile(result);
+      }).catch(reason => {
+        console.error(reason);
+        genomeMap = undefined;
+      });
+
+      loadingPromises.push(mapPromise);
+    }
+
+    if (config.phenotypeFileDom !== undefined){
+      const phenotypeFile = document.getElementById(config.phenotypeFileDom.slice(1)).files[0];
+      let phenotypePromise = loadFromFile(phenotypeFile);
+
+      // Load phenotype data
+      phenotypePromise = phenotypePromise.then((result) => {
+        const phenotypeImporter = new PhenotypeImporter();
+        phenotypes = phenotypeImporter.parseFile(result);
+        traits = phenotypeImporter.traits;
+      }).catch(reason => {
+        console.error(reason, reason.name);
+        phenotypes = undefined;
+        traits = undefined;
+      });
+
+      loadingPromises.push(phenotypePromise);
+    }
+
     // const qtlPromise = loadFromFile(qtlFileDom);
-    const genotypeFile = document.getElementById(genotypeFileDom.slice(1)).files[0];
+    const genotypeFile = document.getElementById(config.genotypeFileDom.slice(1)).files[0];
     let genotypePromise = loadFromFile(genotypeFile);
-
-    // Load map data
-    mapPromise = mapPromise.then((result) => {
-      const mapImporter = new MapImporter();
-      genomeMap = mapImporter.parseFile(result);
-    }).catch(reason => {
-      console.error(reason);
-      genomeMap = undefined;
-    });
+    loadingPromises.push(genotypePromise);
 
     // // Then QTL data
     // qtlPromise.then((result) => {
@@ -693,8 +761,8 @@ export default function GenotypeRenderer() {
 
     // Then genotype data
     // Must be executed after the map file has been parsed *and* the genotype file has been read
-    Promise.all([mapPromise, genotypePromise]).then((results) => {
-      let result = results[1];
+    Promise.all(loadingPromises).then((results) => {
+      let result = results[results.length - 1];  // The genotype promise is last
       genotypeImporter = new GenotypeImporter(genomeMap);
 
       if (genomeMap === undefined) {
@@ -708,13 +776,17 @@ export default function GenotypeRenderer() {
         germplasmData = germplasmList;
         const { stateTable } = genotypeImporter;
 
-        dataSet = new DataSet(genomeMap, germplasmData, stateTable);
+        dataSet = new DataSet(genomeMap, germplasmData, stateTable, traits, phenotypes);
         colorScheme = new NucleotideColorScheme(dataSet);
 
         populateLineSelect();
         populateChromosomeSelect();
 
         canvasController.init(dataSet, colorScheme);
+
+        // Tells the dom parent that Flapjack has finished loading. Allows spinners
+        // or similar to be disabled
+        sendEvent('FlapjackFinished', config.domParent);
       });
     });
 

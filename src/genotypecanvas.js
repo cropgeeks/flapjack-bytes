@@ -17,6 +17,7 @@ export default class GenotypeCanvas {
     this.backContext = this.backBuffer.getContext('2d');
     this.mapCanvasHeight = 60;
     this.nameCanvasWidth = 100;
+    this.traitBoxWidth = 8;
 
     this.scrollbarWidth = 10;
     this.scrollbarHeight = 10;
@@ -51,11 +52,10 @@ export default class GenotypeCanvas {
     this.sortComparisonLineIndex = 0;
 
     this.scorePadding = 2;
-  }
 
-  /*totalChromosomeGap() {
-    return (this.dataSet.genomeMap.chromosomes.length - 1) * this.chromosomeGapSize;
-  }*/
+    this.columnBackgrounds = ["#FFFFFF", "#D8D8D8"];
+    this.resetColumnBackground();
+  }
 
   maxCanvasWidth() {
     return Math.max((this.dataSet.markerCountOn(this.selectedChromosome) * this.boxSize), this.alleleCanvasWidth());
@@ -95,26 +95,26 @@ export default class GenotypeCanvas {
   prerender(redraw) {
     this.drawingContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    if (redraw) {
-      const dataWidth = Math.ceil((this.alleleCanvasWidth()) / this.boxSize);
-      const markerStart = Math.floor(this.translatedX / this.boxSize);
-      const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCountOn(this.selectedChromosome));
+    const dataWidth = Math.ceil((this.alleleCanvasWidth()) / this.boxSize);
+    const markerStart = Math.floor(this.translatedX / this.boxSize);
+    const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCountOn(this.selectedChromosome));
 
-      const germplasmStart = Math.floor(this.translatedY / this.boxSize);
-      const germplasmEnd = Math.min(germplasmStart
-        + Math.floor(this.canvas.height / this.boxSize), this.dataSet.lineCount());
+    const germplasmStart = Math.floor(this.translatedY / this.boxSize);
+    const germplasmEnd = Math.min(germplasmStart
+      + Math.floor(this.canvas.height / this.boxSize), this.dataSet.lineCount());
 
-      const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
+    const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
 
+    if (redraw)
       this.render(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle);
-    }
-
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
 
-    this.renderCrosshair();
-    this.highlightMarker();
-    this.highlightLineName();
-    if (this.lineSort.hasScore) this.highlightLineScore();
+    const xPos = (this.markerIndexUnderMouse * this.boxSize) - this.translatedX;
+    const yPos = (this.lineUnderMouse * this.boxSize) - yWiggle;
+    this.renderCrosshair(markerStart, xPos, germplasmStart, yPos);
+    this.highlightMarker(dataWidth, markerStart, markerEnd, xPos);
+    this.highlightLineName(germplasmStart, yPos);
+    if (this.lineSort.hasScore) this.highlightLineScore(germplasmStart, yPos);
   }
 
   calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart) {
@@ -124,17 +124,12 @@ export default class GenotypeCanvas {
     return mapMarkerPos;
   }
 
-  highlightMarker() {
+  highlightMarker(dataWidth, markerStart, markerEnd, xPos) {
     if (this.markerUnderMouse) {
-      const dataWidth = Math.ceil(this.alleleCanvasWidth() / this.boxSize);
-
-      const markerStart = Math.floor(this.translatedX / this.boxSize);
-      const markerEnd = Math.min(markerStart + dataWidth, this.dataSet.markerCountOn(this.selectedChromosome));
-
       const renderData = this.dataSet.markersToRenderOn(this.selectedChromosome, markerStart, markerEnd);
 
       const chromosome = this.dataSet.genomeMap.chromosomes[this.selectedChromosome];
-      const chrStart = 0;  // this.chromosomeStarts[this.chromosomeUnderMouse];
+      const chrStart = 0;
       const chrEnd = chromosome.markerCount() * this.boxSize;
       const drawStart = -this.translatedX;
 
@@ -158,7 +153,6 @@ export default class GenotypeCanvas {
       // Translate to the correct position to draw the map
       this.drawingContext.translate(this.alleleCanvasXOffset, 10);
 
-      let xPos = drawStart + (this.markerIndexUnderMouse * this.boxSize);
       xPos += (this.boxSize / 2);
       this.drawingContext.strokeStyle = '#F00';
       this.renderMarker(this.drawingContext, this.markerUnderMouse, xPos, firstMarkerPos, scaleFactor, drawStart);
@@ -195,10 +189,10 @@ export default class GenotypeCanvas {
     }
   }
 
-  highlightLineName() {
+  highlightLineName(germplasmStart, yPos) {
     if (this.lineUnderMouse !== undefined) {
       this.drawingContext.save();
-      this.drawingContext.translate(0, this.mapCanvasHeight);
+      this.drawingContext.translate(this.traitCanvasWidth, this.mapCanvasHeight);
       // Prevent line name under scrollbar being highlighted
       const region = new Path2D();
       const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
@@ -208,10 +202,6 @@ export default class GenotypeCanvas {
       this.drawingContext.fillStyle = '#F00';
       this.drawingContext.font = this.font;
 
-      const germplasmStart = Math.floor(this.translatedY / this.boxSize);
-      const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
-      const yPos = (this.lineUnderMouse * this.boxSize) - yWiggle;
-
       const { name } = this.dataSet.germplasmList[this.lineIndexUnderMouse];
 
       const y = yPos + (this.boxSize - (this.fontSize / 2));
@@ -220,10 +210,10 @@ export default class GenotypeCanvas {
     }
   }
 
-  highlightLineScore() {
+  highlightLineScore(germplasmStart, yPos) {
     if (this.lineUnderMouse !== undefined) {
       this.drawingContext.save();
-      this.drawingContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
+      this.drawingContext.translate(this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth, this.mapCanvasHeight);
       // Prevent line name under scrollbar being highlighted
       const region = new Path2D();
       const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
@@ -232,10 +222,6 @@ export default class GenotypeCanvas {
 
       this.drawingContext.fillStyle = '#F00';
       this.drawingContext.font = this.font;
-
-      const germplasmStart = Math.floor(this.translatedY / this.boxSize);
-      const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
-      const yPos = (this.lineUnderMouse * this.boxSize) - yWiggle;
 
       const { name } = this.dataSet.germplasmList[this.lineIndexUnderMouse];
 
@@ -247,7 +233,7 @@ export default class GenotypeCanvas {
     }
   }
 
-  renderCrosshair() {
+  renderCrosshair(markerStart, xPos, germplasmStart, yPos) {
     // Setup crosshair drawing parameters
     this.drawingContext.save();
     this.drawingContext.translate(this.alleleCanvasXOffset, this.mapCanvasHeight);
@@ -260,8 +246,8 @@ export default class GenotypeCanvas {
     this.drawingContext.clip(region);
 
     // Render each element of the crosshair
-    this.renderVerticalCrosshairLine();
-    this.renderHorizontalCrosshairLine();
+    this.renderVerticalCrosshairLine(xPos);
+    this.renderHorizontalCrosshairLine(yPos);
 
     // Reset the drawing parameters for the rest of the render code
     this.drawingContext.translate(-this.alleleCanvasXOffset, -this.mapCanvasHeight);
@@ -269,29 +255,31 @@ export default class GenotypeCanvas {
     this.drawingContext.restore();
   }
 
-  renderVerticalCrosshairLine() {
-    // const chrStart = this.chromosomeStarts[this.chromosomeUnderMouse];
-    const drawStart = -this.translatedX;
-    const xPos = drawStart + (this.markerIndexUnderMouse * this.boxSize);
-
+  renderVerticalCrosshairLine(xPos) {
     this.drawingContext.fillRect(xPos, 0, this.boxSize, this.alleleCanvasHeight());
   }
 
-  renderHorizontalCrosshairLine() {
-    const germplasmStart = Math.floor(this.translatedY / this.boxSize);
-    const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
-    const yPos = (this.lineUnderMouse * this.boxSize) - yWiggle;
-
+  renderHorizontalCrosshairLine(yPos) {
     this.drawingContext.fillRect(0, yPos, this.alleleCanvasWidth(), this.boxSize);
   }
 
   render(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle) {
+    this.resetColumnBackground();
     this.backContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
     this.renderMap(markerStart, markerEnd);
+
+    if (this.dataSet.hasTraits())
+      this.renderGermplasmTraits(germplasmStart, germplasmEnd, yWiggle);
+
     this.renderGermplasmNames(germplasmStart, germplasmEnd, yWiggle);
-    if (this.lineSort.hasScore){
+
+    if (this.dataSet.hasTraits())
+      this.renderGermplasmTraitValues(germplasmStart, germplasmEnd, yWiggle);
+
+    if (this.lineSort.hasScore)
       this.renderGermplasmScore(germplasmStart, germplasmEnd, yWiggle);
-    }
+
     this.renderGermplasm(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle);
     this.renderScrollbars();
   }
@@ -369,6 +357,44 @@ export default class GenotypeCanvas {
     this.backContext.restore();
   }
 
+  renderGermplasmTraits(germplasmStart, germplasmEnd, yWiggle){
+    this.backContext.save();
+
+    // Create a clipping region so that lineNames can't creep up above the line
+    // name canvas
+    const region = new Path2D();
+    // We need to take account of the scrollbar potentially disappearing when
+    // zoomed out
+    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+    region.rect(0, this.mapCanvasHeight, this.traitCanvasWidth, clipHeight);
+    this.backContext.clip(region);
+
+    const germplasms = this.dataSet.germplasmFor(germplasmStart, germplasmEnd);
+
+    this.backContext.font = this.font;
+    this.backContext.translate(0, this.mapCanvasHeight);
+
+    germplasms.forEach((germplasm, idx) => {
+      const yPos = (idx * this.boxSize) - yWiggle;
+      if (germplasm.phenotype !== undefined){
+        this.dataSet.traitNames.forEach((traitName, traitIndex) => {
+          const xPos = traitIndex * this.traitBoxWidth;
+          const trait = this.dataSet.getTrait(traitName);
+          const traitValue = germplasm.getPhenotype(traitName);
+          if (traitValue !== undefined){
+            const scaleValue = trait.scaleValue(traitValue);
+            let hue = 120 * scaleValue;
+            const rgb = this.hsv2rgb(hue, 0.53, 1);
+            this.backContext.fillStyle = "rgb(" + Math.floor(rgb[0] * 255) + "," + Math.floor(rgb[1] * 255) + "," + Math.floor(rgb[2] * 255) + ")";
+            this.backContext.fillRect(xPos, yPos, this.traitBoxWidth, this.boxSize);
+          }
+        });
+      }
+    });
+
+    this.backContext.restore();
+  }
+
   renderGermplasmNames(germplasmStart, germplasmEnd, yWiggle) {
     this.backContext.save();
 
@@ -378,16 +404,18 @@ export default class GenotypeCanvas {
     // We need to take account of the scrollbar potentially disappearing when
     // zoomed out
     const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
-    region.rect(0, this.mapCanvasHeight, this.nameCanvasWidth, clipHeight);
+    region.rect(this.traitCanvasWidth, this.mapCanvasHeight, this.nameCanvasWidth, clipHeight);
     this.backContext.clip(region);
 
     const lineNames = this.dataSet.germplasmFor(germplasmStart, germplasmEnd)
       .map(germplasm => germplasm.name);
 
+    this.backContext.translate(this.traitCanvasWidth, this.mapCanvasHeight);
+    this.backContext.fillStyle = this.nextColumnBackground();
+    this.backContext.fillRect(0, 0, this.nameCanvasWidth, clipHeight);
+
     this.backContext.fillStyle = '#333';
     this.backContext.font = this.font;
-    this.backContext.translate(0, this.mapCanvasHeight);
-
     lineNames.forEach((name, idx) => {
       const y = (idx * this.boxSize) - yWiggle + (this.boxSize - (this.fontSize / 2));
       this.backContext.fillText(name, 0, y);
@@ -395,8 +423,58 @@ export default class GenotypeCanvas {
     this.backContext.restore();
   }
 
+  renderGermplasmTraitValues(germplasmStart, germplasmEnd, yWiggle) {
+    this.backContext.save();
+
+    // Create a clipping region so that lineNames can't creep up above the line
+    // name canvas
+    const region = new Path2D();
+    // We need to take account of the scrollbar potentially disappearing when
+    // zoomed out
+    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+    region.rect(this.traitCanvasWidth + this.nameCanvasWidth, this.mapCanvasHeight, this.traitValuesCanvasWidth, clipHeight);
+    this.backContext.clip(region);
+
+    const germplasms = this.dataSet.germplasmFor(germplasmStart, germplasmEnd);
+
+    this.backContext.font = this.font;
+    this.backContext.translate(this.traitCanvasWidth + this.nameCanvasWidth, this.mapCanvasHeight);
+
+    let xPos = 0;
+    this.dataSet.traitNames.forEach((traitName, traitIndex) => {
+      this.backContext.fillStyle = this.nextColumnBackground();
+      this.backContext.fillRect(xPos, 0, this.traitValueColumnWidths[traitIndex], clipHeight);
+
+      this.backContext.fillStyle = "#333";
+      const trait = this.dataSet.getTrait(traitName);
+
+      this.backContext.save();
+      const column = new Path2D();
+      column.rect(xPos, 0, this.traitValueColumnWidths[traitIndex], clipHeight);
+      this.backContext.clip(column);
+
+      germplasms.forEach((germplasm, idx) => {
+        if (germplasm.phenotype !== undefined){
+          const yPos = (idx * this.boxSize) - yWiggle;
+          const traitValue = trait.getValue(germplasm.getPhenotype(traitName));
+
+          if (traitValue !== undefined){
+            const y = yPos + (this.boxSize - (this.fontSize / 2));
+            this.backContext.fillText(traitValue.toString(), xPos + this.scorePadding, y);
+          }
+        }
+      });
+
+      this.backContext.restore();
+
+      xPos += this.traitValueColumnWidths[traitIndex];
+    });
+
+    this.backContext.restore();
+  }
+
   // Render the sorting scores column
-  renderGermplasmScore(germplasmStart, germplasmEnd, yWiggle){
+  renderGermplasmScore(germplasmStart, germplasmEnd, yWiggle) {
     this.backContext.save();
 
     // Create a clipping region so that lineNames can't creep up above the line
@@ -405,20 +483,23 @@ export default class GenotypeCanvas {
     // We need to take account of the scrollbar potentially disappearing when
     //zoomed out
     const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
-    region.rect(this.nameCanvasWidth, this.mapCanvasHeight, this.scoreCanvasWidth, clipHeight);
+    region.rect(this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth, this.mapCanvasHeight, this.scoreCanvasWidth, clipHeight);
     this.backContext.clip(region);
 
     const lineNames = this.dataSet.germplasmFor(germplasmStart, germplasmEnd)
       .map(germplasm => germplasm.name);
 
+    this.backContext.translate(this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth, this.mapCanvasHeight);
+    this.backContext.fillStyle = this.nextColumnBackground();
+    this.backContext.fillRect(0, 0, this.scoreCanvasWidth, clipHeight);
+
+
     this.backContext.fillStyle = '#333';
     this.backContext.font = this.font;
-    this.backContext.translate(this.nameCanvasWidth, this.mapCanvasHeight);
-
     lineNames.forEach((name, idx) => {
       const y = (idx * this.boxSize) - yWiggle + (this.boxSize - (this.fontSize / 2));
       const score = this.lineSort.getScore(name);
-      this.backContext.fillText(score.toFixed(2), 2, y);
+      this.backContext.fillText(score.toFixed(2), this.scorePadding, y);
     });
     this.backContext.restore();
   }
@@ -591,7 +672,6 @@ export default class GenotypeCanvas {
     // We need to calculate an offset because the gaps between chromosomes
     // aren't part of the data model
     const mouseXPos = x - this.alleleCanvasXOffset;
-    const mouseXPosCanvas = this.translatedX + mouseXPos;
     const mouseYPos = y - this.mapCanvasHeight;
 
     if (mouseXPos > 0 && mouseXPos < this.alleleCanvasWidth() && mouseXPos < this.maxDataWidth()) {
@@ -607,8 +687,12 @@ export default class GenotypeCanvas {
     }
 
     if (mouseYPos > 0 && mouseYPos < this.alleleCanvasHeight() && mouseYPos < this.maxDataHeight()) {
-      this.lineUnderMouse = Math.max(0, Math.floor(mouseYPos / this.boxSize));
-      this.lineIndexUnderMouse = this.lineUnderMouse + Math.floor(this.translatedY / this.boxSize);
+      const germplasmStart = Math.floor(this.translatedY / this.boxSize);
+      const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
+
+      this.lineUnderMouse = Math.floor((mouseYPos + yWiggle) / this.boxSize);
+      this.lineIndexUnderMouse = Math.floor((this.translatedY + mouseYPos + yWiggle) / this.boxSize);
+      // this.lineIndexUnderMouse = this.lineUnderMouse + Math.floor(this.translatedY / this.boxSize);  // Accumulates rounding errors
     } else {
       this.markerUnderMouse = undefined;
       this.markerIndexUnderMouse = undefined;
@@ -654,7 +738,17 @@ export default class GenotypeCanvas {
     } else {
       this.scoreCanvasWidth = 0;
     }
-    this.alleleCanvasXOffset = this.nameCanvasWidth + this.scoreCanvasWidth;
+
+    if (this.dataSet.hasTraits()){
+      this.traitCanvasWidth = this.dataSet.traits.size * this.traitBoxWidth;
+      this.traitValueColumnWidths = this.dataSet.traitNames.map(name => this.backContext.measureText(this.dataSet.getTrait(name).longestValue).width + 2*this.scorePadding);
+      this.traitValuesCanvasWidth = this.traitValueColumnWidths.reduce((a, b) => a + b);
+    } else {
+      this.traitCanvasWidth = 0;
+      this.traitValuesCanvasWidth = 0;
+    }
+
+    this.alleleCanvasXOffset = this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth;
 
     this.horizontalScrollbar.updateWidth(this.alleleCanvasWidth());
   }
@@ -816,6 +910,21 @@ export default class GenotypeCanvas {
     tmpContext.drawImage(this.canvas, 0, 0);
 
     return tmpCanvas.toDataURL(type, encoderOptions);
+  }
+
+  hsv2rgb(h, s, v) {
+    let f = (n, k = (n + h/60) % 6) => v - v*s*Math.max(Math.min(k, 4-k, 1), 0);     
+    return [f(5), f(3), f(1)];       
+  }
+
+  nextColumnBackground() {
+    const background = this.columnBackgrounds[this.currentColumnBackground];
+    this.currentColumnBackground = (this.currentColumnBackground + 1) % this.columnBackgrounds.length;
+    return background;
+  }
+
+  resetColumnBackground() {
+    this.currentColumnBackground = 1;
   }
 
 //   rainbowColor(numOfSteps, step) {

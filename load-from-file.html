@@ -13,6 +13,10 @@
             <label for="genofile">Genotype file:</label>
             <input type="file" id="genofile" name="genofile">
           </div>
+          <div>
+            <label for="phenofile">Phenotype file:</label>
+            <input type="file" id="phenofile" name="phenofile">
+          </div>
           <input type="submit" action="#" id="submit" name="submit" value="Submit">
       </div>
       <div id="canvas-holder">
@@ -24,7 +28,15 @@
         $(document).ready(function(){
           $("#submit").click(function(){
             var renderer = GenotypeRenderer();
-            renderer.renderGenotypesFile("#canvas-holder", null, 600, "#mapfile", "#genofile", null, 200, 600, 600);
+            renderer.renderGenotypesFile({
+              domParent: "#canvas-holder",
+              width: null, height: 600, 
+              mapFileDom: "#mapfile",
+              genotypeFileDom: "#genofile",
+              phenotypeFileDom: "#phenofile",
+              overviewWidth: null, overviewHeight: 200,
+              minGenotypeAutoWidth: 600, minGenotypeAutoHeight: 600,
+            });
             return false;
           });
       });
