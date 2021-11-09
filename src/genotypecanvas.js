@@ -55,6 +55,9 @@ export default class GenotypeCanvas {
 
     this.columnBackgrounds = ["#FFFFFF", "#D8D8D8"];
     this.resetColumnBackground();
+
+    this.mouseOverText = undefined;
+    this.mouseOverPosition = undefined;
   }
 
   maxCanvasWidth() {
@@ -115,6 +118,7 @@ export default class GenotypeCanvas {
     this.highlightMarker(dataWidth, markerStart, markerEnd, xPos);
     this.highlightLineName(germplasmStart, yPos);
     if (this.lineSort.hasScore) this.highlightLineScore(germplasmStart, yPos);
+    this.renderMouseOverText();
   }
 
   calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart) {
@@ -227,7 +231,7 @@ export default class GenotypeCanvas {
 
       const y = yPos + (this.boxSize - (this.fontSize / 2));
       const score = this.lineSort.getScore(name);
-      this.drawingContext.fillText(score.toFixed(2), 2, y);
+      this.drawingContext.fillText(score.toFixed(2), this.scorePadding, y);
 
       this.drawingContext.restore();
     }
@@ -261,6 +265,34 @@ export default class GenotypeCanvas {
 
   renderHorizontalCrosshairLine(yPos) {
     this.drawingContext.fillRect(0, yPos, this.alleleCanvasWidth(), this.boxSize);
+  }
+
+  renderMouseOverText() {
+    if (this.mouseOverText !== undefined){
+      this.drawingContext.save();
+      this.drawingContext.font = this.font;
+
+      const textWidth = this.drawingContext.measureText(this.mouseOverText).width;
+      const textHeight = this.fontSize;
+      const padding = 4;
+      const boxWidth = textWidth + 2*padding;
+      const boxHeight = textHeight + 2*padding;
+
+      const [xBase, yBase] = this.mouseOverPosition;
+      let drawDirection = [0, -1];
+      if (yBase - boxHeight < 0) drawDirection[1] = 0;
+      if (xBase + boxWidth > this.canvas.width) drawDirection[0] = -1;
+
+      const boxX = xBase + drawDirection[0] * boxWidth;
+      const boxY = yBase + drawDirection[1] * boxHeight;
+
+      this.drawingContext.fillStyle = "rgba(50,50,50,0.8)";
+      this.drawingContext.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+      this.drawingContext.fillStyle = "#FFFFFF";
+      this.drawingContext.fillText(this.mouseOverText, boxX + padding, boxY + boxHeight - padding);
+      this.drawingContext.restore();
+    }
   }
 
   render(germplasmStart, germplasmEnd, markerStart, markerEnd, yWiggle) {
@@ -669,8 +701,6 @@ export default class GenotypeCanvas {
   }
 
   mouseOver(x, y) {
-    // We need to calculate an offset because the gaps between chromosomes
-    // aren't part of the data model
     const mouseXPos = x - this.alleleCanvasXOffset;
     const mouseYPos = y - this.mapCanvasHeight;
 
@@ -684,6 +714,7 @@ export default class GenotypeCanvas {
       this.markerUnderMouse = undefined;
       this.markerIndexUnderMouse = undefined;
       this.lineUnderMouse = undefined;
+      this.lineIndexUnderMouse = undefined;
     }
 
     if (mouseYPos > 0 && mouseYPos < this.alleleCanvasHeight() && mouseYPos < this.maxDataHeight()) {
@@ -691,12 +722,48 @@ export default class GenotypeCanvas {
       const yWiggle = this.translatedY - (germplasmStart * this.boxSize);
 
       this.lineUnderMouse = Math.floor((mouseYPos + yWiggle) / this.boxSize);
-      this.lineIndexUnderMouse = Math.floor((this.translatedY + mouseYPos + yWiggle) / this.boxSize);
+      this.lineIndexUnderMouse = Math.floor((this.translatedY + mouseYPos) / this.boxSize);
       // this.lineIndexUnderMouse = this.lineUnderMouse + Math.floor(this.translatedY / this.boxSize);  // Accumulates rounding errors
     } else {
       this.markerUnderMouse = undefined;
       this.markerIndexUnderMouse = undefined;
       this.lineUnderMouse = undefined;
+      this.lineIndexUnderMouse = undefined;
+    }
+
+    // Mouse over text boxes
+    this.mouseOverText = undefined;
+    this.mouseOverPosition = undefined;
+    if (this.dataSet.hasTraits() && this.lineIndexUnderMouse !== undefined){
+      const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+      if (germplasm.phenotype !== undefined){
+        let traitIndex;
+
+        // Heatmap boxes
+        if (x > 0 && x < this.traitCanvasWidth){
+          traitIndex = Math.floor(x / this.traitBoxWidth);
+        // Value columns
+        } else if (x > this.traitCanvasWidth + this.nameCanvasWidth && x < this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth){
+          const relX = x - this.traitCanvasWidth - this.nameCanvasWidth;
+          let xPos = 0, columnIndex = 0;
+          for (let columnIndex = 0; columnIndex < this.traitValueColumnWidths.length; columnIndex += 1){
+            xPos += this.traitValueColumnWidths[columnIndex];
+            if (relX < xPos){
+              traitIndex = columnIndex;
+              break;
+            }
+          }
+        }
+
+        if (traitIndex !== undefined){
+          const trait = this.dataSet.getTrait(this.dataSet.traitNames[traitIndex]);
+          const traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
+          if (traitValue !== undefined){
+            this.mouseOverText = trait.name + " : " + traitValue;
+            this.mouseOverPosition = [x, y];
+          }
+        }
+      }
     }
 
     this.prerender(false);
