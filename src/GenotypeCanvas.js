@@ -117,6 +117,7 @@ export default class GenotypeCanvas {
     this.renderCrosshair(markerStart, xPos, germplasmStart, yPos);
     this.highlightMarker(dataWidth, markerStart, markerEnd, xPos);
     this.highlightLineName(germplasmStart, yPos);
+    if (this.dataSet.hasTraits()) this.highlightLineTraitValues(germplasmStart, yPos);
     if (this.lineSort.hasScore) this.highlightLineScore(germplasmStart, yPos);
     this.renderMouseOverText();
   }
@@ -210,6 +211,48 @@ export default class GenotypeCanvas {
 
       const y = yPos + (this.boxSize - (this.fontSize / 2));
       this.drawingContext.fillText(name, 0, y);
+      this.drawingContext.restore();
+    }
+  }
+
+  highlightLineTraitValues(germplasmStart, yPos) {
+    if (this.lineUnderMouse !== undefined){
+      this.drawingContext.save();
+      this.drawingContext.translate(this.traitCanvasWidth + this.nameCanvasWidth, this.mapCanvasHeight);
+      
+      // Prevent line name under scrollbar being highlighted
+      const region = new Path2D();
+      const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+      region.rect(0, 0, this.traitValuesCanvasWidth, clipHeight);
+      this.drawingContext.clip(region);
+
+      this.drawingContext.fillStyle = '#F00';
+      this.drawingContext.font = this.font;
+
+      const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+
+      if (germplasm.phenotype !== undefined){
+        let xPos = 0;
+        this.dataSet.traitNames.forEach((traitName, traitIndex) => {
+          const trait = this.dataSet.getTrait(traitName);
+          const traitValue = trait.getValue(germplasm.getPhenotype(traitName));
+
+          if (traitValue !== undefined){
+            this.drawingContext.save();
+            const column = new Path2D();
+            column.rect(xPos, 0, this.traitValueColumnWidths[traitIndex], clipHeight);
+            this.drawingContext.clip(column);
+
+            const y = yPos + (this.boxSize - (this.fontSize / 2));
+            console.log(xPos + this.scorePadding, y);
+            this.drawingContext.fillText(traitValue.toString(), xPos + this.scorePadding, y);
+            this.drawingContext.restore();
+          };
+
+          xPos += this.traitValueColumnWidths[traitIndex];
+        });
+      }
+
       this.drawingContext.restore();
     }
   }
