@@ -114,11 +114,12 @@ export default class GenotypeCanvas {
 
     const xPos = (this.markerIndexUnderMouse * this.boxSize) - this.translatedX;
     const yPos = (this.lineUnderMouse * this.boxSize) - yWiggle;
+
     this.renderCrosshair(markerStart, xPos, germplasmStart, yPos);
     this.highlightMarker(dataWidth, markerStart, markerEnd, xPos);
     this.highlightLineName(germplasmStart, yPos);
-    if (this.dataSet.hasTraits()) this.highlightLineTraitValues(germplasmStart, yPos);
-    if (this.lineSort.hasScore) this.highlightLineScore(germplasmStart, yPos);
+    this.highlightLineTraitValues(germplasmStart, yPos);
+    this.highlightLineScore(germplasmStart, yPos);
     this.renderMouseOverText();
   }
 
@@ -216,7 +217,7 @@ export default class GenotypeCanvas {
   }
 
   highlightLineTraitValues(germplasmStart, yPos) {
-    if (this.lineUnderMouse !== undefined){
+    if (this.dataSet.hasTraits() && this.lineUnderMouse !== undefined){
       this.drawingContext.save();
       this.drawingContext.translate(this.traitCanvasWidth + this.nameCanvasWidth, this.mapCanvasHeight);
       
@@ -244,7 +245,6 @@ export default class GenotypeCanvas {
             this.drawingContext.clip(column);
 
             const y = yPos + (this.boxSize - (this.fontSize / 2));
-            console.log(xPos + this.scorePadding, y);
             this.drawingContext.fillText(traitValue.toString(), xPos + this.scorePadding, y);
             this.drawingContext.restore();
           };
@@ -258,7 +258,7 @@ export default class GenotypeCanvas {
   }
 
   highlightLineScore(germplasmStart, yPos) {
-    if (this.lineUnderMouse !== undefined) {
+    if (this.lineSort.hasScore && this.lineUnderMouse !== undefined) {
       this.drawingContext.save();
       this.drawingContext.translate(this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth, this.mapCanvasHeight);
       // Prevent line name under scrollbar being highlighted
@@ -777,35 +777,42 @@ export default class GenotypeCanvas {
     // Mouse over text boxes
     this.mouseOverText = undefined;
     this.mouseOverPosition = undefined;
-    if (this.dataSet.hasTraits() && this.lineIndexUnderMouse !== undefined){
-      const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
-      if (germplasm.phenotype !== undefined){
-        let traitIndex;
 
-        // Heatmap boxes
-        if (x > 0 && x < this.traitCanvasWidth){
-          traitIndex = Math.floor(x / this.traitBoxWidth);
-        // Value columns
-        } else if (x > this.traitCanvasWidth + this.nameCanvasWidth && x < this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth){
-          const relX = x - this.traitCanvasWidth - this.nameCanvasWidth;
-          let xPos = 0, columnIndex = 0;
-          for (let columnIndex = 0; columnIndex < this.traitValueColumnWidths.length; columnIndex += 1){
-            xPos += this.traitValueColumnWidths[columnIndex];
-            if (relX < xPos){
-              traitIndex = columnIndex;
-              break;
-            }
+    if (this.lineIndexUnderMouse !== undefined){
+      if (this.dataSet.hasTraits() && x > 0 && x < this.traitCanvasWidth){
+        const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+        const traitIndex = Math.floor(x / this.traitBoxWidth);
+        const trait = this.dataSet.getTrait(this.dataSet.traitNames[traitIndex]);
+        const traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
+        if (traitValue !== undefined){
+          this.mouseOverText = trait.name + " : " + traitValue.toString();
+          this.mouseOverPosition = [x, y];
+        }
+      } else if (this.dataSet.hasTraits() && x > this.traitCanvasWidth + this.nameCanvasWidth && x < this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth){
+        const relX = x - this.traitCanvasWidth - this.nameCanvasWidth;
+        let xPos = 0, columnIndex = 0, traitIndex = undefined;
+
+        // Get the trait under the mouse (columns are not of equal size)
+        for (let columnIndex = 0; columnIndex < this.traitValueColumnWidths.length; columnIndex += 1){
+          xPos += this.traitValueColumnWidths[columnIndex];
+          if (relX < xPos){
+            traitIndex = columnIndex;
+            break;
           }
         }
 
-        if (traitIndex !== undefined){
-          const trait = this.dataSet.getTrait(this.dataSet.traitNames[traitIndex]);
-          const traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
-          if (traitValue !== undefined){
-            this.mouseOverText = trait.name + " : " + traitValue;
-            this.mouseOverPosition = [x, y];
-          }
+        const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+        const trait = this.dataSet.getTrait(this.dataSet.traitNames[traitIndex]);
+        const traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
+        if (traitValue !== undefined){
+          this.mouseOverText = trait.name + " : " + traitValue.toString();
+          this.mouseOverPosition = [x, y];
         }
+      } else if (this.lineSort.hasScore && x > this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth && x < this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth){
+        const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+        const score = this.lineSort.getScore(germplasm.name);
+        this.mouseOverText = "Sort score : " + score.toString();
+        this.mouseOverPosition = [x, y];
       }
     }
 
