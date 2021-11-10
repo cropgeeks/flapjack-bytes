@@ -298,7 +298,7 @@ export default function GenotypeRenderer() {
     addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
     addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol, lineSelect);
 
-    if (config.phenotypeFileDom !== undefined || config.phenotypeURL !== undefined){
+    if ((config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.slice(1)).files[0] !== undefined) || config.phenotypeFileURL !== undefined){
       const traitSelect = document.createElement('select');
       traitSelect.id = 'sortTraitSelect';
       traitSelect.disabled = true;
@@ -566,79 +566,115 @@ export default function GenotypeRenderer() {
     clearParent(config.domParent);
     createRendererComponents(config, true);
 
-    let mapFile;
-    let genotypeFile;
+    let mapFile, genotypeFile, phenotypeFile;
     let germplasmData;
-    let genotypePromise;
+    let loadingPromises = [];
+    let mapLoaded = 0, genotypeLoaded = 0, phenotypeLoaded = 0;
+    let mapSize = 0, genotypeSize = 0, phenotypeSize = 0;
 
-    setProgressBarLabel("Downloading the genome map...");
+    setProgressBarLabel("Downloading data...");
     setAdvancement(0);
 
-    let mapPromise = axios.get(config.mapFileURL, {
-      headers: { 'Content-Type': 'text/plain' },
-      onDownloadProgress: function (progressEvent){
-        if (progressEvent.lengthComputable)
-          setAdvancement(progressEvent.loaded / progressEvent.total);
-      }
-    }).then((response) => {
-      mapFile = response.data;
-    }).catch((error) => {
-      console.error(error);
-    });
-
-    mapPromise = mapPromise.then(function (){
-      setProgressBarLabel("Downloading the genotypes...");
-      setAdvancement(0);
-
-      genotypePromise = axios.get(config.genotypeFileURL, {
+    if (config.mapFileURL){
+      let mapPromise = axios.get(config.mapFileURL, {
         headers: { 'Content-Type': 'text/plain' },
         onDownloadProgress: function (progressEvent){
-          if (progressEvent.lengthComputable)
-            setAdvancement(progressEvent.loaded / progressEvent.total);
+          if (progressEvent.lengthComputable){
+            mapLoaded = progressEvent.loaded;
+            mapSize = progressEvent.total;
+            setAdvancement((mapLoaded + genotypeLoaded + phenotypeLoaded) / (mapSize + genotypeSize + phenotypeSize));
+          }
         }
       }).then((response) => {
-        genotypeFile = response.data;
+        mapFile = response.data;
       }).catch((error) => {
         console.error(error);
       });
+      
+      loadingPromises.push(mapPromise);
+    }
 
-      genotypePromise = genotypePromise.then(function (){
-        setAdvancement(0);
-        setProgressBarLabel("Processing the genome map...")
-
-        if (mapFile !== undefined) {
-          const mapImporter = new MapImporter();
-          genomeMap = mapImporter.parseFile(mapFile);
+    if (config.phenotypeFileURL){
+      let phenotypePromise = axios.get(config.phenotypeFileURL, {
+        headers: { 'Content-Type': 'text/plain' },
+        onDownloadProgress: function (progressEvent){
+          if (progressEvent.lengthComputable){
+            phenotypeLoaded = progressEvent.loaded;
+            phenotypeSize = progressEvent.total;
+            setAdvancement((mapLoaded + genotypeLoaded + phenotypeLoaded) / (mapSize + genotypeSize + phenotypeSize));
+          }
         }
-
-        setProgressBarLabel("Processing the genotypes...");
-        genotypeImporter = new GenotypeImporter(genomeMap);
-
-        if (genomeMap === undefined) {
-          genomeMap = genotypeImporter.createFakeMap(genotypeFile);
-        }
-
-        genotypeImporter.parseFile(genotypeFile, setAdvancement, removeAdvancement).then(function (germplasmList) {
-          germplasmData = germplasmList;
-          const { stateTable } = genotypeImporter;
-
-          dataSet = new DataSet(genomeMap, germplasmData, stateTable);
-          colorScheme = new NucleotideColorScheme(dataSet);
-
-          populateLineSelect();
-          populateChromosomeSelect();
-
-          canvasController.init(dataSet, colorScheme);
-
-          // Tells the dom parent that Flapjack has finished loading. Allows spinners
-          // or similar to be disabled
-          sendEvent('FlapjackFinished', config.domParent);
-        });
+      }).then((response) => {
+        phenotypeFile = response.data;
       }).catch((error) => {
-        sendEvent('FlapjackError', config.domParent);
-        // eslint-disable-next-line no-console
-        console.log(error);
+        console.error(error);
       });
+      
+      loadingPromises.push(phenotypePromise);
+    }
+
+    let genotypePromise = axios.get(config.genotypeFileURL, {
+      headers: { 'Content-Type': 'text/plain' },
+      onDownloadProgress: function (progressEvent){
+        if (progressEvent.lengthComputable){
+          genotypeLoaded = progressEvent.loaded;
+          genotypeSize = progressEvent.total;
+          setAdvancement((mapLoaded + genotypeLoaded + phenotypeLoaded) / (mapSize + genotypeSize + phenotypeSize));
+        }
+      }
+    }).then((response) => {
+      genotypeFile = response.data;
+    }).catch((error) => {
+      console.error(error);
+    });
+    loadingPromises.push(genotypePromise);
+
+    Promise.all(loadingPromises).then(function (){
+      setAdvancement(0);
+      setProgressBarLabel("Processing the genome map...");
+
+      if (mapFile !== undefined) {
+        const mapImporter = new MapImporter();
+        genomeMap = mapImporter.parseFile(mapFile);
+      }
+
+      setAdvancement(0);
+      setProgressBarLabel("Processing the phenotypes...");
+
+      if (phenotypeFile !== undefined){
+        const phenotypeImporter = new PhenotypeImporter();
+        phenotypes = phenotypeImporter.parseFile(phenotypeFile);
+        traits = phenotypeImporter.traits;
+      }
+
+      setProgressBarLabel("Processing the genotypes...");
+      genotypeImporter = new GenotypeImporter(genomeMap);
+
+      if (genomeMap === undefined) {
+        genomeMap = genotypeImporter.createFakeMap(genotypeFile);
+      }
+
+      genotypeImporter.parseFile(genotypeFile, setAdvancement, removeAdvancement).then(function (germplasmList) {
+        germplasmData = germplasmList;
+        const { stateTable } = genotypeImporter;
+
+        dataSet = new DataSet(genomeMap, germplasmData, stateTable, traits, phenotypes);
+        colorScheme = new NucleotideColorScheme(dataSet);
+
+        populateLineSelect();
+        if (phenotypes !== undefined) populateTraitSelect();
+        populateChromosomeSelect();
+
+        canvasController.init(dataSet, colorScheme);
+
+        // Tells the dom parent that Flapjack has finished loading. Allows spinners
+        // or similar to be disabled
+        sendEvent('FlapjackFinished', config.domParent);
+      });
+    }).catch((error) => {
+      sendEvent('FlapjackError', config.domParent);
+      // eslint-disable-next-line no-console
+      console.log(error);
     });
 
     return genotypeRenderer;
@@ -798,7 +834,7 @@ export default function GenotypeRenderer() {
         colorScheme = new NucleotideColorScheme(dataSet);
 
         populateLineSelect();
-        populateTraitSelect();
+        if (phenotypes !== undefined) populateTraitSelect();
         populateChromosomeSelect();
 
         canvasController.init(dataSet, colorScheme);

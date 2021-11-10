@@ -13,6 +13,10 @@
           <label for="genofile">Genotype file:</label>
           <input type="text" id="genofile" name="genofile" value="http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.dat">
         </div>
+        <div>
+          <label for="phenofile">Phenotype file:</label>
+          <input type="text" id="phenofile" name="phenofile">
+        </div>
         <input type="submit" action="#" id="submit" name="submit" value="Submit">
       </div>
       <div id="canvas-holder">
@@ -24,7 +28,14 @@
         $(document).ready(function(){
           $("#submit").click(function(){
             var renderer = GenotypeRenderer();
-            renderer.renderGenotypesUrl("#canvas-holder", 800, 600, $('#mapfile').val(), $('#genofile').val());
+            renderer.renderGenotypesUrl({
+              domParent: "#canvas-holder",
+              width: 800,
+              height: 600,
+              mapFileURL: $('#mapfile').val(),
+              genotypeFileURL: $('#genofile').val(),
+              phenotypeFileURL: $('#phenofile').val(),
+            });
             return false;
           });
       });

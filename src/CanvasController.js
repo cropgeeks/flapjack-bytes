@@ -57,6 +57,20 @@ export default class CanvasController {
       this.genotypeCanvas.setColorComparisonLine(event.target.options[event.target.selectedIndex].value);
       this.overviewCanvas.prerender(true);
     });
+  }
+
+  init(dataSet, colorScheme) {
+    // Initialize the components
+    this.genotypeCanvas.init(dataSet, colorScheme);
+    this.genotypeCanvas.prerender(true);
+    this.overviewCanvas.init(dataSet, colorScheme, this.genotypeCanvas.visibilityWindow());
+    this.overviewCanvas.prerender(true);
+
+    this.updateAutoWidth();
+
+    window.addEventListener("resize", event => {
+      this.updateAutoWidth();
+    });
 
     // Sort
     const sortLineSelect = document.getElementById('sortLineSelect');
@@ -95,34 +109,22 @@ export default class CanvasController {
       this.overviewCanvas.prerender(true);
     });
 
-    const traitOrderRadio = document.getElementById('traitSort');
-    traitOrderRadio.addEventListener('change', () => {
-      sortLineSelect.disabled = true;
-      sortTraitSelect.disabled = false;
+    if (dataSet.hasTraits()){
+      const traitOrderRadio = document.getElementById('traitSort');
+      traitOrderRadio.addEventListener('change', () => {
+        sortLineSelect.disabled = true;
+        sortTraitSelect.disabled = false;
 
-      const traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;
-      this.genotypeCanvas.setLineSort(new TraitLineSort(traitName));
-      this.overviewCanvas.prerender(true);
-    });
+        const traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;
+        this.genotypeCanvas.setLineSort(new TraitLineSort(traitName));
+        this.overviewCanvas.prerender(true);
+      });
 
-    sortTraitSelect.addEventListener('change', (event) => {
-      this.genotypeCanvas.setSortTrait(event.target.options[event.target.selectedIndex].value);
-      this.overviewCanvas.prerender(true);
-    })
-  }
-
-  init(dataSet, colorScheme) {
-    // Initialize the components
-    this.genotypeCanvas.init(dataSet, colorScheme);
-    this.genotypeCanvas.prerender(true);
-    this.overviewCanvas.init(dataSet, colorScheme, this.genotypeCanvas.visibilityWindow());
-    this.overviewCanvas.prerender(true);
-
-    this.updateAutoWidth();
-
-    window.addEventListener("resize", event => {
-      this.updateAutoWidth();
-    });
+      sortTraitSelect.addEventListener('change', (event) => {
+        this.genotypeCanvas.setSortTrait(event.target.options[event.target.selectedIndex].value);
+        this.overviewCanvas.prerender(true);
+      });
+    }
 
     // Set the canvas controls only once we have a valid data set and color scheme
     // If they are set in the constructor, moving the mouse above the canvas before
