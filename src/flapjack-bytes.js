@@ -179,9 +179,11 @@ export default function GenotypeRenderer() {
     const colorFieldSet = createColorSchemeFieldset(config);
     const sortFieldSet = createSortFieldSet(config);
     const exportFieldSet = createExportFieldSet(config);
+    const displayFieldSet = createDisplayFieldSet(config);
 
     formRow.appendChild(colorFieldSet);
     formRow.appendChild(sortFieldSet);
+    if (displayFieldSet !== undefined) formRow.appendChild(displayFieldSet);
     formRow.appendChild(exportFieldSet);
     form.appendChild(formRow);
     controlDiv.appendChild(form);
@@ -370,6 +372,39 @@ export default function GenotypeRenderer() {
     return formCol;
   }
 
+  function createDisplayFieldSet(config){
+    if ((config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.slice(1)).files[0] !== undefined) || config.phenotypeFileURL !== undefined){
+      const formCol = document.createElement('div');
+      formCol.classList.add('col');
+
+      const formGroup = document.createElement('div');
+      formGroup.classList.add('form-group');
+
+      const fieldSet = document.createElement('fieldset');
+      fieldSet.classList.add('bytes-fieldset');
+
+      const legend = document.createElement('legend');
+      const legendText = document.createTextNode('Display option');
+      legend.appendChild(legendText);
+
+      const traitSelectLegend = document.createElement('div');
+      const traitSelectLegendText = document.createTextNode('Traits to display');
+      traitSelectLegend.appendChild(traitSelectLegendText);
+
+      const traitSelect = document.createElement('select');
+      traitSelect.id = 'displayTraitSelect';
+      traitSelect.multiple = true;
+      traitSelect.size = 5;
+
+      fieldSet.appendChild(legend);
+      fieldSet.appendChild(traitSelectLegend);
+      fieldSet.appendChild(traitSelect);
+      formGroup.appendChild(fieldSet);
+      formCol.appendChild(formGroup);
+      return formCol;
+    }
+  }
+
   function setProgressBarLabel(newLabel) {
     progressBarLabel.data = newLabel;
   }
@@ -433,7 +468,7 @@ export default function GenotypeRenderer() {
     domParent,
     width,
     height,
-    server,
+    baseURL,
     matrixId,
     mapId,
     authToken,
@@ -445,7 +480,7 @@ export default function GenotypeRenderer() {
     if (!(config instanceof Object)){
       config = {
         domParent: config,  // Position for domParent
-        server, matrixId, mapId, authToken,
+        baseURL, matrixId, mapId, authToken,
         minGenotypeAutoWidth, minOverviewAutoWidth,
       };
       config.width = (width !== undefined) ? width : null;
@@ -711,13 +746,18 @@ export default function GenotypeRenderer() {
   }
 
   function populateTraitSelect() {
-    const traitSelect = document.getElementById('sortTraitSelect');
+    const sortTraitSelect = document.getElementById('sortTraitSelect');
+    const displayTraitSelect = document.getElementById('displayTraitSelect');
 
     dataSet.traitNames.forEach(name => {
       const opt = document.createElement('option');
       opt.value = name;
       opt.text = name;
-      traitSelect.add(opt);
+      sortTraitSelect.add(opt);
+
+      const clone = opt.cloneNode(true);
+      clone.selected = true;
+      displayTraitSelect.add(clone);
     });
   }
 

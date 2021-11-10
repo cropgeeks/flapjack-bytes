@@ -124,6 +124,16 @@ export default class CanvasController {
         this.genotypeCanvas.setSortTrait(event.target.options[event.target.selectedIndex].value);
         this.overviewCanvas.prerender(true);
       });
+
+      const displayTraitSelect = document.getElementById('displayTraitSelect');
+      displayTraitSelect.addEventListener('change', (event) => {
+        let displayTraits = [];
+        for (let option of displayTraitSelect){
+          if (option.selected)
+            displayTraits.push(option.value);
+        }
+        this.genotypeCanvas.setDisplayTraits(displayTraits);
+      })
     }
 
     // Set the canvas controls only once we have a valid data set and color scheme

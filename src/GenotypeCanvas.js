@@ -56,6 +56,8 @@ export default class GenotypeCanvas {
     this.columnBackgrounds = ["#FFFFFF", "#D8D8D8"];
     this.resetColumnBackground();
 
+    this.displayTraits = [];
+
     this.mouseOverText = undefined;
     this.mouseOverPosition = undefined;
   }
@@ -89,6 +91,7 @@ export default class GenotypeCanvas {
     this.lineSort.sort(this.dataSet);
     this.colorScheme = colorScheme;
     this.font = this.updateFontSize();
+    this.displayTraits = this.dataSet.traitNames;
     // this.updateVisualPositions();
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
     this.zoom(this.boxSize);
@@ -234,7 +237,7 @@ export default class GenotypeCanvas {
 
       if (germplasm.phenotype !== undefined){
         let xPos = 0;
-        this.dataSet.traitNames.forEach((traitName, traitIndex) => {
+        this.displayTraits.forEach((traitName, traitIndex) => {
           const trait = this.dataSet.getTrait(traitName);
           const traitValue = trait.getValue(germplasm.getPhenotype(traitName));
 
@@ -452,7 +455,7 @@ export default class GenotypeCanvas {
     germplasms.forEach((germplasm, idx) => {
       const yPos = (idx * this.boxSize) - yWiggle;
       if (germplasm.phenotype !== undefined){
-        this.dataSet.traitNames.forEach((traitName, traitIndex) => {
+        this.displayTraits.forEach((traitName, traitIndex) => {
           const xPos = traitIndex * this.traitBoxWidth;
           const trait = this.dataSet.getTrait(traitName);
           const traitValue = germplasm.getPhenotype(traitName);
@@ -516,7 +519,7 @@ export default class GenotypeCanvas {
     this.backContext.translate(this.traitCanvasWidth + this.nameCanvasWidth, this.mapCanvasHeight);
 
     let xPos = 0;
-    this.dataSet.traitNames.forEach((traitName, traitIndex) => {
+    this.displayTraits.forEach((traitName, traitIndex) => {
       this.backContext.fillStyle = this.nextColumnBackground();
       this.backContext.fillRect(xPos, 0, this.traitValueColumnWidths[traitIndex], clipHeight);
 
@@ -782,7 +785,7 @@ export default class GenotypeCanvas {
       if (this.dataSet.hasTraits() && x > 0 && x < this.traitCanvasWidth){
         const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
         const traitIndex = Math.floor(x / this.traitBoxWidth);
-        const trait = this.dataSet.getTrait(this.dataSet.traitNames[traitIndex]);
+        const trait = this.dataSet.getTrait(this.displayTraits[traitIndex]);
         const traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
         if (traitValue !== undefined){
           this.mouseOverText = trait.name + " : " + traitValue.toString();
@@ -802,7 +805,7 @@ export default class GenotypeCanvas {
         }
 
         const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
-        const trait = this.dataSet.getTrait(this.dataSet.traitNames[traitIndex]);
+        const trait = this.dataSet.getTrait(this.displayTraits[traitIndex]);
         const traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
         if (traitValue !== undefined){
           this.mouseOverText = trait.name + " : " + traitValue.toString();
@@ -857,9 +860,12 @@ export default class GenotypeCanvas {
     }
 
     if (this.dataSet.hasTraits()){
-      this.traitCanvasWidth = this.dataSet.traits.size * this.traitBoxWidth;
-      this.traitValueColumnWidths = this.dataSet.traitNames.map(name => this.backContext.measureText(this.dataSet.getTrait(name).longestValue).width + 2*this.scorePadding);
-      this.traitValuesCanvasWidth = this.traitValueColumnWidths.reduce((a, b) => a + b);
+      this.traitCanvasWidth = this.displayTraits.length * this.traitBoxWidth;
+      this.traitValueColumnWidths = this.displayTraits.map(name => this.backContext.measureText(this.dataSet.getTrait(name).longestValue).width + 2*this.scorePadding);
+      
+      if (this.traitValueColumnWidths.length == 0) this.traitValuesCanvasWidth = 0;
+      else if (this.traitValueColumnWidths.length == 0) this.traitValuesCanvasWidth = this.traitValueColumnWidths[0];
+      else this.traitValuesCanvasWidth = this.traitValueColumnWidths.reduce((a, b) => a + b);
     } else {
       this.traitCanvasWidth = 0;
       this.traitValuesCanvasWidth = 0;
@@ -1001,6 +1007,12 @@ export default class GenotypeCanvas {
       this.lineSort.setTrait(comparedTrait);
       this.sortLines();
     }
+  }
+
+  setDisplayTraits(displayTraits) {
+    this.displayTraits = displayTraits;
+    this.updateCanvasWidths();
+    this.prerender(true);
   }
 
   setChromosome(chromosomeIndex) {
