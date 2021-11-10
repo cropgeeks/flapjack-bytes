@@ -465,7 +465,9 @@ export default function GenotypeRenderer() {
   }
 
   genotypeRenderer.renderGenotypesBrapi = function renderGenotypesBrapi(
-    domParent,
+    config,  // Compatibility positional domParent
+
+    // Positional arguments kept for compatibility
     width,
     height,
     baseURL,
@@ -493,10 +495,10 @@ export default function GenotypeRenderer() {
     createRendererComponents(config, false);
     let germplasmData;
 
-    const client = axios.create({ baseURL: config.server });
+    const client = axios.create({ baseURL: config.baseURL });
     client.defaults.headers.common.Authorization = `Bearer ${config.authToken}`;
 
-    if (mapId !== null) {
+    if (config.mapId !== null) {
       // TODO: GOBii don't have the markerpositions call implemented yet so I
       // can't load map data
       processMarkerPositionsCall(client, `/markerpositions?mapDbId=${config.mapId}`)

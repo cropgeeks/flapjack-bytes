@@ -79,7 +79,7 @@ export default class CanvasController {
     const importingOrderRadio = document.getElementById('importingOrderSort');
     importingOrderRadio.addEventListener('change', () => {
       sortLineSelect.disabled = true;
-      sortTraitSelect.disabled = true;
+      if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
 
       this.genotypeCanvas.setLineSort(new ImportingOrderLineSort());
       this.overviewCanvas.prerender(true);
@@ -88,7 +88,7 @@ export default class CanvasController {
     const alphabetOrderRadio = document.getElementById('alphabeticSort');
     alphabetOrderRadio.addEventListener('change', () => {
       sortLineSelect.disabled = true;
-      sortTraitSelect.disabled = true;
+      if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
 
       this.genotypeCanvas.setLineSort(new AlphabeticLineSort());
       this.overviewCanvas.prerender(true);
@@ -97,7 +97,7 @@ export default class CanvasController {
     const similarityOrderRadio = document.getElementById('similaritySort');
     similarityOrderRadio.addEventListener('change', () => {
       sortLineSelect.disabled = false;
-      sortTraitSelect.disabled = true;
+      if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
 
       const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
       this.genotypeCanvas.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
