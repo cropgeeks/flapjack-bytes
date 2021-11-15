@@ -265,7 +265,7 @@ export default function GenotypeRenderer() {
     const radioCol = document.createElement('div');
     radioCol.classList.add('col');
     addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, radioCol);
-    addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line', false, radioCol, lineSelect);
+    addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line (allele match)', false, radioCol, lineSelect);
 
     fieldset.appendChild(legend);
     fieldset.appendChild(radioCol);
