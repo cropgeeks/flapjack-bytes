@@ -18,6 +18,7 @@ export default function GenotypeRenderer() {
   // Variables for referring to the genotype canvas
   let genotypeCanvas;
   let overviewCanvas;
+  let settingsTabs = new Map();
   // TODO: need to investigate a proper clean way to implement this controller
   // functionality
   // eslint-disable-next-line no-unused-vars
@@ -69,70 +70,13 @@ export default function GenotypeRenderer() {
     if (config.minOverviewAutoWidth === undefined) config.minOverviewAutoWidth = 0;
 
     const canvasHolder = document.getElementById(config.domParent.slice(1));
+    canvasHolder.style.fontFamily = 'system-ui';
+    canvasHolder.style.fontSize = '14px';
     
     const computedStyles = window.getComputedStyle(canvasHolder);
     const autoWidth = canvasHolder.clientWidth - parseInt(computedStyles.paddingLeft) - parseInt(computedStyles.paddingRight);
     const width = (config.width === null) ? Math.max(autoWidth, config.minGenotypeAutoWidth) : config.width;
     let overviewWidth = (config.overviewWidth === null) ? Math.max(autoWidth, config.minOverviewAutoWidth) : config.overviewWidth;
-
-    // Controls
-    const controlDiv = document.createElement('div');
-    controlDiv.id = 'zoom-holder';
-    const controlCol = document.createElement('div');
-    controlCol.classList.add('col');
-    const formControlDiv = document.createElement('div');
-    formControlDiv.classList.add('form-group');
-
-    const controlFieldSet = document.createElement('fieldset');
-    controlFieldSet.classList.add('bytes-fieldset');
-
-    const controlLegend = document.createElement('legend');
-    const controlLegendText = document.createTextNode('Controls');
-    controlLegend.appendChild(controlLegendText);
-
-    // Chromosome
-    const chromosomeLabel = document.createElement('label');
-    chromosomeLabel.setAttribute('for', 'chromosomeSelect')
-    chromosomeLabel.innerHTML = 'Chromosome: ';
-
-    const chromosomeSelect = document.createElement('select');
-    chromosomeSelect.id = 'chromosomeSelect';
-    chromosomeSelect.addEventListener('change', (event) => {
-      setChromosome(event.target.selectedIndex);
-    });
-
-    const chromosomeContainer = document.createElement('div');
-    chromosomeContainer.append(chromosomeLabel);
-    chromosomeContainer.append(chromosomeSelect);
-
-    // Zoom
-    const zoomLabel = document.createElement('label');
-    zoomLabel.setAttribute('for', 'zoom-control');
-    zoomLabel.innerHTML = 'Zoom:';
-
-    const range = document.createElement('input');
-    range.id = 'zoom-control';
-    range.setAttribute('type', 'range');
-    range.min = 2;
-    range.max = 64;
-    range.value = 16;
-
-    const zoomContainer = document.createElement('div');
-    zoomContainer.append(zoomLabel);
-    zoomContainer.append(range);
-
-    range.addEventListener('change', () => {
-      zoom(range.value);
-    });
-
-    range.addEventListener('input', () => {
-      zoom(range.value);
-    });
-
-    controlFieldSet.appendChild(controlLegend);
-    controlFieldSet.appendChild(chromosomeContainer);
-    controlFieldSet.appendChild(zoomContainer);
-    canvasHolder.appendChild(controlFieldSet);
 
     if (showProgress){
       // Progress bar
@@ -171,28 +115,97 @@ export default function GenotypeRenderer() {
     overviewCanvas = new OverviewCanvas(overviewWidth, config.overviewHeight);
     canvasHolder.append(overviewCanvas.canvas);
 
-    // Form
-    const form = document.createElement('div');
-    const formRow = document.createElement('div');
-    formRow.classList.add('row');
+    //// Settings
+    const settings = document.createElement('div');
+    settings.classList.add('row');
+    settings.style.marginTop = '8px';
 
-    const colorFieldSet = createColorSchemeFieldset(config);
-    const sortFieldSet = createSortFieldSet(config);
-    const exportFieldSet = createExportFieldSet(config);
-    const displayFieldSet = createDisplayFieldSet(config);
+    // Create the tabs
+    const controlTab = createControlTab(config);
+    const colorTab = createColorSchemeTab(config);
+    const sortTab = createSortTab(config);
+    const exportTab = createExportTab(config);
+    const displayTab = createDisplayTab(config);
 
-    formRow.appendChild(colorFieldSet);
-    formRow.appendChild(sortFieldSet);
-    if (displayFieldSet !== undefined) formRow.appendChild(displayFieldSet);
-    formRow.appendChild(exportFieldSet);
-    form.appendChild(formRow);
-    controlDiv.appendChild(form);
+    const maxTabHeight = Math.max(
+      controlTab.getBoundingClientRect().height,
+      colorTab.getBoundingClientRect().height,
+      sortTab.getBoundingClientRect().height,
+      exportTab.getBoundingClientRect().height,
+      displayTab.getBoundingClientRect().height
+    );
+
+    // Create the tab toggles
+    const menuRow = document.createElement('div');
+
+    const controlButton = createTabToggle('control', 'Controls');
+    const colorButton = createTabToggle('color', 'Color schemes');
+    const sortButton = createTabToggle('sort', 'Sorting');
+    const displayButton = createTabToggle('display', 'Display');
+    const exportButton = createTabToggle('export', 'Export');
     
-    canvasHolder.appendChild(controlDiv);
+    menuRow.appendChild(controlButton)
+    menuRow.appendChild(colorButton);
+    menuRow.appendChild(sortButton);
+    if (displayTab !== undefined)
+      menuRow.appendChild(displayButton);
+    menuRow.appendChild(exportButton);    
+
+    settingsTabs.set('control', [controlButton, controlTab]);
+    settingsTabs.set('color', [colorButton, colorTab]);
+    settingsTabs.set('sort', [sortButton, sortTab]);
+    if (displayTab !== undefined)
+      settingsTabs.set('display', [displayButton, displayTab]);
+    settingsTabs.set('export', [exportButton, exportTab]);
+
+    settings.appendChild(menuRow);
+
+    // Add the actual tabs
+    const tabContainer = document.createElement('div');
+    tabContainer.appendChild(controlTab);
+    tabContainer.appendChild(colorTab);
+    tabContainer.appendChild(sortTab);
+    if (displayTab !== undefined)
+      tabContainer.appendChild(displayTab);
+    tabContainer.appendChild(exportTab);
+
+    tabContainer.style.minHeight = '140px';  // Can't really use getClientBoundingRect as the tabs are not displayed yet, so...
+    tabContainer.style.border = '1px solid #e0e0e0';
+    tabContainer.style.padding = '10px';
+    settings.appendChild(tabContainer);
+
+    controlTab.style.display = 'block';
+    
+    canvasHolder.appendChild(settings);
 
     addStyleSheet();
 
     canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, config.width === null, config.overviewWidth === null, config.minGenotypeAutoWidth, config.minOverviewAutoWidth);
+  }
+
+  function createTabToggle(name, title){
+    const button = document.createElement('button');
+    button.classList.add('bytes-tabtoggle');
+    button.style.fontSize = '15px';
+    button.appendChild(document.createTextNode(title));
+    button.addEventListener('click', openSettingsTab(name));
+    return button;
+  }
+
+  function openSettingsTab(name){
+    return function (event) {
+
+      for (let key of settingsTabs.keys()){
+        const [button, tab] = settingsTabs.get(key);
+        if (key == name){
+          button.classList.add('bytes-tabtoggle-active');
+          tab.style.display = 'block';
+        } else {
+          button.classList.remove('bytes-tabtoggle-active')
+          tab.style.display = 'none';
+        }
+      }
+    }
   }
 
   function addRadioButton(name, id, text, checked, parent, subcontrol) {
@@ -239,24 +252,67 @@ export default function GenotypeRenderer() {
       return style.sheet;
     }());
 
-    addCSSRule(sheet, '.bytes-fieldset > legend', 'border-style: none; border-width: 0; font-size: 14px; line-height: 20px; margin-bottom: 0; width: auto; padding: 0 10px; border: 1px solid #e0e0e0;');
-    addCSSRule(sheet, '.bytes-fieldset', 'border: 1px solid #e0e0e0; padding: 10px;');
-    // addCSSRule(sheet, 'input', 'margin: .4rem;');
+    //addCSSRule(sheet, '.bytes-fieldset > legend', 'border-style: none; border-width: 0; font-size: 14px; line-height: 20px; margin-bottom: 0; width: auto; padding: 0 10px; border: 1px solid #e0e0e0;');
+    //addCSSRule(sheet, '.bytes-fieldset', 'border: 1px solid #e0e0e0; padding: 10px;');
+    addCSSRule(sheet, '.bytes-tabtoggle', "display: inline-block; border: none; outline: none; padding: 8px;");
+    addCSSRule(sheet, '.bytes-tabtoggle:hover', 'background-color: #DDDDDD');
+    addCSSRule(sheet, '.bytes-tabtoggle.bytes-tabtoggle-active', 'background-color: #CCCCCC');
+    addCSSRule(sheet, '.bytes-tab', 'display: none;');
+;    // addCSSRule(sheet, 'input', 'margin: .4rem;');
   }
 
-  function createColorSchemeFieldset(config) {
-    const formCol = document.createElement('div');
-    formCol.classList.add('col');
+  function createControlTab(config) {
+    // Controls
+    const tab = document.createElement('div');
+    tab.classList.add('bytes-tab');
 
-    const formGroup = document.createElement('div');
-    formGroup.classList.add('form-group');
+    // Chromosome
+    const chromosomeLabel = document.createElement('label');
+    chromosomeLabel.setAttribute('for', 'chromosomeSelect')
+    chromosomeLabel.innerHTML = 'Chromosome: ';
 
-    const fieldset = document.createElement('fieldset');
-    fieldset.classList.add('bytes-fieldset');
+    const chromosomeSelect = document.createElement('select');
+    chromosomeSelect.id = 'chromosomeSelect';
+    chromosomeSelect.addEventListener('change', (event) => {
+      setChromosome(event.target.selectedIndex);
+    });
 
-    const legend = document.createElement('legend');
-    const legendText = document.createTextNode('Color Schemes');
-    legend.appendChild(legendText);
+    const chromosomeContainer = document.createElement('div');
+    chromosomeContainer.append(chromosomeLabel);
+    chromosomeContainer.append(chromosomeSelect);
+
+    // Zoom
+    const zoomLabel = document.createElement('label');
+    zoomLabel.setAttribute('for', 'zoom-control');
+    zoomLabel.innerHTML = 'Zoom:';
+
+    const range = document.createElement('input');
+    range.id = 'zoom-control';
+    range.setAttribute('type', 'range');
+    range.min = 2;
+    range.max = 64;
+    range.value = 16;
+
+    const zoomContainer = document.createElement('div');
+    zoomContainer.append(zoomLabel);
+    zoomContainer.append(range);
+
+    range.addEventListener('change', () => {
+      zoom(range.value);
+    });
+
+    range.addEventListener('input', () => {
+      zoom(range.value);
+    });
+
+    tab.appendChild(chromosomeContainer);
+    tab.appendChild(zoomContainer);
+    return tab;
+  }
+
+  function createColorSchemeTab(config) {
+    const tab = document.createElement('div');
+    tab.classList.add('bytes-tab');
 
     const lineSelect = document.createElement('select');
     lineSelect.id = 'colorLineSelect';
@@ -267,28 +323,13 @@ export default function GenotypeRenderer() {
     addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, radioCol);
     addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line (allele match)', false, radioCol, lineSelect);
 
-    fieldset.appendChild(legend);
-    fieldset.appendChild(radioCol);
-    formGroup.appendChild(fieldset);
-
-    formCol.appendChild(formGroup);
-
-    return formCol;
+    tab.appendChild(radioCol);
+    return tab;
   }
 
-  function createSortFieldSet(config) {
-    const formCol = document.createElement('div');
-    formCol.classList.add('col');
-
-    const formGroup = document.createElement('div');
-    formGroup.classList.add('form-group');
-
-    const fieldset = document.createElement('fieldset');
-    fieldset.classList.add('bytes-fieldset');
-
-    const legend = document.createElement('legend');
-    const legendText = document.createTextNode('Sort lines');
-    legend.appendChild(legendText);
+  function createSortTab(config) {
+    const tab = document.createElement('div');
+    tab.classList.add('bytes-tab');
 
     const lineSelect = document.createElement('select');
     lineSelect.id = 'sortLineSelect';
@@ -307,27 +348,13 @@ export default function GenotypeRenderer() {
       addRadioButton('selectedSort', 'traitSort', 'By trait', false, radioCol, traitSelect);
     }
 
-    fieldset.appendChild(legend);
-    fieldset.appendChild(radioCol);
-    formGroup.appendChild(fieldset);
-
-    formCol.appendChild(formGroup);
-    return formCol;
+    tab.appendChild(radioCol);
+    return tab;
   }
 
-  function createExportFieldSet(config) {
-    const formCol = document.createElement('div');
-    formCol.classList.add('col');
-
-    const formGroup = document.createElement('div');
-    formGroup.classList.add('form-group');
-
-    const fieldset = document.createElement('fieldset');
-    fieldset.classList.add('bytes-fieldset');
-
-    const legend = document.createElement('legend');
-    const legendText = document.createTextNode('Export');
-    legend.appendChild(legendText);
+  function createExportTab(config) {
+    const tab = document.createElement('div');
+    tab.classList.add('bytes-tab');
 
     const exportViewButton = document.createElement('button')
     const exportViewText = document.createTextNode('Export view');
@@ -363,29 +390,16 @@ export default function GenotypeRenderer() {
       }
     });
 
-    fieldset.appendChild(legend);
-    fieldset.appendChild(exportViewButton);
-    fieldset.appendChild(exportOverviewButton);
-    formGroup.appendChild(fieldset);
-
-    formCol.appendChild(formGroup);
-    return formCol;
+    tab.appendChild(exportViewButton);
+    tab.appendChild(exportOverviewButton);
+    
+    return tab;
   }
 
-  function createDisplayFieldSet(config){
+  function createDisplayTab(config){
     if ((config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.slice(1)).files[0] !== undefined) || config.phenotypeFileURL !== undefined){
-      const formCol = document.createElement('div');
-      formCol.classList.add('col');
-
-      const formGroup = document.createElement('div');
-      formGroup.classList.add('form-group');
-
-      const fieldSet = document.createElement('fieldset');
-      fieldSet.classList.add('bytes-fieldset');
-
-      const legend = document.createElement('legend');
-      const legendText = document.createTextNode('Display option');
-      legend.appendChild(legendText);
+      const tab = document.createElement('div');
+      tab.classList.add('bytes-tab');
 
       const traitSelectLegend = document.createElement('div');
       const traitSelectLegendText = document.createTextNode('Traits to display');
@@ -396,12 +410,10 @@ export default function GenotypeRenderer() {
       traitSelect.multiple = true;
       traitSelect.size = 5;
 
-      fieldSet.appendChild(legend);
-      fieldSet.appendChild(traitSelectLegend);
-      fieldSet.appendChild(traitSelect);
-      formGroup.appendChild(fieldSet);
-      formCol.appendChild(formGroup);
-      return formCol;
+      tab.appendChild(traitSelectLegend);
+      tab.appendChild(traitSelect);
+      
+      return tab;
     }
   }
 

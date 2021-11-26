@@ -67,7 +67,7 @@ export default class GenotypeCanvas {
   }
 
   maxCanvasHeight() {
-    return Math.max(this.dataSet.lineCount() * this.boxSize, this.alleleCanvasHeight());
+    return Math.max(this.alleleUsedHeight(), this.alleleCanvasHeight());
   }
 
   alleleCanvasWidth() {
@@ -76,6 +76,10 @@ export default class GenotypeCanvas {
 
   alleleCanvasHeight() {
     return this.canvas.height - this.mapCanvasHeight - this.scrollbarHeight;
+  }
+
+  alleleUsedHeight() {
+    return this.dataSet.lineCount() * this.boxSize;
   }
 
   maxDataHeight() {
@@ -204,7 +208,7 @@ export default class GenotypeCanvas {
       this.drawingContext.translate(this.traitCanvasWidth, this.mapCanvasHeight);
       // Prevent line name under scrollbar being highlighted
       const region = new Path2D();
-      const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+      const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.alleleUsedHeight();
       region.rect(0, 0, this.nameCanvasWidth, clipHeight);
       this.drawingContext.clip(region);
 
@@ -226,7 +230,7 @@ export default class GenotypeCanvas {
       
       // Prevent line name under scrollbar being highlighted
       const region = new Path2D();
-      const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+      const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.alleleUsedHeight();
       region.rect(0, 0, this.traitValuesCanvasWidth, clipHeight);
       this.drawingContext.clip(region);
 
@@ -266,7 +270,7 @@ export default class GenotypeCanvas {
       this.drawingContext.translate(this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth, this.mapCanvasHeight);
       // Prevent line name under scrollbar being highlighted
       const region = new Path2D();
-      const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+      const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.alleleUsedHeight();
       region.rect(0, 0, this.scoreCanvasWidth, clipHeight);
       this.drawingContext.clip(region);
 
@@ -443,7 +447,7 @@ export default class GenotypeCanvas {
     const region = new Path2D();
     // We need to take account of the scrollbar potentially disappearing when
     // zoomed out
-    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.alleleUsedHeight();
     region.rect(0, this.mapCanvasHeight, this.traitCanvasWidth, clipHeight);
     this.backContext.clip(region);
 
@@ -481,7 +485,7 @@ export default class GenotypeCanvas {
     const region = new Path2D();
     // We need to take account of the scrollbar potentially disappearing when
     // zoomed out
-    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.alleleUsedHeight();
     region.rect(this.traitCanvasWidth, this.mapCanvasHeight, this.nameCanvasWidth, clipHeight);
     this.backContext.clip(region);
 
@@ -509,7 +513,7 @@ export default class GenotypeCanvas {
     const region = new Path2D();
     // We need to take account of the scrollbar potentially disappearing when
     // zoomed out
-    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.alleleUsedHeight();
     region.rect(this.traitCanvasWidth + this.nameCanvasWidth, this.mapCanvasHeight, this.traitValuesCanvasWidth, clipHeight);
     this.backContext.clip(region);
 
@@ -560,7 +564,7 @@ export default class GenotypeCanvas {
     const region = new Path2D();
     // We need to take account of the scrollbar potentially disappearing when
     //zoomed out
-    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.canvas.height;
+    const clipHeight = this.canScrollX() ? this.alleleCanvasHeight() : this.alleleUsedHeight();
     region.rect(this.traitCanvasWidth + this.nameCanvasWidth + this.traitValuesCanvasWidth, this.mapCanvasHeight, this.scoreCanvasWidth, clipHeight);
     this.backContext.clip(region);
 
