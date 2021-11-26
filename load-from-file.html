@@ -22,11 +22,10 @@
       <div id="canvas-holder">
         <!-- Empty div that we can insert a canvas into from javascript. -->
       </div>
-      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
       <script src="build/flapjack-bytes.js"></script>
       <script type="text/javascript">
-        $(document).ready(function(){
-          $("#submit").click(function(){
+        document.addEventListener("DOMContentLoaded", function(){
+          document.getElementById("submit").addEventListener("click", function(){
             var renderer = GenotypeRenderer();
             renderer.renderGenotypesFile({
               domParent: "#canvas-holder",

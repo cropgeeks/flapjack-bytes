@@ -112,7 +112,8 @@ export default class CanvasController {
         sortLineSelect.disabled = true;
         sortTraitSelect.disabled = false;
         
-        
+        const traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;
+        this.setLineSort(new TraitLineSort(traitName));
       });
 
       sortTraitSelect.addEventListener('change', (event) => {
