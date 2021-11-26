@@ -127,14 +127,6 @@ export default function GenotypeRenderer() {
     const exportTab = createExportTab(config);
     const displayTab = createDisplayTab(config);
 
-    const maxTabHeight = Math.max(
-      controlTab.getBoundingClientRect().height,
-      colorTab.getBoundingClientRect().height,
-      sortTab.getBoundingClientRect().height,
-      exportTab.getBoundingClientRect().height,
-      displayTab.getBoundingClientRect().height
-    );
-
     // Create the tab toggles
     const menuRow = document.createElement('div');
 

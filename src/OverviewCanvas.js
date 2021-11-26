@@ -22,6 +22,8 @@ export default class OverviewCanvas {
     this.dataSet = undefined;
     this.colorScheme = undefined;
     this.selectedChromosome = 0;
+
+    this.enabled = true;
   }
 
   init (dataSet, colorScheme, visibilityWindow){
@@ -32,12 +34,21 @@ export default class OverviewCanvas {
   }
 
   prerender (redraw){
+    this.drawingContext.save();
+
     if (redraw){
       this.renderImage(this.backContext, this.width, this.height, false);
     }
 
     this.drawingContext.drawImage(this.backBuffer, 0, 0);
     this.renderWindow();
+
+    if (!this.enabled){
+      this.drawingContext.fillStyle = 'rgba(150, 150, 150, 0.4)';
+      this.drawingContext.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    this.drawingContext.restore();
   }
 
   // Draw the genotype canvas' visibility window
@@ -104,6 +115,8 @@ export default class OverviewCanvas {
 
   // Set the center of the visibility window to (mouseX, mouseY)
   mouseDrag (mouseX, mouseY, visibilityWindow){
+    if (!this.enabled) return;
+
     const scale = this.renderingScale(this.width, this.height);
     const centerMarker = mouseX * scale.markersPerPixel;
     const centerGermplasm = mouseY * scale.germplasmsPerPixel;
@@ -120,6 +133,8 @@ export default class OverviewCanvas {
 
   // Set the visibility window, given its data coordinates
   moveToPosition (marker, germplasm, visibilityWindow){
+    if (!this.enabled) return;
+
     this.windowRect = this.windowFromPosition(marker, germplasm, visibilityWindow);
     this.prerender(false);
 
@@ -145,6 +160,16 @@ export default class OverviewCanvas {
 
   exportName (){
     return `overview-${this.dataSet.genomeMap.chromosomes[this.selectedChromosome].name}`;
+  }
+
+  disable (){
+    this.enabled = false;
+    this.prerender(false);
+  }
+
+  enable (){
+    this.enabled = true;
+    this.prerender(false);
   }
 
   // Export the overview to an image

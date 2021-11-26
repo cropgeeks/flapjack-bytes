@@ -60,6 +60,8 @@ export default class GenotypeCanvas {
 
     this.mouseOverText = undefined;
     this.mouseOverPosition = undefined;
+
+    this.enabled = true;
   }
 
   maxCanvasWidth() {
@@ -103,6 +105,7 @@ export default class GenotypeCanvas {
   }
 
   prerender(redraw) {
+    this.drawingContext.save();
     this.drawingContext.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     const dataWidth = Math.ceil((this.alleleCanvasWidth()) / this.boxSize);
@@ -128,6 +131,12 @@ export default class GenotypeCanvas {
     this.highlightLineTraitValues(germplasmStart, yPos);
     this.highlightLineScore(germplasmStart, yPos);
     this.renderMouseOverText();
+
+    if (!this.enabled){
+      this.drawingContext.fillStyle = 'rgba(150, 150, 150, 0.4)';
+      this.drawingContext.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+    this.drawingContext.restore();
   }
 
   calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart) {
@@ -653,6 +662,8 @@ export default class GenotypeCanvas {
   }
 
   moveX(diffX) {
+    if (!this.enabled) return;
+
     const xScrollMax = this.maxCanvasWidth() - this.alleleCanvasWidth();
 
     if (this.canScrollX()) {
@@ -673,6 +684,8 @@ export default class GenotypeCanvas {
   }
 
   moveY(diffY) {
+    if (!this.enabled) return;
+
     const yScrollMax = this.maxCanvasHeight() - this.alleleCanvasHeight();
 
     if (this.canScrollY()) {
@@ -693,6 +706,8 @@ export default class GenotypeCanvas {
   }
 
   dragVerticalScrollbar(y) {
+    if (!this.enabled) return;
+
     if (this.canScrollY()) {
       const yScrollMax = this.maxCanvasHeight() - this.alleleCanvasHeight();
 
@@ -715,6 +730,8 @@ export default class GenotypeCanvas {
   }
 
   dragHorizontalScrollbar(x) {
+    if (!this.enabled) return;
+
     if (this.canScrollX()) {
       const xScrollMax = this.maxCanvasWidth() - this.alleleCanvasWidth();
 
@@ -751,6 +768,8 @@ export default class GenotypeCanvas {
   }
 
   mouseOver(x, y) {
+    if (!this.enabled) return;
+
     const mouseXPos = x - this.alleleCanvasXOffset;
     const mouseYPos = y - this.mapCanvasHeight;
 
@@ -1069,6 +1088,16 @@ export default class GenotypeCanvas {
 
   resetColumnBackground() {
     this.currentColumnBackground = 1;
+  }
+
+  disable() {
+    this.enabled = false;
+    this.prerender(false);
+  }
+
+  enable() {
+    this.enabled = true;
+    this.prerender(false);
   }
 
 //   rainbowColor(numOfSteps, step) {

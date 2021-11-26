@@ -80,33 +80,30 @@ export default class CanvasController {
     importingOrderRadio.addEventListener('change', () => {
       sortLineSelect.disabled = true;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
-
-      this.genotypeCanvas.setLineSort(new ImportingOrderLineSort());
-      this.overviewCanvas.prerender(true);
+      this.setLineSort(new ImportingOrderLineSort());
     });
 
     const alphabetOrderRadio = document.getElementById('alphabeticSort');
     alphabetOrderRadio.addEventListener('change', () => {
       sortLineSelect.disabled = true;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
-
-      this.genotypeCanvas.setLineSort(new AlphabeticLineSort());
-      this.overviewCanvas.prerender(true);
+      this.setLineSort(new AlphabeticLineSort());
     });
 
     const similarityOrderRadio = document.getElementById('similaritySort');
     similarityOrderRadio.addEventListener('change', () => {
       sortLineSelect.disabled = false;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
-
+      
       const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
-      this.genotypeCanvas.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
-      this.overviewCanvas.prerender(true);
+      this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
     });
 
     sortLineSelect.addEventListener('change', (event) => {
-      this.genotypeCanvas.setSortComparisonLine(event.target.options[event.target.selectedIndex].value);
-      this.overviewCanvas.prerender(true);
+      if (!sortLineSelect.disabled){
+        const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
+        this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
+      }
     });
 
     if (dataSet.hasTraits()){
@@ -114,15 +111,15 @@ export default class CanvasController {
       traitOrderRadio.addEventListener('change', () => {
         sortLineSelect.disabled = true;
         sortTraitSelect.disabled = false;
-
-        const traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;
-        this.genotypeCanvas.setLineSort(new TraitLineSort(traitName));
-        this.overviewCanvas.prerender(true);
+        
+        
       });
 
       sortTraitSelect.addEventListener('change', (event) => {
-        this.genotypeCanvas.setSortTrait(event.target.options[event.target.selectedIndex].value);
-        this.overviewCanvas.prerender(true);
+        if (!sortTraitSelect.disabled){
+          const traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;
+          this.setLineSort(new TraitLineSort(traitName));
+        }
       });
 
       const displayTraitSelect = document.getElementById('displayTraitSelect');
@@ -201,6 +198,17 @@ export default class CanvasController {
     });
   }
 
+  setLineSort(lineSort){
+    this.disableCanvas();
+
+    // Yield control to the browser to make a render (to show the grey overlay)
+    setTimeout(() => {
+      this.genotypeCanvas.setLineSort(lineSort);
+      this.overviewCanvas.prerender(true);
+      this.enableCanvas();
+    }, 4);
+  }
+
   updateAutoWidth() {
     const computedStyles = window.getComputedStyle(this.canvasContainer);
     const autoWidth = this.canvasContainer.clientWidth - parseInt(computedStyles.paddingLeft) - parseInt(computedStyles.paddingRight);
@@ -225,6 +233,16 @@ export default class CanvasController {
     this.genotypeCanvas.setChromosome(chromosomeIndex);
     this.overviewCanvas.setChromosome(chromosomeIndex);
     this.overviewCanvas.moveToPosition(0, 0, this.genotypeCanvas.visibilityWindow());
+  }
+
+  disableCanvas() {
+    this.genotypeCanvas.disable();
+    this.overviewCanvas.disable();
+  }
+
+  enableCanvas(self) {
+    this.genotypeCanvas.enable();
+    this.overviewCanvas.enable();
   }
 
   getGenotypeMouseLocation(clientX, clientY) {
