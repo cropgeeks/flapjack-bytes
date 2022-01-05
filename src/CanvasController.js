@@ -7,7 +7,7 @@ import SimilarityColorScheme from './color/SimilarityColorScheme'
 
 
 export default class CanvasController {
-  constructor(container, genotypeCanvas, overviewCanvas, genotypeAutoWidth, overviewAutoWidth, minGenotypeAutoWidth, minOverviewAutoWidth) {
+  constructor(container, genotypeCanvas, overviewCanvas, saveSettings, genotypeAutoWidth, overviewAutoWidth, minGenotypeAutoWidth, minOverviewAutoWidth) {
     this.canvasContainer = container;
     this.genotypeCanvas = genotypeCanvas;
     this.overviewCanvas = overviewCanvas;
@@ -15,6 +15,7 @@ export default class CanvasController {
     this.overviewAutoWidth = overviewAutoWidth === undefined ? false : overviewAutoWidth;
     this.minGenotypeAutoWidth = minGenotypeAutoWidth === undefined ? 0 : minGenotypeAutoWidth;
     this.minOverviewAutoWidth = minOverviewAutoWidth === undefined ? 0 : minOverviewAutoWidth;
+    this.saveSettings = saveSettings;
 
     this.chromosomeIndex = 0;
     this.dragStartX = null;
@@ -24,9 +25,28 @@ export default class CanvasController {
     this.draggingHorizontalScrollbar = false;
     this.draggingOverviewCanvas = false;
     this.contextMenuY = null;
+  }
+
+  init(dataSet) {
+    this.dataSet = dataSet;
+    const settings = this.loadDefaultSettings(this.dataSet.id);
+
+    // Initialize the components
+    this.genotypeCanvas.init(dataSet, settings);
+    this.genotypeCanvas.prerender(true);
+    this.overviewCanvas.init(dataSet, settings, this.genotypeCanvas.visibilityWindow());
+    this.overviewCanvas.prerender(true);
+
+    this.updateAutoWidth();
+
+    window.addEventListener("resize", event => {
+      this.updateAutoWidth();
+    });
 
     // Color schemes
     const nucleotideRadio = document.getElementById('nucleotideScheme');
+    if (settings.colorSchemeId == "nucleotide")
+      nucleotideRadio.checked = true;
     nucleotideRadio.addEventListener('change', () => {
       const lineSelect = document.getElementById('colorLineSelect');
       lineSelect.disabled = true;
@@ -35,9 +55,17 @@ export default class CanvasController {
       colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
       this.genotypeCanvas.setColorScheme(colorScheme);
       this.overviewCanvas.setColorScheme(colorScheme);
+
+      this.saveSetting("colorScheme", "nucleotide");
     });
 
     const similarityRadio = document.getElementById('similarityScheme');
+    const lineSelect = document.getElementById('colorLineSelect');
+    if (settings.colorSchemeId == "similarity") {
+      similarityRadio.checked = true;
+      lineSelect.disabled = false;
+      lineSelect.value = settings.colorReference;
+    }
     similarityRadio.addEventListener('change', () => {
       const lineSelect = document.getElementById('colorLineSelect');
       lineSelect.disabled = false;
@@ -50,26 +78,16 @@ export default class CanvasController {
       this.genotypeCanvas.setColorScheme(colorScheme);
       this.genotypeCanvas.setColorComparisonLine(referenceName);
       this.overviewCanvas.setColorScheme(colorScheme);
+
+      this.saveSetting("colorScheme", "similarity");
     });
 
-    const lineSelect = document.getElementById('colorLineSelect');
     lineSelect.addEventListener('change', (event) => {
-      this.genotypeCanvas.setColorComparisonLine(event.target.options[event.target.selectedIndex].value);
+      const reference = event.target.options[event.target.selectedIndex].value;
+      this.genotypeCanvas.setColorComparisonLine(reference);
       this.overviewCanvas.prerender(true);
-    });
-  }
 
-  init(dataSet, colorScheme) {
-    // Initialize the components
-    this.genotypeCanvas.init(dataSet, colorScheme);
-    this.genotypeCanvas.prerender(true);
-    this.overviewCanvas.init(dataSet, colorScheme, this.genotypeCanvas.visibilityWindow());
-    this.overviewCanvas.prerender(true);
-
-    this.updateAutoWidth();
-
-    window.addEventListener("resize", event => {
-      this.updateAutoWidth();
+      this.saveSetting("colorReference", reference);
     });
 
     // Sort
@@ -77,49 +95,71 @@ export default class CanvasController {
     const sortTraitSelect = document.getElementById('sortTraitSelect');
 
     const importingOrderRadio = document.getElementById('importingOrderSort');
+    if (settings.lineSortId == "importing")
+      importingOrderRadio.checked = true;
     importingOrderRadio.addEventListener('change', () => {
       sortLineSelect.disabled = true;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
       this.setLineSort(new ImportingOrderLineSort());
+      this.saveSetting("sort", "importing");
     });
 
     const alphabetOrderRadio = document.getElementById('alphabeticSort');
+    if (settings.lineSortId == "alphabetic")
+      alphabetOrderRadio.checked = true;
     alphabetOrderRadio.addEventListener('change', () => {
       sortLineSelect.disabled = true;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
       this.setLineSort(new AlphabeticLineSort());
+      this.saveSetting("sort", "alphabetic");
     });
 
     const similarityOrderRadio = document.getElementById('similaritySort');
+    if (settings.lineSortId == "similarity") {
+      similarityOrderRadio.checked = true;
+      sortLineSelect.disabled = false;
+      sortLineSelect.value = settings.sortReference;
+    }
     similarityOrderRadio.addEventListener('change', () => {
       sortLineSelect.disabled = false;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
       
       const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
       this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
+      this.saveSetting("sort", "similarity");
+      this.saveSetting("sortReference", referenceName);
     });
 
     sortLineSelect.addEventListener('change', (event) => {
       if (!sortLineSelect.disabled){
         const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
         this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
+        this.saveSetting("sortReference", referenceName);
       }
     });
 
-    if (dataSet.hasTraits()){
+    if (dataSet.hasTraits()) {
       const traitOrderRadio = document.getElementById('traitSort');
+      if (settings.lineSortId == "trait") {
+        traitOrderRadio.checked = true;
+        sortTraitSelect.disabled = false;
+        sortTraitSelect.value = settings.sortReference;
+      }
       traitOrderRadio.addEventListener('change', () => {
         sortLineSelect.disabled = true;
         sortTraitSelect.disabled = false;
         
         const traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;
         this.setLineSort(new TraitLineSort(traitName));
+        this.saveSetting("sort", "trait");
+        this.saveSetting("sortReference", traitName);
       });
 
       sortTraitSelect.addEventListener('change', (event) => {
         if (!sortTraitSelect.disabled){
           const traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;
           this.setLineSort(new TraitLineSort(traitName));
+          this.saveSetting("sortReference", traitName);
         }
       });
 
@@ -131,6 +171,7 @@ export default class CanvasController {
             displayTraits.push(option.value);
         }
         this.genotypeCanvas.setDisplayTraits(displayTraits);
+        this.saveSetting("displayTraits", displayTraits.join(";"));
       })
     }
 
@@ -318,5 +359,74 @@ export default class CanvasController {
     const genotypePosition = this.overviewCanvas.mouseDrag(mousePos.x, mousePos.y, this.genotypeCanvas.visibilityWindow());
     this.genotypeCanvas.moveToPosition(genotypePosition.marker, genotypePosition.germplasm);
     this.draggingOverviewCanvas = true;
+  }
+
+  saveSetting(key, value) {
+    if (this.saveSettings) {
+      const mangledKey = "_fj-bytes::" + this.dataSet.id + "::" + key;
+      localStorage.setItem(mangledKey, value);
+    }
+  }
+
+  loadSetting(key) {
+    const mangledKey = "_fj-bytes::" + this.dataSet.id + "::" + key;
+    return localStorage.getItem(mangledKey);
+  }
+
+  loadDefaultSettings() {
+    const sortId = this.loadSetting("sort");
+    const sortReference = this.loadSetting("sortReference");
+    const colorSchemeId = this.loadSetting("colorScheme");
+    const colorReference = this.loadSetting("colorReference");
+    const displayTraits = this.loadSetting("displayTraits");
+
+    let settings = {
+      colorReference, sortReference,
+      displayTraits: (displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";")),
+      lineSort: new ImportingOrderLineSort(),
+      lineSortId: "importing",
+      colorScheme: new NucleotideColorScheme(this.dataSet),
+      colorSchemeId: "nucleotide",
+    };
+
+    switch (sortId) {
+      case "importing":
+        settings.lineSort = new ImportingOrderLineSort();
+        settings.lineSortId = "importing";
+        break;
+      case "alphabetic":
+        settings.lineSort = new AlphabeticLineSort();
+        settings.lineSortId = "alphabetic";
+        break;
+      case "trait":
+        if (this.dataSet.hasTraits() && dataSet.getTrait(sortReference) !== undefined) {
+          settings.lineSort = new TraitLineSort(sortReference);
+          settings.lineSortId = "trait";
+        }
+        break;
+      case "similarity":
+        if (this.dataSet.germplasmList.find(germplasm => germplasm.name == sortReference) !== undefined) {
+          settings.lineSort = new SimilarityLineSort(sortReference, [this.chromosomeIndex]);
+          settings.lineSortId = "similarity";
+        }
+        break;
+      default:
+    }
+
+    switch (colorSchemeId) {
+      case "nucleotide":
+        settings.colorScheme = new NucleotideColorScheme(this.dataSet);
+        settings.colorSchemeId = "nucleotide";
+        break;
+      case "similarity":
+        const referenceIndex = this.dataSet.germplasmList.findIndex(germplasm => germplasm.name == colorReference)
+        if (referenceIndex !== undefined) {
+          settings.colorScheme = new SimilarityColorScheme(this.dataSet, referenceIndex);
+          settings.colorSchemeId = "similarity";
+        }
+        break;
+    }
+
+    return settings;
   }
 }

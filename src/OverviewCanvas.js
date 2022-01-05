@@ -26,9 +26,9 @@ export default class OverviewCanvas {
     this.enabled = true;
   }
 
-  init (dataSet, colorScheme, visibilityWindow){
+  init (dataSet, settings, visibilityWindow){
     this.dataSet = dataSet;
-    this.colorScheme = colorScheme;
+    this.colorScheme = settings.colorScheme;
     this.moveToPosition(0, 0, visibilityWindow);
     this.prerender(true);
   }

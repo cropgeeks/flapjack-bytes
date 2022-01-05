@@ -81,6 +81,7 @@ renderer.renderGenotypesBrapi({
   authToken: this.authToken
   overviewWidth: 800,  // Overview width
   overviewWidth: 200,   // Overview height
+  saveSettings: false,
 });
 ```
 
@@ -104,6 +105,8 @@ The parameters are as follows:
 - `overviewHeight`: the height of the overview the library will create (if undefined, use a default height)
 - `minGenotypeAutoWidth`: the minimum width for the genotype view (auto-width mode only, optional)
 - `minOverviewAutoWidth`: the minimum width for the overview (auto-width mode only, optional)
+- `saveSettings`: Whether to save the user settings (reference lines, trait colors) (defaults to `true`)
+- `dataSetId`: Arbitrary string to identify this dataset's saved settings (if undefined, use `matrixId`)
 
 
 ### Local File
@@ -157,14 +160,9 @@ into the flapjack-bytes library.
 ```
 
 Here jQuery is just used to simplify adding the event handler to the submit
-button. The meat of the code is the following two lines:
+button. 
 
-```javascript
-var renderer = GenotypeRenderer();
-renderer.renderGenotypesFile("#canvas-holder", null, 600, "#mapfile", "#genofile", null, 200, 600, 600);
-```
-
-Where the parameters are as follows:
+The parameters are as follows:
 - `domParent`: the id of the canvas to inject the flapjack-bytes canvas into
 - `width`: the width of the canvas
     - can be set to `null` to automatically resize the canvas to fit the available width
@@ -178,6 +176,8 @@ Where the parameters are as follows:
 - `overviewHeight`: the height of the overview (if undefined, use a default height)
 - `minGenotypeAutoWidth`: the minimum width for the genotype view (auto-width mode only, optional)
 - `minOverviewAutoWidth`: the minimum height for the overview (auto-width mode only, optional)
+- `saveSettings`: Whether to save the user settings (reference lines, trait colors) (defaults to `true`)
+- `dataSetId`: Arbitrary string to identify this dataset's saved settings (if undefined, use the genotype file name)
 
 The map file and genotype file should be in their respective [Flapjack formats](http://flapjack.hutton.ac.uk/en/latest/projects_&_data_formats.html#data-sets-maps-and-genotypes)
 
@@ -244,7 +244,8 @@ renderer.renderGenotypesUrl({
   mapFileURL: $('#mapfile').val(),
   genotypeFileURL: $('#genofile').val(),
   overviewWidth: 800,
-  overviewHeight: 200
+  overviewHeight: 200,
+  dataSetId: "MyDataSet",
 });
 ```
 
@@ -262,3 +263,5 @@ Where the parameters are as follows:
 - `overviewHeight`: the height of the overview (if undefined, use a default height)
 - `minGenotypeOverviewWidth`: the minimum width for the genotype view (auto-width mode only, optional)
 - `minGenotypeOverviewHeight`: the minimum height for the genotype view (auto-width mode only, optional)
+- `saveSettings`: Whether to save the user settings (reference lines, trait colors) (defaults to `true`)
+- `dataSetId`: Arbitrary string to identify this dataset's saved settings (if undefined, use `genotypeFileURL`)

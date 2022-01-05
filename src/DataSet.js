@@ -1,7 +1,8 @@
 import {buildSimilarityLookupTable} from './Similarity'
 
 export default class DataSet {
-  constructor(genomeMap, germplasmList, stateTable, traits, phenotypes) {
+  constructor(dataSetId, genomeMap, germplasmList, stateTable, traits, phenotypes) {
+    this.id = dataSetId;
     this.genomeMap = genomeMap;
     this.germplasmList = germplasmList;
     this.stateTable = stateTable;
@@ -68,11 +69,13 @@ export default class DataSet {
     return this.germplasmList.length;
   }
 
-  hasTraits(){
+  hasTraits() {
     return this.traits !== undefined;
   }
 
   getTrait(traitName) {
+    if (!this.hasTraits())
+      return undefined;
     return this.traits.get(traitName);
   }
 }

@@ -2,14 +2,11 @@ import axios from 'axios';
 import GenotypeCanvas from './GenotypeCanvas';
 import OverviewCanvas from './OverviewCanvas';
 import CanvasController from './CanvasController';
-import NucleotideColorScheme from './color/NucleotideColorScheme';
 import MapImporter from './MapImporter';
 import GenotypeImporter from './GenotypeImporter';
 import PhenotypeImporter from './PhenotypeImporter'
 import DataSet from './DataSet';
-import ImportingOrderLineSort from './sort/ImportingOrderLineSort'
 
-const defaultLineSort = new ImportingOrderLineSort();
 
 export default function GenotypeRenderer() {
   const genotypeRenderer = {};
@@ -31,8 +28,6 @@ export default function GenotypeRenderer() {
 
   const boxSize = 16;
 
-  let colorScheme;
-
   let genomeMap;
   let phenotypes;
   let traits;
@@ -49,7 +44,7 @@ export default function GenotypeRenderer() {
   }
 
   function zoom(size) {
-    const newPosition = genotypeCanvas.zoom(size, colorScheme);
+    const newPosition = genotypeCanvas.zoom(size);
     overviewCanvas.moveToPosition(newPosition.marker, newPosition.germplasm, genotypeCanvas.visibilityWindow());
   }
 
@@ -77,6 +72,9 @@ export default function GenotypeRenderer() {
     const autoWidth = canvasHolder.clientWidth - parseInt(computedStyles.paddingLeft) - parseInt(computedStyles.paddingRight);
     const width = (config.width === null) ? Math.max(autoWidth, config.minGenotypeAutoWidth) : config.width;
     let overviewWidth = (config.overviewWidth === null) ? Math.max(autoWidth, config.minOverviewAutoWidth) : config.overviewWidth;
+
+    const settings = createSettings(config);
+    canvasHolder.appendChild(settings);
 
     if (showProgress){
       // Progress bar
@@ -106,7 +104,7 @@ export default function GenotypeRenderer() {
       canvasHolder.append(progressBarBackground);
     }
 
-    genotypeCanvas = new GenotypeCanvas(width, config.height, boxSize, defaultLineSort);
+    genotypeCanvas = new GenotypeCanvas(width, config.height, boxSize);
     canvasHolder.append(genotypeCanvas.canvas);
 
     if (!overviewWidth) overviewWidth = width;
@@ -115,64 +113,9 @@ export default function GenotypeRenderer() {
     overviewCanvas = new OverviewCanvas(overviewWidth, config.overviewHeight);
     canvasHolder.append(overviewCanvas.canvas);
 
-    //// Settings
-    const settings = document.createElement('div');
-    settings.classList.add('row');
-    settings.style.marginTop = '8px';
-
-    // Create the tabs
-    const controlTab = createControlTab(config);
-    const colorTab = createColorSchemeTab(config);
-    const sortTab = createSortTab(config);
-    const exportTab = createExportTab(config);
-    const displayTab = createDisplayTab(config);
-
-    // Create the tab toggles
-    const menuRow = document.createElement('div');
-
-    const controlButton = createTabToggle('control', 'Controls');
-    const colorButton = createTabToggle('color', 'Color schemes');
-    const sortButton = createTabToggle('sort', 'Sorting');
-    const displayButton = createTabToggle('display', 'Display');
-    const exportButton = createTabToggle('export', 'Export');
-    
-    menuRow.appendChild(controlButton)
-    menuRow.appendChild(colorButton);
-    menuRow.appendChild(sortButton);
-    if (displayTab !== undefined)
-      menuRow.appendChild(displayButton);
-    menuRow.appendChild(exportButton);    
-
-    settingsTabs.set('control', [controlButton, controlTab]);
-    settingsTabs.set('color', [colorButton, colorTab]);
-    settingsTabs.set('sort', [sortButton, sortTab]);
-    if (displayTab !== undefined)
-      settingsTabs.set('display', [displayButton, displayTab]);
-    settingsTabs.set('export', [exportButton, exportTab]);
-
-    settings.appendChild(menuRow);
-
-    // Add the actual tabs
-    const tabContainer = document.createElement('div');
-    tabContainer.appendChild(controlTab);
-    tabContainer.appendChild(colorTab);
-    tabContainer.appendChild(sortTab);
-    if (displayTab !== undefined)
-      tabContainer.appendChild(displayTab);
-    tabContainer.appendChild(exportTab);
-
-    tabContainer.style.minHeight = '140px';  // Can't really use getClientBoundingRect as the tabs are not displayed yet, so...
-    tabContainer.style.border = '1px solid #e0e0e0';
-    tabContainer.style.padding = '10px';
-    settings.appendChild(tabContainer);
-
-    controlTab.style.display = 'block';
-    
-    canvasHolder.appendChild(settings);
-
     addStyleSheet();
 
-    canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, config.width === null, config.overviewWidth === null, config.minGenotypeAutoWidth, config.minOverviewAutoWidth);
+    canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, (config.saveSettings != false), config.width === null, config.overviewWidth === null, config.minGenotypeAutoWidth, config.minOverviewAutoWidth);
   }
 
   function createTabToggle(name, title){
@@ -250,7 +193,64 @@ export default function GenotypeRenderer() {
     addCSSRule(sheet, '.bytes-tabtoggle:hover', 'background-color: #DDDDDD');
     addCSSRule(sheet, '.bytes-tabtoggle.bytes-tabtoggle-active', 'background-color: #CCCCCC');
     addCSSRule(sheet, '.bytes-tab', 'display: none;');
-;    // addCSSRule(sheet, 'input', 'margin: .4rem;');
+    // addCSSRule(sheet, 'input', 'margin: .4rem;');
+  }
+
+  function createSettings(config) {
+    //// Settings
+    const settings = document.createElement('div');
+    settings.classList.add('row');
+    settings.style.marginTop = '8px';
+
+    // Create the tabs
+    const controlTab = createControlTab(config);
+    const colorTab = createColorSchemeTab(config);
+    const sortTab = createSortTab(config);
+    const exportTab = createExportTab(config);
+    const displayTab = createDisplayTab(config);
+
+    // Create the tab toggles
+    const menuRow = document.createElement('div');
+
+    const controlButton = createTabToggle('control', 'Controls');
+    const colorButton = createTabToggle('color', 'Color schemes');
+    const sortButton = createTabToggle('sort', 'Sorting');
+    const displayButton = createTabToggle('display', 'Display');
+    const exportButton = createTabToggle('export', 'Export');
+    
+    menuRow.appendChild(controlButton)
+    menuRow.appendChild(colorButton);
+    menuRow.appendChild(sortButton);
+    if (displayTab !== undefined)
+      menuRow.appendChild(displayButton);
+    menuRow.appendChild(exportButton);    
+
+    settingsTabs.set('control', [controlButton, controlTab]);
+    settingsTabs.set('color', [colorButton, colorTab]);
+    settingsTabs.set('sort', [sortButton, sortTab]);
+    if (displayTab !== undefined)
+      settingsTabs.set('display', [displayButton, displayTab]);
+    settingsTabs.set('export', [exportButton, exportTab]);
+
+    settings.appendChild(menuRow);
+
+    // Add the actual tabs
+    const tabContainer = document.createElement('div');
+    tabContainer.appendChild(controlTab);
+    tabContainer.appendChild(colorTab);
+    tabContainer.appendChild(sortTab);
+    if (displayTab !== undefined)
+      tabContainer.appendChild(displayTab);
+    tabContainer.appendChild(exportTab);
+
+    tabContainer.style.minHeight = '140px';  // Can't really use getClientBoundingRect as the tabs are not displayed yet, so...
+    tabContainer.style.border = '1px solid #e0e0e0';
+    tabContainer.style.padding = '10px';
+    settings.appendChild(tabContainer);
+
+    controlTab.style.display = 'block';
+
+    return settings
   }
 
   function createControlTab(config) {
@@ -521,13 +521,13 @@ export default function GenotypeRenderer() {
               germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
               const { stateTable } = genotypeImporter;
 
-              dataSet = new DataSet(genomeMap, germplasmData, stateTable);
-              colorScheme = new NucleotideColorScheme(dataSet);
+              const dataSetId = (config.dataSetId === undefined ? config.matrixId : config.dataSetId);
+              dataSet = new DataSet(dataSetId, genomeMap, germplasmData, stateTable);
 
               populateLineSelect();
               populateChromosomeSelect();
 
-              canvasController.init(dataSet, colorScheme);
+              canvasController.init(dataSet);
 
               // Tells the dom parent that Flapjack has finished loading. Allows spinners
               // or similar to be disabled
@@ -556,13 +556,13 @@ export default function GenotypeRenderer() {
           germplasmData = genotypeImporter.parseVariantSetCalls(variantSetCalls);
           const { stateTable } = genotypeImporter;
 
-          dataSet = new DataSet(genomeMap, germplasmData, stateTable);
-          colorScheme = new NucleotideColorScheme(dataSet);
+          const dataSetId = (config.dataSetId === undefined ? config.matrixId : config.dataSetId);
+          dataSet = new DataSet(config.matrixId, genomeMap, germplasmData, stateTable);
 
           populateLineSelect();
           populateChromosomeSelect();
 
-          canvasController.init(dataSet, colorScheme);
+          canvasController.init(dataSet);
 
           // Tells the dom parent that Flapjack has finished loading. Allows spinners
           // or similar to be disabled
@@ -699,14 +699,14 @@ export default function GenotypeRenderer() {
         germplasmData = germplasmList;
         const { stateTable } = genotypeImporter;
 
-        dataSet = new DataSet(genomeMap, germplasmData, stateTable, traits, phenotypes);
-        colorScheme = new NucleotideColorScheme(dataSet);
+        const dataSetId = (config.dataSetId === undefined ? config.genotypeFileURL : config.dataSetId);
+        dataSet = new DataSet(dataSetId, genomeMap, germplasmData, stateTable, traits, phenotypes);
 
         populateLineSelect();
         if (phenotypes !== undefined) populateTraitSelect();
         populateChromosomeSelect();
 
-        canvasController.init(dataSet, colorScheme);
+        canvasController.init(dataSet);
 
         // Tells the dom parent that Flapjack has finished loading. Allows spinners
         // or similar to be disabled
@@ -876,14 +876,14 @@ export default function GenotypeRenderer() {
         germplasmData = germplasmList;
         const { stateTable } = genotypeImporter;
 
-        dataSet = new DataSet(genomeMap, germplasmData, stateTable, traits, phenotypes);
-        colorScheme = new NucleotideColorScheme(dataSet);
+        const dataSetId = (config.dataSetId === undefined ? genotypeFile.name : config.dataSetId);
+        dataSet = new DataSet(dataSetId, genomeMap, germplasmData, stateTable, traits, phenotypes);
 
         populateLineSelect();
         if (phenotypes !== undefined) populateTraitSelect();
         populateChromosomeSelect();
 
-        canvasController.init(dataSet, colorScheme);
+        canvasController.init(dataSet);
 
         // Tells the dom parent that Flapjack has finished loading. Allows spinners
         // or similar to be disabled
