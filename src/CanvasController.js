@@ -32,11 +32,13 @@ export default class CanvasController {
     this.dataSet = dataSet;
     const settings = this.loadDefaultSettings(this.dataSet.id);
 
-    if (settings.traitColors != null) {
+    if (settings.traitColors != null && this.dataSet.hasTraits()) {
       for (let traitName in settings.traitColors) {
         const trait = this.dataSet.getTrait(traitName);
-        for (let value in settings.traitColors[traitName])
-          trait.setHSVColor(parseFloat(value), settings.traitColors[traitName][value]);
+        if (trait !== undefined) {
+          for (let value in settings.traitColors[traitName])
+            trait.setHSVColor(parseFloat(value), settings.traitColors[traitName][value]);
+        }
       }
     }
 
