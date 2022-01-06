@@ -36,8 +36,8 @@ export class Trait {
     if (this.type == TraitType.Category) {
       this.setCategoryColors();
     } else if (this.type == TraitType.Numerical) {
-      this.color.set(this.minValue, DEFAULT_GRADIENT_MIN);
-      this.color.set(this.maxValue, DEFAULT_GRADIENT_MAX);
+      this.colors.set(this.minValue, DEFAULT_GRADIENT_MIN);
+      this.colors.set(this.maxValue, DEFAULT_GRADIENT_MAX);
     }
   }
 

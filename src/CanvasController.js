@@ -35,9 +35,8 @@ export default class CanvasController {
     if (settings.traitColors != null) {
       for (let traitName in settings.traitColors) {
         const trait = this.dataSet.getTrait(traitName);
-        for (let value in settings.traitColors[traitName]) {
+        for (let value in settings.traitColors[traitName])
           trait.setHSVColor(parseFloat(value), settings.traitColors[traitName][value]);
-        }
       }
     }
 
@@ -201,7 +200,7 @@ export default class CanvasController {
         const trait = this.dataSet.getTrait(traitName);
         let traitOptions = null;
         if (trait.type == TraitType.Numerical) {
-          traitOptions = ['min : ' + trait.minValue(), 'max : ' + trait.maxValue()];
+          traitOptions = ['min : ' + trait.minValue, 'max : ' + trait.maxValue];
         } else {
           traitOptions = trait.getValues();
         }
@@ -216,8 +215,11 @@ export default class CanvasController {
           opt.text = value;
           paletteValueSelect.add(opt);
         }
+        paletteValueSelect.selectedIndex = 0;
+        paletteValueSelect.dispatchEvent(new Event('change'));
       });
       paletteTraitSelect.value = this.dataSet.traitNames[0];
+      paletteTraitSelect.dispatchEvent(new Event('change'));
 
       paletteValueSelect.addEventListener('change', event => {
         const traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
@@ -231,6 +233,7 @@ export default class CanvasController {
         }
         paletteValueColor.value = color;
       });
+      paletteValueSelect.dispatchEvent(new Event('change'));
 
       paletteValueColor.addEventListener('change', event => {
         const traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
@@ -488,7 +491,7 @@ export default class CanvasController {
         settings.lineSortId = "alphabetic";
         break;
       case "trait":
-        if (this.dataSet.hasTraits() && dataSet.getTrait(sortReference) !== undefined) {
+        if (this.dataSet.hasTraits() && this.dataSet.getTrait(sortReference) !== undefined) {
           settings.lineSort = new TraitLineSort(sortReference);
           settings.lineSortId = "trait";
         }
