@@ -554,10 +554,8 @@ export default class GenotypeCanvas {
           const traitValue = trait.getValue(phenotype);
 
           if (traitValue !== undefined) {
-            const scaleValue = trait.scaleValue(phenotype);
-            const hue = 120 * scaleValue;
-            const rgb = this.hsv2rgb(hue, 0.53, 1);
-            this.backContext.fillStyle = "rgb(" + Math.floor(rgb[0] * 255) + "," + Math.floor(rgb[1] * 255) + "," + Math.floor(rgb[2] * 255) + ")";
+            this.backContext.fillStyle = trait.getColor(phenotype);
+            //this.backContext.fillStyle = "rgb(" + Math.floor(rgb[0] * 255) + "," + Math.floor(rgb[1] * 255) + "," + Math.floor(rgb[2] * 255) + ")";
             this.backContext.fillRect(xPos, yPos, this.traitValueColumnWidths[traitIndex], this.boxSize);
             
             this.backContext.fillStyle = "#333";
@@ -1088,11 +1086,6 @@ export default class GenotypeCanvas {
     tmpContext.drawImage(this.canvas, 0, 0);
 
     return tmpCanvas.toDataURL(type, encoderOptions);
-  }
-
-  hsv2rgb(h, s, v) {
-    let f = (n, k = (n + h/60) % 6) => v - v*s*Math.max(Math.min(k, 4-k, 1), 0);     
-    return [f(5), f(3), f(1)];       
   }
 
   nextColumnBackground() {

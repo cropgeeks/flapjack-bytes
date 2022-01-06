@@ -393,7 +393,10 @@ export default function GenotypeRenderer() {
       const tab = document.createElement('div');
       tab.classList.add('bytes-tab');
 
-      const traitSelectLegend = document.createElement('div');
+      const traitSelectContainer = document.createElement('div');
+      traitSelectContainer.style.float = 'left';
+
+      const traitSelectLegend = document.createElement('p');
       const traitSelectLegendText = document.createTextNode('Traits to display');
       traitSelectLegend.appendChild(traitSelectLegendText);
 
@@ -402,8 +405,37 @@ export default function GenotypeRenderer() {
       traitSelect.multiple = true;
       traitSelect.size = 5;
 
-      tab.appendChild(traitSelectLegend);
-      tab.appendChild(traitSelect);
+      traitSelectContainer.appendChild(traitSelectLegend);
+      traitSelectContainer.appendChild(traitSelect);
+
+      const paletteSelectContainer = document.createElement('div');
+      paletteSelectContainer.style.float = 'left';
+      paletteSelectContainer.style.marginLeft = '10px';
+
+      const paletteSelectLegend = document.createElement('p');
+      const paletteSelectLegendText = document.createTextNode('Trait colors');
+      paletteSelectLegend.appendChild(paletteSelectLegendText);
+
+      const paletteSelectTrait = document.createElement('select');
+      paletteSelectTrait.id = 'paletteTrait'
+      paletteSelectTrait.style.display = 'block';
+
+      const paletteSelectValue = document.createElement('select');
+      paletteSelectValue.id = 'paletteValue';
+      paletteSelectValue.style.display = 'block';
+
+      const paletteSelectColor = document.createElement('input');
+      paletteSelectColor.id = 'paletteColor';
+      paletteSelectColor.style.display = 'block';
+      paletteSelectColor.setAttribute('type', 'color');
+
+      paletteSelectContainer.appendChild(paletteSelectLegend);
+      paletteSelectContainer.appendChild(paletteSelectTrait);
+      paletteSelectContainer.appendChild(paletteSelectValue);
+      paletteSelectContainer.appendChild(paletteSelectColor);
+
+      tab.appendChild(traitSelectContainer);
+      tab.appendChild(paletteSelectContainer);
       
       return tab;
     }

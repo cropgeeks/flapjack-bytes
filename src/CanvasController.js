@@ -1,3 +1,4 @@
+import {TraitType} from './Trait.js'
 import AlphabeticLineSort from './sort/AlphabeticLineSort'
 import SimilarityLineSort from './sort/SimilarityLineSort'
 import ImportingOrderLineSort from './sort/ImportingOrderLineSort'
@@ -172,7 +173,71 @@ export default class CanvasController {
         }
         this.genotypeCanvas.setDisplayTraits(displayTraits);
         this.saveSetting("displayTraits", displayTraits.join(";"));
-      })
+      });
+
+      // Trait palettes
+      const paletteTraitSelect = document.getElementById('paletteTrait');
+      const paletteValueSelect = document.getElementById('paletteValue');
+      const paletteValueColor = document.getElementById('paletteColor');
+
+      this.dataSet.traitNames.forEach(traitName => {
+        const opt = document.createElement('option');
+        opt.value = traitName;
+        opt.text = traitName;
+        paletteTraitSelect.add(opt);
+      });
+
+      paletteTraitSelect.addEventListener('change', event => {
+        const traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
+        const trait = this.dataSet.getTrait(traitName);
+        let traitOptions = null;
+        if (trait.type == TraitType.Numerical) {
+          traitOptions = ['min : ' + trait.minValue(), 'max : ' + trait.maxValue()];
+        } else {
+          traitOptions = trait.getValues();
+        }
+        
+        // Clear the select list
+        for (let i = paletteValueSelect.options.length - 1; i >= 0; i--)
+          paletteValueSelect.remove(i);
+
+        for (let value of traitOptions) {
+          const opt = document.createElement('option');
+          opt.value = value;
+          opt.text = value;
+          paletteValueSelect.add(opt);
+        }
+      });
+      paletteTraitSelect.value = this.dataSet.traitNames[0];
+
+      paletteValueSelect.addEventListener('change', event => {
+        const traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
+        const trait = this.dataSet.getTrait(traitName);
+        let color = null;
+        if (trait.type == TraitType.Numerical){
+          const index = paletteValueSelect.selectedIndex;
+          color = (index == 0 ? trait.getMinColor() : trait.getMaxColor());
+        } else {
+          color = trait.getColor(paletteValueSelect.selectedIndex);
+        }
+        paletteValueColor.setAttribute('value', color);
+      });
+
+      paletteValueColor.addEventListener('change', event => {
+        const traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
+        const trait = this.dataSet.getTrait(traitName);
+        const color = paletteValueColor.value;
+        if (trait.type == TraitType.Numerical){
+          const index = paletteValueSelect.selectedIndex;
+          if (index == 0)
+            trait.setMinColor(color);
+          else
+            trait.setMaxColor(color);
+        } else {
+          trait.setColor(paletteValueSelect.selectedIndex, color);
+        }
+        this.genotypeCanvas.prerender(true);
+      });
     }
 
     // Set the canvas controls only once we have a valid data set and color scheme
