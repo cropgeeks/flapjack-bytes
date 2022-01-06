@@ -3,7 +3,7 @@ export const TraitType = {
   Numerical: 1,
 };
 
-// Colors are in HSV (hue, saturation, value)
+// Colors are stored as HSV (hue, saturation, value)
 const DEFAULT_HUE_MIN = 0;
 const DEFAULT_HUE_MAX = 120;
 const DEFAULT_SATURATION = 0.53;
@@ -19,6 +19,7 @@ export class Trait {
     this.experiment = experiment;
     this.values = undefined;
     this.colors = new Map();
+    this.customColors = new Set();
     this.longestValue = undefined;
     this.minValue = undefined;
     this.maxValue = undefined;
@@ -78,7 +79,19 @@ export class Trait {
   }
 
   getColor(value) {
-    const hsv = this.colors.get(value);
+    let hsv = null;
+    if (this.type == TraitType.Category) {
+      hsv = this.colors.get(value);
+    } else {
+      const minColor = this.colors.get(this.minValue);
+      const maxColor = this.colors.get(this.maxValue);
+      const normalized = this.scaleValue(value);
+      hsv = [
+        (maxColor[0] - minColor[0]) * normalized + minColor[0],
+        (maxColor[1] - minColor[1]) * normalized + minColor[1],
+        (maxColor[2] - minColor[2]) * normalized + minColor[2],
+      ];
+    }
     const rgb = this.hsv2rgb(hsv[0], hsv[1], hsv[2]);
     const hexa = '#' + ((1 << 24) | (Math.floor(rgb[0] * 255) << 16) | (Math.floor(rgb[1] * 255) << 8) | Math.floor(rgb[2] * 255)).toString(16).slice(1);
     return hexa;
@@ -96,6 +109,21 @@ export class Trait {
     const rgb = [parseInt(color.slice(1, 3), 16) / 255, parseInt(color.slice(3, 5), 16) / 255, parseInt(color.slice(5, 7), 16) / 255];
     const hsv = this.rgb2hsv(rgb[0], rgb[1], rgb[2]);
     this.colors.set(value, hsv);
+    this.customColors.add(value);
+  }
+
+  setHSVColor(value, color) {
+    this.colors.set(value, color);
+    this.customColors.add(value);
+  }
+
+  getCustomColors() {
+    const customMap = new Map();
+    for (let value of this.customColors) {
+      const color = this.colors.get(value);
+      customMap.set(value, color);
+    }
+    return customMap;
   }
 
   // From https://stackoverflow.com/a/54024653

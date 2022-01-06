@@ -32,6 +32,15 @@ export default class CanvasController {
     this.dataSet = dataSet;
     const settings = this.loadDefaultSettings(this.dataSet.id);
 
+    if (settings.traitColors != null) {
+      for (let traitName in settings.traitColors) {
+        const trait = this.dataSet.getTrait(traitName);
+        for (let value in settings.traitColors[traitName]) {
+          trait.setHSVColor(parseFloat(value), settings.traitColors[traitName][value]);
+        }
+      }
+    }
+
     // Initialize the components
     this.genotypeCanvas.init(dataSet, settings);
     this.genotypeCanvas.prerender(true);
@@ -220,7 +229,7 @@ export default class CanvasController {
         } else {
           color = trait.getColor(paletteValueSelect.selectedIndex);
         }
-        paletteValueColor.setAttribute('value', color);
+        paletteValueColor.value = color;
       });
 
       paletteValueColor.addEventListener('change', event => {
@@ -237,6 +246,7 @@ export default class CanvasController {
           trait.setColor(paletteValueSelect.selectedIndex, color);
         }
         this.genotypeCanvas.prerender(true);
+        this.saveColors();
       });
     }
 
@@ -438,12 +448,25 @@ export default class CanvasController {
     return localStorage.getItem(mangledKey);
   }
 
+  saveColors() {
+    if (this.saveSettings) {
+      const jsonColors = {};
+      for (let traitName of this.dataSet.traitNames) {
+        const customColors = this.dataSet.getTrait(traitName).getCustomColors();
+        if (customColors.size > 0)
+          jsonColors[traitName] = Object.fromEntries(customColors);
+      }
+      this.saveSetting('traitColors', JSON.stringify(jsonColors));
+    }
+  }
+
   loadDefaultSettings() {
     const sortId = this.loadSetting("sort");
     const sortReference = this.loadSetting("sortReference");
     const colorSchemeId = this.loadSetting("colorScheme");
     const colorReference = this.loadSetting("colorReference");
     const displayTraits = this.loadSetting("displayTraits");
+    const customColors = this.loadSetting("traitColors");
 
     let settings = {
       colorReference, sortReference,
@@ -452,6 +475,7 @@ export default class CanvasController {
       lineSortId: "importing",
       colorScheme: new NucleotideColorScheme(this.dataSet),
       colorSchemeId: "nucleotide",
+      traitColors: (customColors == null ? {} : JSON.parse(customColors)),
     };
 
     switch (sortId) {
