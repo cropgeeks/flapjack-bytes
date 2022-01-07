@@ -189,6 +189,7 @@ export default class CanvasController {
       const paletteTraitSelect = document.getElementById('paletteTrait');
       const paletteValueSelect = document.getElementById('paletteValue');
       const paletteValueColor = document.getElementById('paletteColor');
+      const paletteResetButton = document.getElementById('paletteReset');
 
       this.dataSet.traitNames.forEach(traitName => {
         const opt = document.createElement('option');
@@ -253,6 +254,15 @@ export default class CanvasController {
         this.genotypeCanvas.prerender(true);
         this.saveColors();
       });
+
+      paletteResetButton.addEventListener('click', event => {
+        const traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
+        const trait = this.dataSet.getTrait(traitName);
+        trait.resetColors();
+        this.genotypeCanvas.prerender(true);
+        paletteValueSelect.dispatchEvent(new Event('change'));
+        this.saveColors();
+      })
     }
 
     // Set the canvas controls only once we have a valid data set and color scheme

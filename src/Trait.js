@@ -32,7 +32,11 @@ export class Trait {
   setScale (min, max) {
     this.minValue = min;
     this.maxValue = max;
+    this.resetColors();
+  }
 
+  resetColors() {
+    this.customColors.clear();
     if (this.type == TraitType.Category) {
       this.setCategoryColors();
     } else if (this.type == TraitType.Numerical) {

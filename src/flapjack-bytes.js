@@ -429,10 +429,16 @@ export default function GenotypeRenderer() {
       paletteSelectColor.style.display = 'block';
       paletteSelectColor.setAttribute('type', 'color');
 
+      const paletteResetButton = document.createElement('button');
+      const paletteResetLegend = document.createTextNode("Reset this trait's colors");
+      paletteResetButton.appendChild(paletteResetLegend);
+      paletteResetButton.id = 'paletteReset';
+
       paletteSelectContainer.appendChild(paletteSelectLegend);
       paletteSelectContainer.appendChild(paletteSelectTrait);
       paletteSelectContainer.appendChild(paletteSelectValue);
       paletteSelectContainer.appendChild(paletteSelectColor);
+      paletteSelectContainer.appendChild(paletteResetButton);
 
       tab.appendChild(traitSelectContainer);
       tab.appendChild(paletteSelectContainer);
