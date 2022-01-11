@@ -35,7 +35,7 @@ export default function GenotypeRenderer() {
 
   function sendEvent(eventName, domParent) {
     // TODO: Invesitgate using older event emitting code for IE support
-    const canvasHolder = document.getElementById(domParent.slice(1));
+    const canvasHolder = document.getElementById(domParent.replace('#', ''));
 
     // Create the event.
     const event = new Event(eventName);
@@ -53,7 +53,7 @@ export default function GenotypeRenderer() {
   }
 
   function clearParent(domParent) {
-    const canvasHolder = document.getElementById(domParent.slice(1));
+    const canvasHolder = document.getElementById(domParent.replace('#', ''));
     while (canvasHolder.firstChild){
       canvasHolder.removeChild(canvasHolder.firstChild);
     }
@@ -64,7 +64,7 @@ export default function GenotypeRenderer() {
     if (config.minGenotypeAutoWidth === undefined) config.minGenotypeAutoWidth = 0;
     if (config.minOverviewAutoWidth === undefined) config.minOverviewAutoWidth = 0;
 
-    const canvasHolder = document.getElementById(config.domParent.slice(1));
+    const canvasHolder = document.getElementById(config.domParent.replace('#', ''));
     canvasHolder.style.fontFamily = 'system-ui';
     canvasHolder.style.fontSize = '14px';
     
@@ -333,7 +333,7 @@ export default function GenotypeRenderer() {
     addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
     addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol, lineSelect);
 
-    if ((config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.slice(1)).files[0] !== undefined) || config.phenotypeFileURL !== undefined){
+    if ((config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.replace('#', '')).files[0] !== undefined) || config.phenotypeFileURL !== undefined){
       const traitSelect = document.createElement('select');
       traitSelect.id = 'sortTraitSelect';
       traitSelect.disabled = true;
@@ -389,7 +389,7 @@ export default function GenotypeRenderer() {
   }
 
   function createDisplayTab(config){
-    if ((config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.slice(1)).files[0] !== undefined) || config.phenotypeFileURL !== undefined){
+    if ((config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.replace('#', '')).files[0] !== undefined) || config.phenotypeFileURL !== undefined){
       const tab = document.createElement('div');
       tab.classList.add('bytes-tab');
 
@@ -852,7 +852,7 @@ export default function GenotypeRenderer() {
     let loadingPromises = [];
 
     if (config.mapFileDom !== undefined){
-      const mapFile = document.getElementById(config.mapFileDom.slice(1)).files[0];
+      const mapFile = document.getElementById(config.mapFileDom.replace('#', '')).files[0];
       let mapPromise = loadFromFile(mapFile);
 
        // Load map data
@@ -868,7 +868,7 @@ export default function GenotypeRenderer() {
     }
 
     if (config.phenotypeFileDom !== undefined){
-      const phenotypeFile = document.getElementById(config.phenotypeFileDom.slice(1)).files[0];
+      const phenotypeFile = document.getElementById(config.phenotypeFileDom.replace('#', '')).files[0];
       let phenotypePromise = loadFromFile(phenotypeFile);
 
       // Load phenotype data
@@ -886,7 +886,7 @@ export default function GenotypeRenderer() {
     }
 
     // const qtlPromise = loadFromFile(qtlFileDom);
-    const genotypeFile = document.getElementById(config.genotypeFileDom.slice(1)).files[0];
+    const genotypeFile = document.getElementById(config.genotypeFileDom.replace('#', '')).files[0];
     let genotypePromise = loadFromFile(genotypeFile);
     loadingPromises.push(genotypePromise);
 

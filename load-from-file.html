@@ -28,11 +28,11 @@
           document.getElementById("submit").addEventListener("click", function(){
             var renderer = GenotypeRenderer();
             renderer.renderGenotypesFile({
-              domParent: "#canvas-holder",
+              domParent: "canvas-holder",
               width: null, height: 600, 
-              mapFileDom: "#mapfile",
-              genotypeFileDom: "#genofile",
-              phenotypeFileDom: "#phenofile",
+              mapFileDom: "mapfile",
+              genotypeFileDom: "genofile",
+              phenotypeFileDom: "phenofile",
               overviewWidth: null, overviewHeight: 200,
               minGenotypeAutoWidth: 600, minGenotypeAutoHeight: 600,
             });

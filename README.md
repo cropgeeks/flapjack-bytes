@@ -141,12 +141,12 @@ document.addEventListener("DOMContentLoaded", function(){
     document.getElementById("submit").addEventListener("click", function(){
         var renderer = GenotypeRenderer();
         renderer.renderGenotypesFile({
-            domParent: "#canvas-holder",
+            domParent: "canvas-holder",
             width: null,
             height: 600,
-            mapFileDom: "#mapfile",
-            genotypeFileDom: "#genofile",
-            phenotypeFileDom: "#phenofile",
+            mapFileDom: "mapfile",
+            genotypeFileDom: "genofile",
+            phenotypeFileDom: "phenofile",
             overviewWidth: null,
             overviewHeight: 200,
             minGenotypeAutoWidth: 600,
@@ -214,12 +214,12 @@ document.addEventListener("DOMContentLoaded", function(){
     document.getElementById("submit").addEventListener("click", function(){
         var renderer = GenotypeRenderer();
         renderer.renderGenotypesUrl({
-            domParent: "#canvas-holder",
+            domParent: "canvas-holder",
             width: 800,
             height: 600,
-            mapFileURL: $('#mapfile').val(),
-            genotypeFileURL: $('#genofile').val(),
-            phenotypeFileURL: $('#phenotype').val(),
+            mapFileURL: document.getElementById('mapfile').value,
+            genotypeFileURL: document.getElementById('genofile').value,
+            phenotypeFileURL: document.getElementById('phenofile').value,
             overviewWidth: 800,
             overviewHeight: 200
             dataSetId: "MyDataSet",
