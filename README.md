@@ -72,16 +72,16 @@ deployed at: http://bioinf.hutton.ac.uk/gobii-flapjack-bytes.
 ```javascript
 var renderer = GenotypeRenderer();
 renderer.renderGenotypesBrapi({
-  domParent: "#bytes-div",  // Container to inject the canvas into
-  width: 800,  // Genotype view width
-  height: 600,   // Genotype view height
-  baseURL: this.baseUrl,    // BrAPI base URL
-  matrixId: this.callSetId,
-  mapId: this.mapId,
-  authToken: this.authToken
-  overviewWidth: 800,  // Overview width
-  overviewWidth: 200,   // Overview height
-  saveSettings: false,
+    domParent: "#bytes-div",  // Container to inject the canvas into
+    width: 800,  // Genotype view width
+    height: 600,   // Genotype view height
+    baseURL: this.baseUrl,    // BrAPI base URL
+    matrixId: this.callSetId,
+    mapId: this.mapId,
+    authToken: this.authToken
+    overviewWidth: 800,  // Overview width
+    overviewWidth: 200,   // Overview height
+    saveSettings: false,
 });
 ```
 
@@ -135,32 +135,29 @@ The HTML includes a couple of file inputs for getting the files to be loaded
 into the flapjack-bytes library.
 
 ```javascript
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script src="build/flapjack-bytes.js"></script>
 <script type="text/javascript">
-  $(document).ready(function(){
-    $("#submit").click(function(){
-      var renderer = GenotypeRenderer();
-      renderer.renderGenotypesFile({
-        domParent: "#canvas-holder",
-        width: null,
-        height: 600,
-        mapFileDom: "#mapfile",
-        genotypeFileDom: "#genofile",
-        phenotypeFileDom: "#phenofile",
-        overviewWidth: null,
-        overviewHeight: 200,
-        minGenotypeAutoWidth: 600,
-        minOverviewAutoWidth: 600
-      });
-      return false;
+document.addEventListener("DOMContentLoaded", function(){
+    document.getElementById("submit").addEventListener("click", function(){
+        var renderer = GenotypeRenderer();
+        renderer.renderGenotypesFile({
+            domParent: "#canvas-holder",
+            width: null,
+            height: 600,
+            mapFileDom: "#mapfile",
+            genotypeFileDom: "#genofile",
+            phenotypeFileDom: "#phenofile",
+            overviewWidth: null,
+            overviewHeight: 200,
+            minGenotypeAutoWidth: 600,
+            minOverviewAutoWidth: 600,
+            dataSetId: "MyDataSet"
+        });
+        return false;
     });
 });
 </script>
 ```
-
-Here jQuery is just used to simplify adding the event handler to the submit
-button. 
 
 The parameters are as follows:
 - `domParent`: the id of the canvas to inject the flapjack-bytes canvas into
@@ -192,18 +189,18 @@ same server that is hosting the files, or the server hosting the files has to be
 
 ```html
 <div>
-  <div>
-    <label for="mapfile">Map file:</label>
-    <input type="text" id="mapfile" name="mapfile" value="http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.map">
-  </div>
-  <div>
-    <label for="genofile">Genotype file:</label>
-    <input type="text" id="genofile" name="genofile" value="http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.dat">
-  </div>
-  <input type="submit" action="#" id="submit" name="submit" value="Submit">
+    <div>
+        <label for="mapfile">Map file:</label>
+        <input type="text" id="mapfile" name="mapfile" value="http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.map">
+    </div>
+    <div>
+        <label for="genofile">Genotype file:</label>
+        <input type="text" id="genofile" name="genofile" value="http://bioinf.hutton.ac.uk/flapjack/sample-data/tutorials/ped-ver-tutorial.dat">
+    </div>
+    <input type="submit" action="#" id="submit" name="submit" value="Submit">
 </div>
 <div id="canvas-holder">
-  <!-- Empty div that we can insert a canvas into from javascript. -->
+    <!-- Empty div that we can insert a canvas into from javascript. -->
 </div>
 ```
 
@@ -211,42 +208,26 @@ The HTML includes a couple of text inputs for getting the urls of files to be
 loaded into the flapjack-bytes library.
 
 ```javascript
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script src="build/flapjack-bytes.js"></script>
 <script type="text/javascript">
-  $(document).ready(function(){
-    $("#submit").click(function(){
-      var renderer = GenotypeRenderer();
-      renderer.renderGenotypesUrl({
-        domParent: "#canvas-holder",
-        width: 800,
-        height: 600,
-        mapFileURL: $('#mapfile').val(),
-        genotypeFileURL: $('#genofile').val(),
-        overviewWidth: 800,
-        overviewHeight: 200
-      });
-      return false;
+document.addEventListener("DOMContentLoaded", function(){
+    document.getElementById("submit").addEventListener("click", function(){
+        var renderer = GenotypeRenderer();
+        renderer.renderGenotypesUrl({
+            domParent: "#canvas-holder",
+            width: 800,
+            height: 600,
+            mapFileURL: $('#mapfile').val(),
+            genotypeFileURL: $('#genofile').val(),
+            phenotypeFileURL: $('#phenotype').val(),
+            overviewWidth: 800,
+            overviewHeight: 200
+            dataSetId: "MyDataSet",
+        });
+        return false;
     });
 });
 </script>
-```
-
-Here jQuery is just used to simplify adding the event handler to the submit
-button. The meat of the code is the following two lines:
-
-```javascript
-var renderer = GenotypeRenderer();
-renderer.renderGenotypesUrl({
-  domParent: "#canvas-holder",
-  width: 800,
-  height: 600,
-  mapFileURL: $('#mapfile').val(),
-  genotypeFileURL: $('#genofile').val(),
-  overviewWidth: 800,
-  overviewHeight: 200,
-  dataSetId: "MyDataSet",
-});
 ```
 
 Where the parameters are as follows:
