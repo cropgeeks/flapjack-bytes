@@ -66,8 +66,14 @@ export default class OverviewCanvas {
 
 
   renderImage (context, width, height, highlightReference){
-    const imageData = this.createImage(context.createImageData(width, height), highlightReference);
-    context.putImageData(imageData, 0, 0);
+	try {
+	    const imageData = this.createImage(context.createImageData(width, height), highlightReference);
+	    context.putImageData(imageData, 0, 0);
+	}
+	catch(thrownError) {
+		alert(thrownError.indexOf("Cannot read properties of undefined (reading 'genotypeData')") != 0 ? "Error loading genotypes (dataset may be too large for the available RAM)" : thrownError);
+		throw thrownError;
+	}
   }
 
   // Calculate the number of markers and germplasms per pixel in the overview
