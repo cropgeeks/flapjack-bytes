@@ -700,6 +700,8 @@ export default function GenotypeRenderer() {
           genotypeSize = progressEvent.total;
           setAdvancement((mapLoaded + genotypeLoaded + phenotypeLoaded) / (mapSize + genotypeSize + phenotypeSize));
         }
+        else
+        	setProgressBarLabel("Downloading genotype file... " + formatFileSize(progressEvent.loaded));
       }
     }).then((response) => {
       genotypeFile = response.data;
@@ -759,6 +761,14 @@ export default function GenotypeRenderer() {
     return genotypeRenderer;
   };
 
+  function formatFileSize(sizeInBytes) {
+    if (isNaN(sizeInBytes)) return "";
+    if (sizeInBytes >= 1073741824) return parseFloat(sizeInBytes / 1073741824).toFixed(2) + " GB";
+    if (sizeInBytes >= 1048576) return parseFloat(sizeInBytes / 1048576).toFixed(1) + " MB";
+    if (sizeInBytes >= 1024) return parseFloat(sizeInBytes / 1024).toFixed(0) + " KB";
+    return sizeInBytes.toFixed(1) + " B";
+  }
+    
   function loadFromFile(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
