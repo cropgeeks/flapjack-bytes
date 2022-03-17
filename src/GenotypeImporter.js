@@ -6,37 +6,32 @@ import Chromosome from './Chromosome';
 
 export default class GenotypeImporter {
   constructor(genomeMap) {
-    this.rawToGenoMap = new Map();
-    this.rawToGenoMap.set('', Genotype.fromString(''));
+    this.rawToIndexMap = new Map();
+    this.rawToIndexMap.set('', 0);
+    this.rawToIndexMap.set('-', 0);
+
     this.stateTable = new Map();
-    this.stateTable.set(this.rawToGenoMap.get(''), 0);
+    this.stateTable.set(Genotype.fromString(''), 0);
 
     this.genomeMap = genomeMap;
     this.markerIndices = new Map();
     this.germplasmList = [];
-	this.processedLines;
-	this.totalLineCount;
   }
 
   getState(genoString) {
     let index = 0;
     try {
-      let genotype = this.rawToGenoMap.get(genoString);
-      if (genotype === undefined) {
-        genotype = Genotype.fromString(genoString);
-        this.rawToGenoMap.set(genoString, genotype);
-      }
+      index = this.rawToIndexMap.get(genoString);
 
-      index = this.stateTable.get(genotype);
-
-      // If the genotype is not found in the map, we have a new genotype, so set
-      // its index in the map to the size of the map
-      if (index === undefined) {
+      // New genotype, so add it to the stateTable and set its index to the size of the map
+      if (index === undefined){
+        const genotype = Genotype.fromString(genoString);
         index = this.stateTable.size;
         this.stateTable.set(genotype, index);
+        this.rawToIndexMap.set(genoString, index);
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
     return index;
   }
@@ -50,7 +45,7 @@ export default class GenotypeImporter {
     return data;
   }
 
-  processFileLine(line, markerIndexesByNamesAndChromosomes) {
+  processFileLine(line, markerNameMap) {
     if (line.startsWith('#') || (!line || line.length === 0)) {
       return;
     }
@@ -58,54 +53,75 @@ export default class GenotypeImporter {
     if (line.startsWith('Accession') || line.startsWith('\t')) {
       const markerNames = line.split('\t');
 
+      // Get the position from the precomputed name -> position map 
       markerNames.slice(1).forEach((name, idx) => {
-        const indices = this.genomeMap.markerByName(name, markerIndexesByNamesAndChromosomes);
-        if (indices !== -1) {
-          this.markerIndices.set(idx, indices);
-        }
+        const indices = markerNameMap.get(name);
+        this.markerIndices.set(idx, indices);
       });
       // TODO: write code to deal with cases where we don't have a map here...
       // console.log(this.genomeMap.totalMarkerCount());
-      return;
-    }
-    const tokens = line.split('\t');
-    const lineName = tokens[0];
-    const genotypeData = this.initGenotypeData();
-    tokens.slice(1).forEach((state, idx) => {
-      const indices = this.markerIndices.get(idx);
-      // console.log(indices);
-      if (indices !== undefined && indices !== -1) {
-        genotypeData[indices.chromosome][indices.markerIndex] = this.getState(state);
-      }
-    });
+    } else {
+      const tokens = line.split('\t');
+      const lineName = tokens[0];
+      const genotypeData = this.initGenotypeData();
+      tokens.slice(1).forEach((state, idx) => {
+        const indices = this.markerIndices.get(idx);
+        if (indices !== undefined && indices !== -1) {
+          genotypeData[indices.chromosome][indices.markerIndex] = this.getState(state);
+        }
+      });
 
-    const germplasm = new Germplasm(lineName, genotypeData);
-    this.germplasmList.push(germplasm);
+      const germplasm = new Germplasm(lineName, genotypeData);
+      this.germplasmList.push(germplasm);
+    }
   }
 
-  parseFile(fileContents) {
-	var b4 = Date.now();
-	
-	// pre-calculating this index array once for all brings significantly faster loading
-	var markerIndexesByNamesAndChromosomes = new Array();
-	this.genomeMap.chromosomes.forEach((chromosome, idx) => {
-	  markerIndexesByNamesAndChromosomes[idx] = chromosome.markers.map(m => m.name);
+  parseFile(fileContents, advancementCallback, completionCallback) {
+    var b4 = Date.now();
+
+    // Pre-mapping the marker names to their position for faster loading
+    let markerNameMap = new Map();
+    this.genomeMap.chromosomes.forEach((chromosome, chromosomeIndex) => {
+      chromosome.markers.forEach((marker, markerIndex) => {
+        markerNameMap.set(marker.name, {chromosome: chromosomeIndex, markerIndex});
+      });
     });
 
-	this.processedLines = 0;
-	this.totalLineCount = 0;
+    this.processedLines = 0;
     const lines = fileContents.split(/\r?\n/);
-	this.totalLineCount = lines.length;
-    for (let line = 0; line < this.totalLineCount; line += 1) {
-      this.processFileLine(lines[line], markerIndexesByNamesAndChromosomes);
-	  this.processedLines = line;
-    }
-	console.log("parseFile took " + (Date.now() - b4) + "ms");
-    return this.germplasmList;
-  }
+    this.totalLineCount = lines.length;
+    let currentLine = 0;
+    let self = this;
 
-  getImportProgressPercentage() {
-	return parseInt(this.processedLines + " / " + this.totalLineCount);
+    // Give the browser some time to keep the page alive between the parsing of each line
+    // Avoid a complete freeze during a large file load
+    // This yields control between the parsing of each line for the browser to refresh itself
+    // This calls recursively and asynchronously the parsing of the following line
+    // In order to get a single promise that returns only once all the lines have been parsed
+    function doLine(line) {
+      return new Promise(function (resolve, reject){
+        self.processFileLine(lines[line], markerNameMap);
+        self.processedLines += 1;
+        if (advancementCallback)
+          advancementCallback(self.processedLines / self.totalLineCount);
+        
+        if (line + 1 < self.totalLineCount){
+          // Yield to the browser to let it do its things, run the next lines (recursively),
+          // and return once they are done
+          setTimeout(function (){
+            doLine(line + 1).then(resolve);
+          }, 0);
+        } else {  // Finish
+          resolve();
+        }
+      });
+    }
+
+    return doLine(0).then(function (results){
+      if (completionCallback) completionCallback();
+      console.log("parseFile took " + (Date.now() - b4) + "ms");
+      return self.germplasmList;
+    })
   }
 
   // In situations where a map hasn't been provided, we want to create a fake or

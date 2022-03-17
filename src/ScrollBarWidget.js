@@ -22,6 +22,11 @@ export default class ScrollBarWidget {
       this.width - this.corner_radius, this.height - this.corner_radius);
   }
 
+  setPosition(x, y){
+    this.widgetX = x;
+    this.widgetY = y;
+  }
+
   move(newX, newY) {
     this.widgetX = newX;
     this.widgetY = newY;
