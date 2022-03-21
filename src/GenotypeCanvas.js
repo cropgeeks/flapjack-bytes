@@ -824,7 +824,7 @@ export default class GenotypeCanvas {
           this.mouseOverPosition = [x, y];
         }
       } else */
-      if (this.dataSet.hasTraits() && x < this.traitValuesCanvasWidth){
+      if (this.dataSet.hasTraits() && x < this.traitValuesCanvasWidth / 1.1 /*accounting for apennded blank space*/) {
         let xPos = 0, columnIndex = 0, traitIndex = undefined;
 
         // Get the trait under the mouse (columns are not of equal size)
@@ -896,7 +896,6 @@ export default class GenotypeCanvas {
       this.traitValueColumnWidths = this.displayTraits.map(name => this.backContext.measureText(this.dataSet.getTrait(name).longestValue).width + 2*this.scorePadding);
       
       if (this.traitValueColumnWidths.length == 0) this.traitValuesCanvasWidth = 0;
-      else if (this.traitValueColumnWidths.length == 0) this.traitValuesCanvasWidth = this.traitValueColumnWidths[0];
       else this.traitValuesCanvasWidth = this.traitValueColumnWidths.reduce((a, b) => a + b);
 
       // Add 10% blank space to separate it from the genotypes, otherwise readability is really bad
