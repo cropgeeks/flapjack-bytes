@@ -71,7 +71,7 @@ export default class OverviewCanvas {
 	    context.putImageData(imageData, 0, 0);
 	}
 	catch(thrownError) {
-		alert(thrownError.indexOf("Cannot read properties of undefined (reading 'genotypeData')") != 0 ? "Error loading genotypes (dataset may be too large for the available RAM)" : thrownError);
+		alert(thrownError.message.indexOf("Cannot read properties of undefined (reading 'genotypeData')") != -1 ? "Error loading genotypes (dataset may be too large for the available RAM)" : thrownError);
 		throw thrownError;
 	}
   }
