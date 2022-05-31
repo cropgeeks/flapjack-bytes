@@ -168,10 +168,9 @@ export default class GenotypeCanvas {
 
       const firstMarkerPos = chromosome.markers[renderData.firstMarker].position;
       const lastMarkerPos = chromosome.markers[renderData.firstMarker + dW].position;
-      const dist = (lastMarkerPos - firstMarkerPos);
-      const scaleFactor = chromosomeWidth / dist;
+      const scaleFactor = lastMarkerPos == 0 ? 0 /* hack for cases where variants are not positioned */ : chromosomeWidth / (lastMarkerPos - firstMarkerPos);
 
-      this.highlightMarkerName(firstMarkerPos, scaleFactor, drawStart);
+      this.highlightMarkerName(firstMarkerPos, scaleFactor, scaleFactor == 0 ? xPos : drawStart);
 
       this.drawingContext.save();
 
@@ -180,7 +179,7 @@ export default class GenotypeCanvas {
 
       xPos += (this.boxSize / 2);
       this.drawingContext.strokeStyle = '#F00';
-      this.renderMarker(this.drawingContext, this.markerUnderMouse, xPos, firstMarkerPos, scaleFactor, drawStart);
+      this.renderMarker(this.drawingContext, this.markerUnderMouse, xPos, firstMarkerPos, scaleFactor, scaleFactor == 0 ? xPos : drawStart);
 
       this.drawingContext.restore();
     }
@@ -196,7 +195,7 @@ export default class GenotypeCanvas {
 
       let xPos = this.calcMapMarkerPos(this.markerUnderMouse, firstMarkerPos, scaleFactor, drawStart);
 
-      const text = `${this.markerUnderMouse.name} (${this.markerUnderMouse.position})`;
+	  const text = this.markerUnderMouse.name + (scaleFactor == 0 /*unpositioned data*/ ? "" : (" (" + this.markerUnderMouse.position + ")"));
 
       // Measure the text width so we can guarantee it doesn't get drawn off
       // the right hand side of the display
@@ -412,14 +411,13 @@ export default class GenotypeCanvas {
 
     const firstMarkerPos = chromosome.markers[renderData.firstMarker].position;
     const lastMarkerPos = chromosome.markers[renderData.firstMarker + dataWidth].position;
-    const dist = (lastMarkerPos - firstMarkerPos);
-    const scaleFactor = chromosomeWidth / dist;
+    const scaleFactor = lastMarkerPos == 0 ? 0 /* hack for cases where variants are not positioned */ : chromosomeWidth / (lastMarkerPos - firstMarkerPos);
 
     for (let markerIndex = renderData.firstMarker; markerIndex <= renderData.lastMarker; markerIndex += 1) {
       const marker = this.dataSet.genomeMap.chromosomes[this.selectedChromosome].markers[markerIndex];
       let xPos = drawStart + (markerIndex * this.boxSize);
       xPos += (this.boxSize / 2);
-      this.renderMarker(this.backContext, marker, xPos, firstMarkerPos, scaleFactor, drawStart);
+      this.renderMarker(this.backContext, marker, xPos, firstMarkerPos, scaleFactor, scaleFactor == 0 ? xPos : drawStart);
     }
   }
 
