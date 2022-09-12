@@ -89,6 +89,7 @@ export default class CanvasController {
       this.genotypeCanvas.setColorScheme(colorScheme);
       this.genotypeCanvas.setColorComparisonLine(referenceName);
       this.overviewCanvas.setColorScheme(colorScheme);
+      this.saveSetting("colorReference", referenceName);
 
       this.saveSetting("colorScheme", "similarity");
     });
