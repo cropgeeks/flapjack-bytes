@@ -93,18 +93,19 @@ export default class GenotypeCanvas {
 
   init(dataSet, settings) {
     this.dataSet = dataSet;
-    this.colorScheme = settings.colorScheme;
-    this.colorComparisonLineIndex = this.dataSet.germplasmList.findIndex(germplasm => germplasm.name == settings.colorReference);
-    this.colorScheme.setComparisonLineIndex(this.colorComparisonLineIndex);
     this.lineSort = settings.lineSort;
-
     this.lineSort.sort(this.dataSet);
+    this.colorScheme = settings.colorScheme;
+    this.colorComparisonLineIndex = this.dataSet.germplasmList.findIndex(function (germplasm) {
+      return germplasm.name == settings.colorReference;
+    });
+    this.colorScheme.setComparisonLineIndex(this.colorComparisonLineIndex);
     this.font = this.updateFontSize();
-    this.displayTraits = settings.displayTraits;
-    // this.updateVisualPositions();
+    this.displayTraits = settings.displayTraits; // this.updateVisualPositions();
+
     this.colorScheme.setupColorStamps(this.boxSize, this.font, this.fontSize);
     this.zoom(this.boxSize);
-    this.moveToPosition(0, 0);
+//    this.moveToPosition(0, 0);	// useless at startup?
   }
 
   prerender(redraw) {
@@ -672,8 +673,7 @@ export default class GenotypeCanvas {
     if (!this.enabled) return;
 
     const xScrollMax = this.maxCanvasWidth() - this.alleleCanvasWidth();
-
-    if (this.canScrollX()) {
+    if (xScrollMax > 0) {
       this.translatedX -= diffX;
 
       // Prevent scrolling beyond start or end of data
@@ -694,8 +694,7 @@ export default class GenotypeCanvas {
     if (!this.enabled) return;
 
     const yScrollMax = this.maxCanvasHeight() - this.alleleCanvasHeight();
-
-    if (this.canScrollY()) {
+    if (yScrollMax > 0) {
       this.translatedY -= diffY;
 
       // Prevent scrolling beyond start or end of data
@@ -715,9 +714,8 @@ export default class GenotypeCanvas {
   dragVerticalScrollbar(y) {
     if (!this.enabled) return;
 
-    if (this.canScrollY()) {
-      const yScrollMax = this.maxCanvasHeight() - this.alleleCanvasHeight();
-
+    const yScrollMax = this.maxCanvasHeight() - this.alleleCanvasHeight();
+    if (yScrollMax > 0) {
       this.translatedY = (y / this.verticalScrollbar.height) * yScrollMax;
 
       // Prevent scrolling beyond start or end of data
@@ -739,9 +737,8 @@ export default class GenotypeCanvas {
   dragHorizontalScrollbar(x) {
     if (!this.enabled) return;
 
-    if (this.canScrollX()) {
-      const xScrollMax = this.maxCanvasWidth() - this.alleleCanvasWidth();
-
+    const xScrollMax = this.maxCanvasWidth() - this.alleleCanvasWidth();
+    if (xScrollMax > 0) {
       this.translatedX = (x / this.horizontalScrollbar.width) * xScrollMax;
 
       // Prevent scrolling beyond start or end of data
@@ -1061,10 +1058,11 @@ export default class GenotypeCanvas {
   }
 
   sortLines(){
-    // Save the color comparison line to restore it later
-    let colorComparisonName = this.dataSet.germplasmList[this.colorComparisonLineIndex].name;
-    this.lineSort.sort(this.dataSet)
-    this.setColorComparisonLine(colorComparisonName);
+    // Save the color comparison line to restore it after sorting
+    var colorComparisonGermplasm = this.dataSet.germplasmList[this.colorComparisonLineIndex];
+    this.lineSort.sort(this.dataSet);
+    if (colorComparisonGermplasm != null)
+      this.setColorComparisonLine(colorComparisonGermplasm.name);
     this.prerender(true);
   }
 
