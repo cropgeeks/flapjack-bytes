@@ -493,6 +493,16 @@ export default class CanvasController {
       colorSchemeId: "nucleotide",
       traitColors: (customColors == null ? {} : JSON.parse(customColors)),
     };
+    
+    // We use trait values as keys in inner arrays for persisting to Local-storage, so we need to convert those back to list indexes on reload
+	Object.entries(settings.traitColors).forEach(([traitName, colorByValue]) => Object.entries(colorByValue)
+		.forEach(([traitValue, traitValueColor]) => {
+										var traitValueIndex = this.dataSet.traits.get(traitName).values.indexOf(traitValue), traitColorMap = settings.traitColors[traitName];
+										if (traitValueIndex != -1)
+											traitColorMap[traitValueIndex] = traitValueColor;
+										delete traitColorMap[traitValue];
+									}
+	));
 
     switch (sortId) {
       case "importing":
