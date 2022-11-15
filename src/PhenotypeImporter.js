@@ -33,7 +33,7 @@ export default class PhenotypeImporter {
 
   buildTraits() {
     for (let traitIndex = 0; traitIndex < this.traitNames.length; traitIndex += 1){
-      const traitName = this.traitNames[traitIndex];
+      var traitName = this.traitNames[traitIndex];
       const experiment = this.experiments[traitIndex];  // May be undefined
       const values = this.values.map(germplasmValues => germplasmValues[traitIndex + 1]);
       let traitType;
