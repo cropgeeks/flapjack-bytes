@@ -535,7 +535,7 @@ export default class CanvasController {
         break;
       case "similarity":
         const referenceIndex = this.dataSet.germplasmList.findIndex(germplasm => germplasm.name == colorReference)
-        if (referenceIndex !== undefined) {
+        if (referenceIndex !== undefined && referenceIndex != -1) {
           settings.colorScheme = new SimilarityColorScheme(this.dataSet, referenceIndex);
           settings.colorSchemeId = "similarity";
         }
