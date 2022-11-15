@@ -125,7 +125,7 @@ export class Trait {
     const customMap = new Map();
     for (let value of this.customColors) {
       const color = this.colors.get(value);
-      customMap.set(value, color);
+      customMap.set(this.values[value], color);
     }
     return customMap;
   }

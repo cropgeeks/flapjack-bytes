@@ -26,7 +26,7 @@ export default function GenotypeRenderer() {
   let progressBarLabel;
   let progressBarBackground;
 
-  const boxSize = 16;
+  const boxSize = 17;
 
   let genomeMap;
   let phenotypes;
@@ -283,18 +283,35 @@ export default function GenotypeRenderer() {
     range.setAttribute('type', 'range');
     range.min = 2;
     range.max = 64;
-    range.value = 16;
+    range.value = boxSize;
+	range.style.width = "300px";
+	
+	const zoomPreviewLabel = document.createElement('label');
+	zoomPreviewLabel.setAttribute('for', 'zoom-preview');
+	zoomPreviewLabel.innerHTML = 'Preview while dragging';
+	const zoomPreview = document.createElement('input');
+	zoomPreview.id = 'zoom-preview';
+	zoomPreview.setAttribute('type', 'checkbox');
+	zoomPreview.style.marginLeft = "20px";
 
     const zoomContainer = document.createElement('div');
     zoomContainer.append(zoomLabel);
     zoomContainer.append(range);
+    zoomContainer.append(zoomPreview);
+    zoomContainer.append(zoomPreviewLabel);
 
-    range.addEventListener('change', () => {
-      zoom(range.value);
+    range.addEventListener('change', function () {
+	  if (!document.getElementById("zoom-preview").checked) {
+	    //console.log("change: " + range.value);
+	        zoom(range.value);
+	    }
     });
 
-    range.addEventListener('input', () => {
-      zoom(range.value);
+    range.addEventListener('input', function () {
+	  if (document.getElementById("zoom-preview").checked) {
+	    //console.log("input: " + range.value);
+	        zoom(range.value);
+	    }
     });
 
     tab.appendChild(chromosomeContainer);
