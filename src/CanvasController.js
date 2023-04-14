@@ -481,12 +481,13 @@ export default class CanvasController {
     const sortReference = this.loadSetting("sortReference");
     const colorSchemeId = this.loadSetting("colorScheme");
     const colorReference = this.loadSetting("colorReference");
-    const displayTraits = this.loadSetting("displayTraits");
     const customColors = this.loadSetting("traitColors");
+    var displayTraits = this.loadSetting("displayTraits");
+    displayTraits = displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";")
 
     let settings = {
       colorReference, sortReference,
-      displayTraits: (displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";")),
+      displayTraits: displayTraits.length > 10 ? [] : displayTraits,
       lineSort: new ImportingOrderLineSort(),
       lineSortId: "importing",
       colorScheme: new NucleotideColorScheme(this.dataSet),
