@@ -1040,6 +1040,10 @@ export default class GenotypeCanvas {
   }
 
   setDisplayTraits(displayTraits) {
+	if (displayTraits.length > 10) {
+		alert("Too many traits selected, only showing the first 10");
+		displayTraits = displayTraits.slice(0, 10);
+	}
     this.displayTraits = displayTraits;
     this.updateCanvasWidths();
     this.prerender(true);

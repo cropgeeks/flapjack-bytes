@@ -481,12 +481,13 @@ export default class CanvasController {
     const sortReference = this.loadSetting("sortReference");
     const colorSchemeId = this.loadSetting("colorScheme");
     const colorReference = this.loadSetting("colorReference");
-    const displayTraits = this.loadSetting("displayTraits");
     const customColors = this.loadSetting("traitColors");
+    var displayTraits = this.loadSetting("displayTraits");
+    displayTraits = displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";")
 
     let settings = {
       colorReference, sortReference,
-      displayTraits: (displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";")),
+      displayTraits: displayTraits.length > 10 ? [] : displayTraits,
       lineSort: new ImportingOrderLineSort(),
       lineSortId: "importing",
       colorScheme: new NucleotideColorScheme(this.dataSet),
@@ -535,7 +536,7 @@ export default class CanvasController {
         break;
       case "similarity":
         const referenceIndex = this.dataSet.germplasmList.findIndex(germplasm => germplasm.name == colorReference)
-        if (referenceIndex !== undefined) {
+        if (referenceIndex !== undefined && referenceIndex != -1) {
           settings.colorScheme = new SimilarityColorScheme(this.dataSet, referenceIndex);
           settings.colorSchemeId = "similarity";
         }
