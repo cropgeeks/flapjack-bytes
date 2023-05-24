@@ -483,7 +483,7 @@ export default class CanvasController {
     const colorReference = this.loadSetting("colorReference");
     const customColors = this.loadSetting("traitColors");
     var displayTraits = this.loadSetting("displayTraits");
-    displayTraits = displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";")
+    displayTraits = displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";").filter(x => this.dataSet.traitNames == null || this.dataSet.traitNames.includes(x));
 
     let settings = {
       colorReference, sortReference,

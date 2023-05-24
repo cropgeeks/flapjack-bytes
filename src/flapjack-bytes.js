@@ -5763,8 +5763,8 @@
         var colorSchemeId = this.loadSetting("colorScheme");
         var colorReference = this.loadSetting("colorReference");
         var customColors = this.loadSetting("traitColors");
-        var displayTraits = this.loadSetting("displayTraits");
-        displayTraits = displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";");
+	    var displayTraits = this.loadSetting("displayTraits");
+	    displayTraits = displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";").filter(x => this.dataSet.traitNames == null || this.dataSet.traitNames.includes(x));
         var settings = {
           colorReference: colorReference,
           sortReference: sortReference,
