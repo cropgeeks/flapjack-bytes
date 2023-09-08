@@ -3500,12 +3500,16 @@
       value: function renderMouseOverText() {
         if (this.mouseOverText !== undefined) {
           this.drawingContext.save();
-          this.drawingContext.font = this.font;
-          var textWidth = this.drawingContext.measureText(this.mouseOverText).width;
-          var textHeight = this.fontSize;
-          var padding = 4;
-          var boxWidth = textWidth + 2 * padding;
-          var boxHeight = textHeight + 2 * padding;
+          // this.drawingContext.font = this.font;
+          this.drawingContext.fontSize = 20;
+
+          const textWidth = this.drawingContext.measureText(this.mouseOverText).width;
+          //const textHeight = this.fontSize;
+          const textHeight = this.drawingContext.fontSize;
+          const padding = 4;
+          const boxWidth = textWidth + 2*padding;
+          const boxHeight = textHeight; // + 2*padding;
+
           var _this$mouseOverPositi = _slicedToArray(this.mouseOverPosition, 2),
             xBase = _this$mouseOverPositi[0],
             yBase = _this$mouseOverPositi[1];
@@ -3951,6 +3955,83 @@
               this.mouseOverPosition = [x, y];
             }
           } else */
+          // Individual's name tooltip
+          if (!this.dataSet.hasTraits() && x <= this.nameCanvasWidth || this.dataSet.hasTraits() && x <= this.nameCanvasWidth + this.traitValuesCanvasWidth) {
+            var _germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+            this.mouseOverText = _germplasm.name;
+            this.mouseOverPosition = [x, y];
+          }
+          // Genotype tooltip
+          if (!this.dataSet.hasTraits() && !this.lineSort.hasScore && x > this.nameCanvasWidth ||
+              !this.dataSet.hasTraits() && this.lineSort.hasScore && x > this.nameCanvasWidth + this.scoreCanvasWidth ||
+              this.dataSet.hasTraits() && !this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth ||
+              this.dataSet.hasTraits() && this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth) {
+            var _germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+            var markerIndex = Math.floor((this.translatedX + mouseXPos) / this.boxSize);
+            var marker = this.dataSet.markerOn(this.selectedChromosome, markerIndex);
+            this.markerUnderMouse = marker.marker;
+            this.mouseOverText = `Individual's name : ${_germplasm.name}`;
+            this.mouseOverText += `\r\nMarker : ${marker.marker.name} (${marker.marker.position})`;
+            //TODO : do this switch in a new function
+            var geno = 'A';
+            switch (this.dataSet.genotypeFor(this.lineIndexUnderMouse, this.selectedChromosome, markerIndex))
+              {
+                case 0:
+                  geno = 'N/A';
+                  break;
+                case 1:
+                  geno = 'A/T';
+                  break;
+                case 2:
+                  geno = 'A';
+                  break;
+                case 3:
+                  geno = 'T';
+                  break;
+                case 4:
+                  geno = 'C/T';
+                  break;
+                case 5:
+                  geno = 'C';
+                  break;
+                case 6:
+                  geno = 'C/G';
+                  break;
+                case 7:
+                  geno = 'T/A';
+                  break;
+                case 8:
+                  geno = 'T/C';
+                  break;
+                case 9:
+                  geno = 'G/T';
+                  break;
+                case 10:
+                  geno = 'G';
+                  break;
+                case 11:
+                  geno = 'A/G';
+                  break;
+                case 12:
+                  geno = 'C/A';
+                  break;
+                case 13:
+                  geno = 'T/G';
+                  break;
+                case 14:
+                  geno = 'A/C';
+                  break;
+                case 15:
+                  geno = 'G/A';
+                  break;
+                case 16:
+                  geno = 'G/C';
+                  break;
+              }
+            this.mouseOverText += `\r\nGenotype : ${geno}`;
+            this.mouseOverPosition = [x, y];
+          }
+          // Trait tooltip
           if (this.dataSet.hasTraits() && x < this.traitValuesCanvasWidth / 1.1 /*accounting for apennded blank space*/) {
             var xPos = 0,
               traitIndex = undefined;
@@ -3970,7 +4051,9 @@
               this.mouseOverText = trait.name + " : " + traitValue.toString();
               this.mouseOverPosition = [x, y];
             }
-          } else if (this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth && x < this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth) {
+          }
+          // Score tooltip
+          else if (this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth && x < this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth) {
             var _germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
             var score = this.lineSort.getScore(_germplasm.name);
             this.mouseOverText = "Sort score : " + score.toString();
