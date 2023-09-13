@@ -5,6 +5,7 @@ export default class DataSet {
     this.id = dataSetId;
     this.genomeMap = genomeMap;
     this.germplasmList = germplasmList;
+    this.germplasmListFiltered = Array.from(germplasmList);
     this.stateTable = stateTable;
     this.traits = traits;
 
@@ -24,17 +25,20 @@ export default class DataSet {
       this.germplasmList.forEach(germplasm => {
         germplasm.phenotype = phenotypes.get(germplasm.name);
       });
+      this.germplasmListFiltered.forEach(function (germplasm) {
+            germplasm.phenotype = phenotypes.get(germplasm.name);
+          });
     } else {
       this.traitNames = undefined;
     }
   }
 
   germplasmFor(germplasmStart, germplasmEnd) {
-    return this.germplasmList.slice(germplasmStart, germplasmEnd);
+    return this.germplasmListFiltered.slice(germplasmStart, germplasmEnd);
   }
 
   genotypeFor(germplasm, chromosome, marker) {
-    return this.germplasmList[germplasm].genotypeData[chromosome][marker];
+    return this.germplasmListFiltered[germplasm].genotypeData[chromosome][marker];
   }
 
   markersToRender(markerStart, markerEnd) {
@@ -66,7 +70,7 @@ export default class DataSet {
   }
 
   lineCount() {
-    return this.germplasmList.length;
+    return this.germplasmListFiltered.length;
   }
 
   hasTraits() {

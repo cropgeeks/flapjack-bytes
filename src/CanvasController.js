@@ -82,7 +82,7 @@ export default class CanvasController {
       lineSelect.disabled = false;
 
       const referenceName = lineSelect.options[lineSelect.selectedIndex].value;
-      const referenceIndex = this.genotypeCanvas.dataSet.germplasmList.findIndex(germplasm => germplasm.name == referenceName)
+      const referenceIndex = this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(germplasm => germplasm.name == referenceName)
       
       let colorScheme = new SimilarityColorScheme(this.genotypeCanvas.dataSet, referenceIndex);
       colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
@@ -225,35 +225,42 @@ export default class CanvasController {
       paletteTraitSelect.value = this.dataSet.traitNames[0];
       paletteTraitSelect.dispatchEvent(new Event('change'));
 
-      paletteValueSelect.addEventListener('change', event => {
-        const traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
-        const trait = this.dataSet.getTrait(traitName);
-        let color = null;
-        if (trait.type == TraitType.Numerical){
-          const index = paletteValueSelect.selectedIndex;
-          color = (index == 0 ? trait.getMinColor() : trait.getMaxColor());
-        } else {
-          color = trait.getColor(paletteValueSelect.selectedIndex);
+      paletteValueSelect.addEventListener('change', function (event) {
+        for (var i = paletteValueSelect.options.length - 1; i >= 0; i--) {
+            if (paletteValueSelect.options[i].selected)
+            {
+              var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
+              var trait = _this.dataSet.getTrait(traitName);
+              var color = null;
+              if (trait.type == TraitType.Numerical) {
+                var index = i;
+                color = index == 0 ? trait.getMinColor() : trait.getMaxColor();
+              } else {
+                color = trait.getColor(i);
+              }
+              paletteValueColor.value = color;
+            }
         }
-        paletteValueColor.value = color;
       });
       paletteValueSelect.dispatchEvent(new Event('change'));
 
-      paletteValueColor.addEventListener('change', event => {
-        const traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
-        const trait = this.dataSet.getTrait(traitName);
-        const color = paletteValueColor.value;
-        if (trait.type == TraitType.Numerical){
-          const index = paletteValueSelect.selectedIndex;
-          if (index == 0)
-            trait.setMinColor(color);
-          else
-            trait.setMaxColor(color);
-        } else {
-          trait.setColor(paletteValueSelect.selectedIndex, color);
+      paletteValueColor.addEventListener('change', function (event) {
+        for (var i = paletteValueSelect.options.length - 1; i >= 0; i--) {
+            if (paletteValueSelect.options[i].selected)
+            {
+                var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
+                var trait = _this.dataSet.getTrait(traitName);
+                var color = paletteValueColor.value;
+                if (trait.type == TraitType.Numerical) {
+                  var index = i;
+                  if (index == 0) trait.setMinColor(color);else trait.setMaxColor(color);
+                } else {
+                  trait.setColor(i, color);
+                }
+                _this.genotypeCanvas.prerender(true);
+                _this.saveColors();
+            }
         }
-        this.genotypeCanvas.prerender(true);
-        this.saveColors();
       });
 
       paletteResetButton.addEventListener('click', event => {
@@ -366,6 +373,23 @@ export default class CanvasController {
     this.genotypeCanvas.setChromosome(chromosomeIndex);
     this.overviewCanvas.setChromosome(chromosomeIndex);
     this.overviewCanvas.moveToPosition(0, 0, this.genotypeCanvas.visibilityWindow());
+  }
+
+  findGermplasmWithLine(input) {
+     return this.dataSet.germplasmListFiltered.find((item) => item.name.toLowerCase().startsWith(input));
+  }
+
+  setFilter(input) {
+    this.dataSet.germplasmListFiltered = Array.from(this.dataSet.germplasmList);
+    this.dataSet.germplasmListFiltered = this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
+    this.genotypeCanvas.updateCanvasWidths();
+    this.genotypeCanvas.prerender(true);
+  }
+
+  clearFilter() {
+    this.dataSet.germplasmListFiltered = Array.from(this.dataSet.germplasmList);
+    this.genotypeCanvas.updateCanvasWidths();
+    this.genotypeCanvas.prerender(true);
   }
 
   disableCanvas() {
@@ -521,7 +545,7 @@ export default class CanvasController {
         }
         break;
       case "similarity":
-        if (this.dataSet.germplasmList.find(germplasm => germplasm.name == sortReference) !== undefined) {
+        if (this.dataSet.germplasmListFiltered.find(germplasm => germplasm.name == sortReference) !== undefined) {
           settings.lineSort = new SimilarityLineSort(sortReference, [this.chromosomeIndex]);
           settings.lineSortId = "similarity";
         }
@@ -535,7 +559,7 @@ export default class CanvasController {
         settings.colorSchemeId = "nucleotide";
         break;
       case "similarity":
-        const referenceIndex = this.dataSet.germplasmList.findIndex(germplasm => germplasm.name == colorReference)
+        const referenceIndex = this.dataSet.germplasmListFiltered.findIndex(germplasm => germplasm.name == colorReference)
         if (referenceIndex !== undefined && referenceIndex != -1) {
           settings.colorScheme = new SimilarityColorScheme(this.dataSet, referenceIndex);
           settings.colorSchemeId = "similarity";

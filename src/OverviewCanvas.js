@@ -80,7 +80,7 @@ export default class OverviewCanvas {
   renderingScale (width, height){
     return {
       markersPerPixel: this.dataSet.markerCountOn(this.selectedChromosome) / width,
-      germplasmsPerPixel: this.dataSet.germplasmList.length / height,
+      germplasmsPerPixel: this.dataSet.germplasmListFiltered.length / height,
     }
   }
 
@@ -88,7 +88,7 @@ export default class OverviewCanvas {
   // Modeled on the desktop version
   createImage (imageData, highlightReference){
     const scale = this.renderingScale(imageData.width, imageData.height);
-    const germplasmsPerPixel = this.dataSet.germplasmList.length / imageData.height;
+    const germplasmsPerPixel = this.dataSet.germplasmListFiltered.length / imageData.height;
     const markersPerPixel = this.dataSet.markerCountOn(this.selectedChromosome) / imageData.width;
 
     for (let x = 0; x < imageData.width; x += 1){
@@ -129,7 +129,7 @@ export default class OverviewCanvas {
 
     // Clamp within the canvas (no position < 0 or > number of markers or germplasms)
     let cornerMarker = Math.min(Math.max(0, Math.floor(centerMarker - visibilityWindow.markers / 2)), this.dataSet.markerCountOn(this.selectedChromosome) - visibilityWindow.markers);
-    let cornerGermplasm = Math.min(Math.max(Math.floor(centerGermplasm - visibilityWindow.germplasms / 2), 0), this.dataSet.germplasmList.length - visibilityWindow.germplasms);
+    let cornerGermplasm = Math.min(Math.max(Math.floor(centerGermplasm - visibilityWindow.germplasms / 2), 0), this.dataSet.germplasmListFiltered.length - visibilityWindow.germplasms);
 
     this.windowRect = this.windowFromPosition(cornerMarker, cornerGermplasm, visibilityWindow);
     this.prerender(false);
@@ -187,7 +187,7 @@ export default class OverviewCanvas {
   toDataURL (type, encoderOptions){
     const tmpCanvas = document.createElement('canvas')
     tmpCanvas.width = this.dataSet.markerCountOn(this.selectedChromosome);
-    tmpCanvas.height = this.dataSet.germplasmList.length;
+    tmpCanvas.height = this.dataSet.germplasmListFiltered.length;
     
     const tmpContext = tmpCanvas.getContext('2d');
     tmpContext.fillStyle = 'white';
