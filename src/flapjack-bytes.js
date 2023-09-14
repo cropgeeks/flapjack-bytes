@@ -7660,22 +7660,12 @@
         button.classList.add('bytes-tabtoggle');
         button.style.fontSize = '15px';
         button.appendChild(document.createTextNode(title));
-        var closeTabTimeout;
-        button.addEventListener('mouseover', openSettingsTab(name));
-        tab.addEventListener('mouseleave', function (event) {
-          clearTimeout(closeTabTimeout);
-          closeTabTimeout = setTimeout(function () {
-            closeSettingsTab(name)();
-          }, 500);
-        });
-        tab.addEventListener('mouseenter', function (event) {
-          clearTimeout(closeTabTimeout);
-        });
+        button.addEventListener('click', openSettingsTab(name));
         return button;
       }
     }
 
-    function closeSettingsTab(name) {
+    /* closeSettingsTab(name) {
         return function (event) {
           var _iterator = _createForOfIteratorHelper(settingsTabs.keys()),
             _step;
@@ -7686,7 +7676,7 @@
                 _settingsTabs$get2 = _slicedToArray(_settingsTabs$get, 2),
                 button = _settingsTabs$get2[0],
                 tab = _settingsTabs$get2[1];
-              if (key == name /*&& !button.classList.contains('bytes-tabtoggle-active')*/)
+              if (key == name /*&& !button.classList.contains('bytes-tabtoggle-active'))
               {
                 button.classList.remove('bytes-tabtoggle-active');
                 tab.style.display = 'none';
@@ -7698,7 +7688,7 @@
             _iterator.f();
           }
         };
-      }
+      }*/
     function openSettingsTab(name) {
       return function (event) {
         var _iterator = _createForOfIteratorHelper(settingsTabs.keys()),
@@ -7710,7 +7700,7 @@
               _settingsTabs$get2 = _slicedToArray(_settingsTabs$get, 2),
               button = _settingsTabs$get2[0],
               tab = _settingsTabs$get2[1];
-            if (key == name) {
+            if (key == name && !button.classList.contains('bytes-tabtoggle-active')) {
               button.classList.add('bytes-tabtoggle-active');
               tab.style.display = 'block';
             } else {
@@ -7851,7 +7841,7 @@
         }
       });
 
-      // Namefilter
+      /*// Namefilter
       var filterLabel = document.createElement('label');
       filterLabel.innerHTML = 'Line\'s Filter: ';
       filterLabel.setAttribute('for', 'filterInput');
@@ -7864,7 +7854,7 @@
       filterContainer.append(nameFilter);
       nameFilter.addEventListener('input', function (event) {
         setFilter(nameFilter.value.toLowerCase());
-      });
+      });*/
 
       // Ctrl+F
       var findLineLabel = document.createElement('label');
@@ -7895,9 +7885,9 @@
       chromosomeContainer.style.paddingTop = "4px";
       zoomContainer.style.float = "right";
       zoomContainer.style.marginLeft = "50px";
-      filterContainer.style.float = "right";
+      /*filterContainer.style.float = "right";
       filterContainer.style.marginTop = "2px";
-      filterContainer.style.marginLeft = "50px";
+      filterContainer.style.marginLeft = "50px";*/
       findContainer.style.float = "right";
       findContainer.style.marginTop = "2px";
 
@@ -7914,7 +7904,7 @@
       settings.appendChild(tabContainer);
       menuRow.appendChild(chromosomeContainer);
       menuRow.appendChild(zoomContainer);
-      menuRow.appendChild(filterContainer);
+      //menuRow.appendChild(filterContainer);
       menuRow.appendChild(findContainer);
       return settings;
     }
