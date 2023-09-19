@@ -5733,7 +5733,7 @@
     }, {
         key: "findGermplasmWithLine",
         value: function findGermplasmWithLine(input) {
-           return this.dataSet.germplasmListFiltered.find((item) => item.name.toLowerCase().startsWith(input));
+           return this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
         }
       }, {
         key: "setFilter",
@@ -7587,13 +7587,12 @@
       genotypeCanvas.drawingContext.restore();
     }
 
-    function dragToLine(input) {
+    function dragToLine(input, i) {
       if (input.length > 0) {
-        var germplasm = canvasController.findGermplasmWithLine(input);
-        if (germplasm !== undefined) {
-          var index = dataSet.germplasmListFiltered.indexOf(germplasm);
+        var germplasms = canvasController.findGermplasmWithLine(input);
+        if (germplasms.length !== 0) {
+          var index = dataSet.germplasmListFiltered.indexOf(germplasms[i % germplasms.length]);
           var pos = genotypeCanvas.currentPosition();
-          zoom(20);
           var newpos = genotypeCanvas.moveToPosition(0, index);
           var poschange = pos.germplasm !== newpos.germplasm;
           genotypeCanvas.draggingOverviewCanvas = true;
@@ -7932,17 +7931,36 @@
       findContainer.append(findLineLabel);
       findContainer.append(findLine);
       findContainer.append(notFindlabel);
-      findLine.addEventListener('input', function (event) {
+      var incfindline = 0;
+      findLine.addEventListener("input", function(event) {
         notFindlabel.style.display = 'none';
-        var found = dragToLine(findLine.value.toLowerCase());
+        var found = dragToLine(findLine.value.toLowerCase(), incfindline);
         if (found === false) {
-          notFindlabel.style.float = 'right';
+          notFindlabel.style["float"] = 'right';
           notFindlabel.style.display = 'block';
           notFindlabel.innerHTML = ' not found';
-          notFindlabel.style.color ='red';
+          notFindlabel.style.color = 'red';
         }
       });
-
+      findLine.addEventListener("keydown", function(event) {
+        // Code 13 stands for "Enter" key
+        if (event.keyCode === 13) {
+          if (findLine.value.length !== 0) {
+            incfindline = incfindline + 1;
+          }
+        }
+        else {
+          incfindline = 0
+        }
+        notFindlabel.style.display = 'none';
+        var found = dragToLine(findLine.value.toLowerCase(), incfindline);
+        if (found === false) {
+          notFindlabel.style["float"] = 'right';
+          notFindlabel.style.display = 'block';
+          notFindlabel.innerHTML = ' not found';
+          notFindlabel.style.color = 'red';
+        }
+      });
       var markerrange = document.createElement("div");
       markerrange.id = "markerRange";
 

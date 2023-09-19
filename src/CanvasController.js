@@ -376,7 +376,7 @@ export default class CanvasController {
   }
 
   findGermplasmWithLine(input) {
-     return this.dataSet.germplasmListFiltered.find((item) => item.name.toLowerCase().startsWith(input));
+     return this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
   }
 
   setFilter(input) {
