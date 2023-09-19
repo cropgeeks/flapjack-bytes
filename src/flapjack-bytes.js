@@ -3313,6 +3313,7 @@
         this.drawingContext.drawImage(this.backBuffer, 0, 0);
         var xPos = this.markerIndexUnderMouse * this.boxSize - this.translatedX;
         var yPos = this.lineUnderMouse * this.boxSize - yWiggle;
+        this.markerRange(markerStart, markerEnd);
         this.renderCrosshair(markerStart, xPos, germplasmStart, yPos);
         this.highlightMarker(dataWidth, markerStart, markerEnd, xPos);
         this.highlightLineName(germplasmStart, yPos);
@@ -3326,6 +3327,15 @@
         this.drawingContext.restore();
       }
     }, {
+        key: "markerRange",
+        value: function markerRange(markerStartIndex, markerEndIndex) {
+          var markerrange = document.getElementById("markerRange");
+          var markerStart = this.dataSet.markerOn(this.selectedChromosome, markerStartIndex).marker;
+          var markerEnd = this.dataSet.markerOn(this.selectedChromosome, markerEndIndex - 1).marker;
+          var text =  `Current range:<br> ${markerStart.name} (${markerStart.position})  to  ${markerEnd.name} (${markerEnd.position})`;
+          markerrange.innerHTML = text;
+        }
+      }, {
       key: "calcMapMarkerPos",
       value: function calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart) {
         var mapMarkerPos = (marker.position - firstMarkerPos) * mapScaleFactor;
@@ -7646,14 +7656,64 @@
         canvasHolder.append(progressBarBackground);
       }
       genotypeCanvas = new GenotypeCanvas(width, config.height, boxSize);
+      genotypeCanvas.canvas.id = 'genotypeCanvas';
       canvasHolder.append(genotypeCanvas.canvas);
+      var resizeHandle = document.createElement("div");
+      resizeHandle.id = "resizeHandle";
+      resizeHandle.style.position = "absolute";
+      resizeHandle.style.width = '100%';
+      resizeHandle.style.height = '10px';
+      resizeHandle.style.backgroundColor = '#e74c3c';
+      resizeHandle.style.cursor = 'row-resize';
+      canvasHolder.append(resizeHandle);
       if (!overviewWidth) overviewWidth = width;
       if (!config.overviewHeight) config.overviewHeight = 200;
       overviewCanvas = new OverviewCanvas(overviewWidth, config.overviewHeight);
+      overviewCanvas.canvas.id = 'overviewCanvas';
       canvasHolder.append(overviewCanvas.canvas);
+      resizehandler(resizeHandle, overviewCanvas, genotypeCanvas);
       addStyleSheet();
       canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, config.saveSettings != false, config.width === null, config.overviewWidth === null, config.minGenotypeAutoWidth, config.minOverviewAutoWidth);
     }
+    function resizehandler(resizeHandle, resizableDiv1, resizableDiv2) {
+        let isResizing = false;
+        let initialY;
+        let originalHeight1;
+        let originalHeight2;
+        resizeHandle.addEventListener('mousedown', function (event) {
+            isResizing = true;
+            initialY = event.clientY;
+            originalHeight1 = resizableDiv1.canvas.clientHeight;
+            originalHeight2 = resizableDiv2.canvas.clientHeight;
+        });
+        document.addEventListener('mousemove', function(event) {
+            if (!isResizing) return;
+
+            const currentY = event.clientY;
+            const height1 = originalHeight1 - (currentY - initialY);
+            const height2 = originalHeight2 + (currentY - initialY);
+
+            // Appliquer la hauteur minimale souhaitée si nécessaire
+            const minHeight = 10;
+            if (height1 > minHeight) {
+                resizableDiv1.height = height1;
+                resizableDiv1.canvas.height = height1;
+                resizableDiv1.backBuffer.height = height1;
+            }
+            if (height2 > minHeight) {
+                resizableDiv2.height = height2;
+                resizableDiv2.canvas.height = height2;
+                resizableDiv2.backBuffer.height = height2;
+            }
+            resizableDiv2.horizontalScrollbar = new ScrollBar(resizableDiv2.alleleCanvasWidth(), height2, resizableDiv2.alleleCanvasWidth(), resizableDiv2.scrollbarHeight, false);
+            genotypeCanvas.prerender(true);
+            overviewCanvas.prerender(true);
+        });
+
+        document.addEventListener('mouseup', function() {
+            isResizing = false;
+        });
+      }
     function createTabToggle(name, title, tab) {
       if (tab !== undefined) {
         var button = document.createElement('button');
@@ -7862,10 +7922,12 @@
       findLineLabel.setAttribute('for', 'lineInput');
       var findLine = document.createElement('input');
       findLine.type = "text";
+
       findLine.id = "lineInput";
       findLine.placeholder = "Enter a line";
       var notFindlabel = document.createElement('label');
       notFindlabel.style.display = 'none';
+      notFindlabel.setAttribute('for', 'lineInput');
       var findContainer = document.createElement('div');
       findContainer.append(findLineLabel);
       findContainer.append(findLine);
@@ -7874,11 +7936,15 @@
         notFindlabel.style.display = 'none';
         var found = dragToLine(findLine.value.toLowerCase());
         if (found === false) {
+          notFindlabel.style.float = 'right';
           notFindlabel.style.display = 'block';
-          notFindlabel.innerHTML = `Line ${findLine.value} not found`;
+          notFindlabel.innerHTML = ' not found';
           notFindlabel.style.color ='red';
         }
       });
+
+      var markerrange = document.createElement("div");
+      markerrange.id = "markerRange";
 
       chromosomeContainer.style.float = "right";
       chromosomeContainer.style.marginLeft = "50px";
@@ -7890,6 +7956,12 @@
       filterContainer.style.marginLeft = "50px";*/
       findContainer.style.float = "right";
       findContainer.style.marginTop = "2px";
+      findContainer.style.marginLeft = "220px";
+      markerrange.style.textAlign = "center";
+      markerrange.style["float"] = "right";
+      markerrange.style.backgroundColor = "rgb(255, 255, 80)";
+      markerrange.style.color = "#ff5733";
+      markerrange.style.borderRadius = "10px";
 
       // Add the actual tabs
       var tabContainer = document.createElement('div');
@@ -7906,6 +7978,7 @@
       menuRow.appendChild(zoomContainer);
       //menuRow.appendChild(filterContainer);
       menuRow.appendChild(findContainer);
+      menuRow.appendChild(markerrange);
       return settings;
     }
     function createColorSchemeTab(config) {

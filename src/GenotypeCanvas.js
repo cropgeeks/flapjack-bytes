@@ -129,6 +129,7 @@ export default class GenotypeCanvas {
     const xPos = (this.markerIndexUnderMouse * this.boxSize) - this.translatedX;
     const yPos = (this.lineUnderMouse * this.boxSize) - yWiggle;
 
+    this.markerRange(markerStart, markerEnd);
     this.renderCrosshair(markerStart, xPos, germplasmStart, yPos);
     this.highlightMarker(dataWidth, markerStart, markerEnd, xPos);
     this.highlightLineName(germplasmStart, yPos);
@@ -141,6 +142,14 @@ export default class GenotypeCanvas {
       this.drawingContext.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
     this.drawingContext.restore();
+  }
+
+  markerRange(markerStartIndex, markerEndIndex) {
+    var markerrange = document.getElementById("markerRange");
+    var markerStart = this.dataSet.markerOn(this.selectedChromosome, markerStartIndex).marker;
+    var markerEnd = this.dataSet.markerOn(this.selectedChromosome, markerEndIndex - 1).marker;
+    var text =  `Current range:<br> ${markerStart.name} (${markerStart.position})  to  ${markerEnd.name} (${markerEnd.position})`;
+    markerrange.innerHTML = text;
   }
 
   calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart) {
