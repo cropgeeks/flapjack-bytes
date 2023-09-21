@@ -5673,6 +5673,52 @@
         });
 
         // Other events
+        window.addEventListener("resize", function (event) {
+          var canvasholder = document.getElementById("canvasholder");
+          var settings = document.getElementById("settings");
+          var resizehandle = document.getElementById("resizeHandle");
+          var range = document.getElementById("zoom-control");
+          var findLine = document.getElementById("lineInput");
+          var chromosomeSelect = document.getElementById("chromosomeSelect");
+          var chromosomeContainer = document.getElementById("chromosomeContainer");
+          var zoomContainer = document.getElementById("zoom-container");
+          var findContainer = document.getElementById("findContainer");
+          const windowHeight = window.innerHeight;
+          const ratioh = windowHeight / 980;
+          const windowWidth = window.innerWidth;
+          const ratiow = windowWidth / 1920;
+
+          canvasholder.style.fontSize = (14 * ratioh) + "px";
+          canvasholder.style.width = '100%';
+          settings.style.width = '100%';
+          resizehandle.style.width = '100%';
+          _this.genotypeCanvas.canvas.style.width = '100%';
+          _this.overviewCanvas.canvas.style.width = '100%';
+          canvasholder.style.height = windowHeight + "px";
+          settings.style.height = '5%';
+          resizehandle.style.height = '3px';
+          _this.genotypeCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+          _this.overviewCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+          _this.genotypeCanvas.backBuffer.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+          _this.overviewCanvas.backBuffer.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+          _this.genotypeCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+          _this.overviewCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+          range.style.width = (300 * ratiow) + "px";
+          range.style.height = (20 * ratioh) + "%";
+          findLine.style.width = (59 * ratiow) + "%";
+          findLine.style.height = (40 * ratioh) + "%";
+          findLine.style.fontSize =  (findLine.style.height - 4) + "px";
+          chromosomeSelect.style.height = (19 * ratioh) + "px";
+          chromosomeSelect.style.width = (126 * ratiow) + "px";
+          chromosomeSelect.style.fontSize = (13 * ratioh) + "px";
+          findContainer.style.marginLeft = (50 * ratiow) + "px";
+          zoomContainer.style.marginLeft = (50 * ratiow) + "px";
+          chromosomeContainer.style.marginLeft = (50 * ratiow) + "px";
+          _this.genotypeCanvas.prerender(true);
+          _this.overviewCanvas.prerender(true);
+        });
+        window.dispatchEvent(new Event('resize'));
+
         window.addEventListener('mouseup', function () {
           _this.draggingGenotypeCanvas = false;
           _this.draggingVerticalScrollbar = false;
@@ -7532,7 +7578,7 @@
     var dataSet;
     function sendEvent(eventName, domParent) {
       // TODO: Invesitgate using older event emitting code for IE support
-      var canvasHolder = document.getElementById(domParent.replace('#', ''));
+      var canvasHolder = document.getElementById("canvasholder");
 
       // Create the event.
       var event = new Event(eventName);
@@ -7546,20 +7592,21 @@
       canvasController.setChromosome(chromosomeIndex);
     }
 
-    function blackCrosshairLine(index, poschange) {
+    function blackCrosshairLine(index) {
       var germplasmStart = Math.floor(genotypeCanvas.translatedY / genotypeCanvas.boxSize);
       var yWiggle = genotypeCanvas.translatedY - germplasmStart * genotypeCanvas.boxSize;
-      var yPos = /*index * genotypeCanvas.boxSize - */yWiggle;
+      var yPos =  (index - germplasmStart) * genotypeCanvas.boxSize
+      if (genotypeCanvas.translatedY === 0){
+          yPos = index * genotypeCanvas.boxSize - yWiggle
+      }
       var yScrollMax = genotypeCanvas.maxCanvasHeight() - genotypeCanvas.alleleCanvasHeight();
-      if (!poschange || genotypeCanvas.translatedY === yScrollMax)
-      {
-          yPos = index * genotypeCanvas.boxSize - yScrollMax < 0 ? index * genotypeCanvas.boxSize - yWiggle : index * genotypeCanvas.boxSize - yScrollMax;
+      if (genotypeCanvas.translatedY === yScrollMax) {
+         yPos =  index * genotypeCanvas.boxSize - yScrollMax < 0 ? index * genotypeCanvas.boxSize - yWiggle : index * genotypeCanvas.boxSize - yScrollMax;
       }
       genotypeCanvas.drawingContext.save();
       genotypeCanvas.drawingContext.translate(genotypeCanvas.alleleCanvasXOffset, genotypeCanvas.mapCanvasHeight);
       genotypeCanvas.drawingContext.globalAlpha = 0.4;
       genotypeCanvas.drawingContext.fillStyle = '#000';
-      //var isBlack = false;
 
       // Clip the canvas to prevent over-drawing of the crosshair
       var region = new Path2D();
@@ -7568,20 +7615,6 @@
 
       genotypeCanvas.renderHorizontalCrosshairLine(yPos);
 
-      /*var interval = setInterval(function() {
-          isBlack = toggleRectangleColor(isBlack, yPos);
-      }, 500);
-
-      // Arrêter le clignotement après 2 secondes (2000 millisecondes)
-      setTimeout(function() {
-          clearInterval(interval);
-          // Effacer le rectangle
-          genotypeCanvas.drawingContext.globalAlpha = 0;
-          // Reset the drawing parameters for the rest of the render code
-          genotypeCanvas.drawingContext.translate(-genotypeCanvas.alleleCanvasXOffset, -genotypeCanvas.mapCanvasHeight);
-          genotypeCanvas.drawingContext.globalAlpha = 1;
-          genotypeCanvas.drawingContext.restore();
-      }, 2000);*/
       genotypeCanvas.drawingContext.translate(-genotypeCanvas.alleleCanvasXOffset, -genotypeCanvas.mapCanvasHeight);
       genotypeCanvas.drawingContext.globalAlpha = 1;
       genotypeCanvas.drawingContext.restore();
@@ -7592,11 +7625,16 @@
         var germplasms = canvasController.findGermplasmWithLine(input);
         if (germplasms.length !== 0) {
           var index = dataSet.germplasmListFiltered.indexOf(germplasms[i % germplasms.length]);
-          var pos = genotypeCanvas.currentPosition();
-          var newpos = genotypeCanvas.moveToPosition(0, index);
-          var poschange = pos.germplasm !== newpos.germplasm;
+          var zoomValue = document.getElementById('zoom-control').value;
+          var calc = Math.floor(index - (64 / zoomValue * 10 / 2));
+          if (calc < 0) {
+              genotypeCanvas.moveToPosition(0, 0);
+          }
+          else {
+              genotypeCanvas.moveToPosition(0, calc);
+          }
           genotypeCanvas.draggingOverviewCanvas = true;
-          blackCrosshairLine(index, poschange);
+          blackCrosshairLine(index);
           return true;
         }
         return false;
@@ -7623,6 +7661,7 @@
       if (config.minGenotypeAutoWidth === undefined) config.minGenotypeAutoWidth = 0;
       if (config.minOverviewAutoWidth === undefined) config.minOverviewAutoWidth = 0;
       var canvasHolder = document.getElementById(config.domParent.replace('#', ''));
+      canvasHolder.id = "canvasholder";
       canvasHolder.style.fontFamily = 'system-ui';
       canvasHolder.style.fontSize = '14px';
       var computedStyles = window.getComputedStyle(canvasHolder);
@@ -7661,8 +7700,9 @@
       resizeHandle.id = "resizeHandle";
       resizeHandle.style.position = "absolute";
       resizeHandle.style.width = '100%';
-      resizeHandle.style.height = '10px';
+      resizeHandle.style.height = '3px';
       resizeHandle.style.backgroundColor = '#e74c3c';
+      resizeHandle.style.padding = '2px'
       resizeHandle.style.cursor = 'row-resize';
       canvasHolder.append(resizeHandle);
       if (!overviewWidth) overviewWidth = width;
@@ -7825,6 +7865,7 @@
     function createSettings(config) {
       //// Settings
       var settings = document.createElement('div');
+      settings.id = 'settings';
       settings.classList.add('row');
       settings.style.marginTop = '8px';
 
@@ -7861,6 +7902,7 @@
         setChromosome(event.target.selectedIndex);
       });
       var chromosomeContainer = document.createElement('div');
+      chromosomeContainer.id = "chromosomeContainer";
       chromosomeContainer.append(chromosomeLabel);
       chromosomeContainer.append(chromosomeSelect);
 
@@ -7883,6 +7925,7 @@
       zoomPreview.setAttribute('type', 'checkbox');
       zoomPreview.style.marginLeft = "20px";
       var zoomContainer = document.createElement('div');
+      zoomContainer.id = 'zoom-container';
       zoomContainer.append(zoomLabel);
       zoomContainer.append(range);
       zoomContainer.append(zoomPreview);
@@ -7928,6 +7971,7 @@
       notFindlabel.style.display = 'none';
       notFindlabel.setAttribute('for', 'lineInput');
       var findContainer = document.createElement('div');
+      findContainer.id = "findContainer";
       findContainer.append(findLineLabel);
       findContainer.append(findLine);
       findContainer.append(notFindlabel);
