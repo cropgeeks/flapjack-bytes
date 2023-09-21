@@ -318,7 +318,7 @@ export default class CanvasController {
     });
 
     // Other events
-    window.addEventListener("resize", function (event) {
+    /*window.addEventListener("resize", function (event) {
       var canvasholder = document.getElementById("canvasholder");
       var settings = document.getElementById("settings");
       var resizehandle = document.getElementById("resizeHandle");
@@ -362,7 +362,7 @@ export default class CanvasController {
       _this.genotypeCanvas.prerender(true);
       _this.overviewCanvas.prerender(true);
     });
-    window.dispatchEvent(new Event('resize'));
+    window.dispatchEvent(new Event('resize'));*/
 
     window.addEventListener('mouseup', () => {
       this.draggingGenotypeCanvas = false;

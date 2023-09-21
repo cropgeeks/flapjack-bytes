@@ -5673,7 +5673,7 @@
         });
 
         // Other events
-        window.addEventListener("resize", function (event) {
+        /*window.addEventListener("resize", function (event) {
           var canvasholder = document.getElementById("canvasholder");
           var settings = document.getElementById("settings");
           var resizehandle = document.getElementById("resizeHandle");
@@ -5717,7 +5717,7 @@
           _this.genotypeCanvas.prerender(true);
           _this.overviewCanvas.prerender(true);
         });
-        window.dispatchEvent(new Event('resize'));
+        window.dispatchEvent(new Event('resize'));*/
 
         window.addEventListener('mouseup', function () {
           _this.draggingGenotypeCanvas = false;
@@ -7698,11 +7698,9 @@
       canvasHolder.append(genotypeCanvas.canvas);
       var resizeHandle = document.createElement("div");
       resizeHandle.id = "resizeHandle";
-      resizeHandle.style.position = "absolute";
       resizeHandle.style.width = '100%';
       resizeHandle.style.height = '3px';
       resizeHandle.style.backgroundColor = '#e74c3c';
-      resizeHandle.style.padding = '2px'
       resizeHandle.style.cursor = 'row-resize';
       canvasHolder.append(resizeHandle);
       if (!overviewWidth) overviewWidth = width;
@@ -7903,6 +7901,7 @@
       });
       var chromosomeContainer = document.createElement('div');
       chromosomeContainer.id = "chromosomeContainer";
+      chromosomeContainer.style.marginLeft = "50px";
       chromosomeContainer.append(chromosomeLabel);
       chromosomeContainer.append(chromosomeSelect);
 
@@ -7926,6 +7925,7 @@
       zoomPreview.style.marginLeft = "20px";
       var zoomContainer = document.createElement('div');
       zoomContainer.id = 'zoom-container';
+      zoomContainer.style.marginLeft = "50px";
       zoomContainer.append(zoomLabel);
       zoomContainer.append(range);
       zoomContainer.append(zoomPreview);
@@ -7972,6 +7972,7 @@
       notFindlabel.setAttribute('for', 'lineInput');
       var findContainer = document.createElement('div');
       findContainer.id = "findContainer";
+      findContainer.style.marginLeft = "50px";
       findContainer.append(findLineLabel);
       findContainer.append(findLine);
       findContainer.append(notFindlabel);
@@ -8018,7 +8019,7 @@
       filterContainer.style.marginLeft = "50px";*/
       findContainer.style.float = "right";
       findContainer.style.marginTop = "2px";
-      findContainer.style.marginLeft = "220px";
+      findContainer.style.marginLeft = "50px";
       markerrange.style.textAlign = "center";
       markerrange.style["float"] = "right";
       markerrange.style.backgroundColor = "rgb(255, 255, 80)";
