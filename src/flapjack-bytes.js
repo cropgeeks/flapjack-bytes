@@ -3332,7 +3332,7 @@
           var markerrange = document.getElementById("markerRange");
           var markerStart = this.dataSet.markerOn(this.selectedChromosome, markerStartIndex).marker;
           var markerEnd = this.dataSet.markerOn(this.selectedChromosome, markerEndIndex - 1).marker;
-          var text =  `Current range:<br> ${markerStart.name} (${markerStart.position})  to  ${markerEnd.name} (${markerEnd.position})`;
+          var text = markerStart.name.concat(" (").concat(markerStart.position, ")<br>").concat(markerEnd.name, " (").concat(markerEnd.position, ")");
           markerrange.innerHTML = text;
         }
       }, {
@@ -5964,10 +5964,13 @@
             var _ref4 = _slicedToArray(_ref3, 2),
               traitValue = _ref4[0],
               traitValueColor = _ref4[1];
-            var traitValueIndex = _this3.dataSet.traits.get(traitName).values.indexOf(traitValue),
-              traitColorMap = settings.traitColors[traitName];
-            if (traitValueIndex != -1) traitColorMap[traitValueIndex] = traitValueColor;
-            delete traitColorMap[traitValue];
+              var trait = _this3.dataSet.traits.get(traitName);
+              if (trait != null) {
+	            var traitValueIndex = _this3.dataSet.traits.get(traitName).values.indexOf(traitValue),
+	              traitColorMap = settings.traitColors[traitName];
+	            if (traitValueIndex != -1) traitColorMap[traitValueIndex] = traitValueColor;
+	            delete traitColorMap[traitValue];
+	          }
           });
         });
         switch (sortId) {
@@ -7763,6 +7766,7 @@
         var button = document.createElement('button');
         button.classList.add('bytes-tabtoggle');
         button.style.fontSize = '15px';
+        button.style.cursor = 'hand';
         button.appendChild(document.createTextNode(title));
         button.addEventListener('click', openSettingsTab(name));
         return button;
@@ -7900,7 +7904,7 @@
       // Chromosome
       var chromosomeLabel = document.createElement('label');
       chromosomeLabel.setAttribute('for', 'chromosomeSelect');
-      chromosomeLabel.innerHTML = 'Chromosome: ';
+      chromosomeLabel.innerHTML = 'Chromosome ';
       var chromosomeSelect = document.createElement('select');
       chromosomeSelect.id = 'chromosomeSelect';
       chromosomeSelect.addEventListener('change', function (event) {
@@ -7915,7 +7919,7 @@
       // Zoom
       var zoomLabel = document.createElement('label');
       zoomLabel.setAttribute('for', 'zoom-control');
-      zoomLabel.innerHTML = 'Zoom:';
+      zoomLabel.innerHTML = 'Zoom';
       var range = document.createElement('input');
       range.id = 'zoom-control';
       range.setAttribute('type', 'range');
@@ -7966,32 +7970,32 @@
       });*/
 
       // Ctrl+F
-      var findLineLabel = document.createElement('label');
-      findLineLabel.innerHTML = 'Find line : ';
-      findLineLabel.setAttribute('for', 'lineInput');
       var findLine = document.createElement('input');
       findLine.type = "text";
-
       findLine.id = "lineInput";
-      findLine.placeholder = "Enter a line";
-      var notFindlabel = document.createElement('label');
-      notFindlabel.style.display = 'none';
-      notFindlabel.setAttribute('for', 'lineInput');
+      findLine.style.width = "170px";
+      findLine.placeholder = "Search line";
+      var notFoundlabel = document.createElement('label');
+      notFoundlabel.style.display = 'none';
+      notFoundlabel.setAttribute('for', 'lineInput');
       var findContainer = document.createElement('div');
       findContainer.id = "findContainer";
       findContainer.style.marginLeft = "50px";
-      findContainer.append(findLineLabel);
       findContainer.append(findLine);
-      findContainer.append(notFindlabel);
+      findContainer.append(notFoundlabel);
       var incfindline = 0;
       findLine.addEventListener("input", function(event) {
-        notFindlabel.style.display = 'none';
+        notFoundlabel.style.display = 'none';
         var found = dragToLine(findLine.value.toLowerCase(), incfindline);
         if (found === false) {
-          notFindlabel.style["float"] = 'right';
-          notFindlabel.style.display = 'block';
-          notFindlabel.innerHTML = ' not found';
-          notFindlabel.style.color = 'red';
+            notFoundlabel.style.position = 'absolute';
+            notFoundlabel.style.display = 'block';
+            notFoundlabel.style.marginLeft = '100px';
+            notFoundlabel.style.marginTop = '-19px';
+            notFoundlabel.innerHTML = ' not found';
+            notFoundlabel.style.color = 'red';
+            notFoundlabel.style.backgroundColor = '#eeeeee';
+            notFoundlabel.style.padding = '0px 3px';
         }
       });
       findLine.addEventListener("keydown", function(event) {
@@ -8004,52 +8008,44 @@
         else {
           incfindline = 0
         }
-        notFindlabel.style.display = 'none';
-        var found = dragToLine(findLine.value.toLowerCase(), incfindline);
-        if (found === false) {
-          notFindlabel.style["float"] = 'right';
-          notFindlabel.style.display = 'block';
-          notFindlabel.innerHTML = ' not found';
-          notFindlabel.style.color = 'red';
-        }
+        findLine.dispatchEvent(new Event('input'));
       });
-      var markerrange = document.createElement("div");
-      markerrange.id = "markerRange";
+        var markerrange = document.createElement("div");
+        markerrange.id = "markerRange";
+        chromosomeContainer.style.display = "inline-block";
+        chromosomeContainer.style.margin = "0 40px";
+        chromosomeContainer.style.paddingTop = "4px";
+        chromosomeContainer.style.minWidth = "285px";
+        zoomContainer.style["float"] = "right";
+        zoomContainer.style.marginLeft = "40px";
+        findContainer.style["float"] = "right";
+        findContainer.style.marginTop = "2px";
+        findContainer.style.marginLeft = "0px";
+        markerrange.style.marginTop = "-5px";
+        markerrange.style.marginLeft = "15px";
+        markerrange.style.textAlign = "right";
+        markerrange.style.display = "inline-block";
+        markerrange.style.color = "blue";
+        markerrange.style.position = "absolute";
+        markerrange.style.fontSize = "12px";
 
-      chromosomeContainer.style.float = "right";
-      chromosomeContainer.style.marginLeft = "50px";
-      chromosomeContainer.style.paddingTop = "4px";
-      zoomContainer.style.float = "right";
-      zoomContainer.style.marginLeft = "50px";
-      /*filterContainer.style.float = "right";
-      filterContainer.style.marginTop = "2px";
-      filterContainer.style.marginLeft = "50px";*/
-      findContainer.style.float = "right";
-      findContainer.style.marginTop = "2px";
-      findContainer.style.marginLeft = "50px";
-      markerrange.style.textAlign = "center";
-      markerrange.style["float"] = "right";
-      markerrange.style.backgroundColor = "rgb(255, 255, 80)";
-      markerrange.style.color = "#ff5733";
-      markerrange.style.borderRadius = "10px";
-
-      // Add the actual tabs
-      var tabContainer = document.createElement('div');
-      tabContainer.appendChild(colorTab);
-      tabContainer.appendChild(sortTab);
-      if (displayTab !== undefined) tabContainer.appendChild(displayTab);
-      tabContainer.appendChild(exportTab);
-      tabContainer.style.position = 'absolute';
-      tabContainer.style.backgroundColor = 'rgb(221,221,221)';
-      tabContainer.style.minWidth = '400px';
-      tabContainer.style.opacity = '95%';
-      settings.appendChild(tabContainer);
-      menuRow.appendChild(chromosomeContainer);
-      menuRow.appendChild(zoomContainer);
-      //menuRow.appendChild(filterContainer);
-      menuRow.appendChild(findContainer);
-      menuRow.appendChild(markerrange);
-      return settings;
+        // Add the actual tabs
+        var tabContainer = document.createElement('div');
+        tabContainer.appendChild(colorTab);
+        tabContainer.appendChild(sortTab);
+        if (displayTab !== undefined) tabContainer.appendChild(displayTab);
+        tabContainer.appendChild(exportTab);
+        tabContainer.style.position = 'absolute';
+        tabContainer.style.backgroundColor = 'rgb(221,221,221)';
+        tabContainer.style.minWidth = '400px';
+        tabContainer.style.opacity = '95%';
+        settings.appendChild(tabContainer);
+        menuRow.appendChild(chromosomeContainer);
+        menuRow.appendChild(zoomContainer);
+        //menuRow.appendChild(filterContainer);
+        menuRow.appendChild(findContainer);
+        chromosomeContainer.appendChild(markerrange);
+        return settings;
     }
     function createColorSchemeTab(config) {
       var tab = document.createElement('div');
@@ -8129,57 +8125,57 @@
     }
     function createDisplayTab(config) {
       if (config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.replace('#', '')).files[0] !== undefined || config.phenotypeFileURL !== undefined) {
-        var tab = document.createElement('div');
-        tab.classList.add('bytes-tab');
-        tab.style.marginLeft = '10px';
-        var traitSelectContainer = document.createElement('div');
-        traitSelectContainer.style["float"] = 'left';
-        var traitSelectLegend = document.createElement('p');
-        var traitSelectLegendText = document.createTextNode('Traits to display');
-        traitSelectLegend.appendChild(traitSelectLegendText);
-        var traitSelect = document.createElement('select');
-        traitSelect.id = 'displayTraitSelect';
-        traitSelect.multiple = true;
-        traitSelect.size = 10;
-        traitSelectContainer.appendChild(traitSelectLegend);
-        traitSelectContainer.appendChild(traitSelect);
-        var paletteSelectContainer = document.createElement('div');
-        paletteSelectContainer.style["float"] = 'left';
-        paletteSelectContainer.style.marginLeft = '10px';
-        paletteSelectContainer.style.marginBottom = '10px';
-        var paletteSelectLegend = document.createElement('p');
-        var paletteSelectLegendText = document.createTextNode('Trait colors');
-        paletteSelectLegend.appendChild(paletteSelectLegendText);
-        var paletteSelectTrait = document.createElement('select');
-        paletteSelectTrait.id = 'paletteTrait';
-        paletteSelectTrait.style.display = 'block';
-        var paletteSelectValue = document.createElement('select');
-        paletteSelectValue.id = 'paletteValue';
-        paletteSelectValue.style.display = 'block';
-        paletteSelectValue.multiple = true;
-        paletteSelectValue.size = 8;
-        var paletteSelectColor = document.createElement('input');
-        paletteSelectColor.id = 'paletteColor';
-        paletteSelectColor.style.display = 'block';
-        paletteSelectColor.setAttribute('type', 'color');
-        var paletteResetButton = document.createElement('button');
-        var paletteResetLegend = document.createTextNode("Reset this trait's colors");
-        paletteResetButton.appendChild(paletteResetLegend);
-        paletteResetButton.id = 'paletteReset';
-        paletteResetButton.style.marginLeft = '20px';
-        var colorContainer = document.createElement('div');
-        colorContainer.style.display = 'flex';
-        colorContainer.appendChild(paletteSelectColor);
-        colorContainer.appendChild(paletteResetButton);
-        paletteSelectContainer.appendChild(paletteSelectLegend);
-        paletteSelectContainer.appendChild(paletteSelectTrait);
-        paletteSelectContainer.appendChild(paletteSelectValue);
-        paletteSelectContainer.appendChild(colorContainer);
-        //paletteSelectContainer.appendChild(paletteSelectColor);
-        //paletteSelectContainer.appendChild(paletteResetButton);
-        tab.appendChild(traitSelectContainer);
-        tab.appendChild(paletteSelectContainer);
-        return tab;
+          var tab = document.createElement('div');
+          tab.classList.add('bytes-tab');
+          tab.style.marginLeft = '10px';
+          var traitSelectContainer = document.createElement('div');
+          traitSelectContainer.style["float"] = 'left';
+          var traitSelectLegend = document.createElement('p');
+          var traitSelectLegendText = document.createTextNode('Traits to display');
+          traitSelectLegend.appendChild(traitSelectLegendText);
+          var traitSelect = document.createElement('select');
+          traitSelect.id = 'displayTraitSelect';
+          traitSelect.multiple = true;
+          traitSelect.size = 10;
+          traitSelectContainer.appendChild(traitSelectLegend);
+          traitSelectContainer.appendChild(traitSelect);
+          var paletteSelectContainer = document.createElement('div');
+          paletteSelectContainer.style["float"] = 'left';
+          paletteSelectContainer.style.marginLeft = '30px';
+          paletteSelectContainer.style.marginBottom = '10px';
+          var paletteSelectLegend = document.createElement('p');
+          var paletteSelectLegendText = document.createTextNode('Trait colors');
+          paletteSelectLegend.appendChild(paletteSelectLegendText);
+          var paletteSelectTrait = document.createElement('select');
+          paletteSelectTrait.id = 'paletteTrait';
+          paletteSelectTrait.style.display = 'block';
+          var paletteSelectValue = document.createElement('select');
+          paletteSelectValue.id = 'paletteValue';
+          paletteSelectValue.style.display = 'block';
+          paletteSelectValue.multiple = true;
+          paletteSelectValue.size = 9;
+          var paletteSelectColor = document.createElement('input');
+          paletteSelectColor.id = 'paletteColor';
+          paletteSelectColor.style.display = 'block';
+          paletteSelectColor.style.marginLeft = '20px';
+          paletteSelectColor.style.marginBottom = '10px';
+          paletteSelectColor.setAttribute('type', 'color');
+          var paletteResetButton = document.createElement('button');
+          var paletteResetLegend = document.createTextNode("Reset trait colors");
+          paletteResetButton.appendChild(paletteResetLegend);
+          paletteResetButton.id = 'paletteReset';
+          paletteResetButton.style.marginLeft = '20px';
+          var colorContainer = document.createElement('div');
+          colorContainer.style.float = 'right';
+          colorContainer.appendChild(paletteSelectColor);
+          colorContainer.appendChild(paletteResetButton);
+          paletteSelectContainer.appendChild(paletteSelectLegend);
+          paletteSelectContainer.appendChild(paletteSelectTrait);
+          paletteSelectContainer.appendChild(colorContainer);
+          paletteSelectContainer.appendChild(paletteSelectValue);
+          tab.appendChild(traitSelectContainer);
+          tab.appendChild(paletteSelectContainer);
+          return tab;
       }
     }
     function setProgressBarLabel(newLabel) {
