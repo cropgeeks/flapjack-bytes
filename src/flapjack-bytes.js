@@ -3984,7 +3984,7 @@
               this.mouseOverText =  "Line: ".concat(_germplasm.name)
                                 +	";\r\nPosition: ".concat(marker.marker.position)
                                 +	";\r\nMarker: ".concat(marker.marker.name);
-              //TODO : do this switch in a new function
+              /*//TODO : do this switch in a new function
               var geno = 'A';
               switch (this.dataSet.genotypeFor(this.lineIndexUnderMouse, this.selectedChromosome, markerIndex)) {
                 case 0:
@@ -4039,7 +4039,7 @@
                   geno = 'G/C';
                   break;
               }
-              this.mouseOverText += `\r\nGenotype: ${geno}`;
+              this.mouseOverText += `\r\nGenotype: ${geno}`;*/
               this.mouseOverPosition = [x, y];
             }
           }

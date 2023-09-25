@@ -847,8 +847,8 @@ export default class GenotypeCanvas {
         this.markerUnderMouse = marker.marker;
         if (marker.marker !== undefined) {
           this.mouseOverText = `Line : ${_germplasm.name}`;
-          this.mouseOverText += `\r\nMarker : ${marker.marker.name} (${marker.marker.position})`;
-          //TODO : do this switch in a new function
+          this.mouseOverText += `\nMarker : ${marker.marker.name} (${marker.marker.position})`;
+          /*//TODO : do this switch in a new function
           var geno = 'A';
           switch (this.dataSet.genotypeFor(this.lineIndexUnderMouse, this.selectedChromosome, markerIndex)) {
             case 0:
@@ -903,7 +903,7 @@ export default class GenotypeCanvas {
               geno = 'G/C';
               break;
           }
-          this.mouseOverText += `\r\nGenotype : ${geno}`;
+          this.mouseOverText += `\r\nGenotype : ${geno}`;*/
           this.mouseOverPosition = [x, y];
         }
       }
