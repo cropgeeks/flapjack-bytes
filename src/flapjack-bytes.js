@@ -3332,7 +3332,7 @@
           var markerrange = document.getElementById("markerRange");
           var markerStart = this.dataSet.markerOn(this.selectedChromosome, markerStartIndex).marker;
           var markerEnd = this.dataSet.markerOn(this.selectedChromosome, markerEndIndex - 1).marker;
-          var text = markerStart.name.concat(" (").concat(markerStart.position, ")<br>").concat(markerEnd.name, " (").concat(markerEnd.position, ")");
+          var text = markerStart.position + "<br>" + markerEnd.position;
           markerrange.innerHTML = text;
         }
       }, {
@@ -3981,8 +3981,9 @@
             var marker = this.dataSet.markerOn(this.selectedChromosome, markerIndex);
             this.markerUnderMouse = marker.marker;
             if (marker.marker !== undefined) {
-              this.mouseOverText = `Line : ${_germplasm.name}`;
-              this.mouseOverText += `\r\nMarker : ${marker.marker.name} (${marker.marker.position})`;
+              this.mouseOverText =  "Line: ".concat(_germplasm.name)
+                                +	";\r\nPosition: ".concat(marker.marker.position)
+                                +	";\r\nMarker: ".concat(marker.marker.name);
               //TODO : do this switch in a new function
               var geno = 'A';
               switch (this.dataSet.genotypeFor(this.lineIndexUnderMouse, this.selectedChromosome, markerIndex)) {
@@ -4038,7 +4039,7 @@
                   geno = 'G/C';
                   break;
               }
-              this.mouseOverText += `\r\nGenotype : ${geno}`;
+              this.mouseOverText += `\r\nGenotype: ${geno}`;
               this.mouseOverPosition = [x, y];
             }
           }
@@ -7926,7 +7927,7 @@
       range.min = 2;
       range.max = 64;
       range.value = boxSize;
-      range.style.width = "300px";
+      range.style.width = "280px";
       var zoomPreviewLabel = document.createElement('label');
       zoomPreviewLabel.setAttribute('for', 'zoom-preview');
       zoomPreviewLabel.innerHTML = 'Preview while dragging';
