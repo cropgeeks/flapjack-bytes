@@ -59,8 +59,8 @@ export default class CanvasController {
     if (settings.colorSchemeId == "nucleotide")
       nucleotideRadio.checked = true;
     nucleotideRadio.addEventListener('change', () => {
-      const lineSelect = document.getElementById('colorLineSelect');
-      lineSelect.disabled = true;
+      var lineInput = document.getElementById('colorLineInput');
+      lineInput.disabled = true;
 
       let colorScheme = new NucleotideColorScheme(this.genotypeCanvas.dataSet);
       colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
@@ -72,17 +72,20 @@ export default class CanvasController {
 
     const similarityRadio = document.getElementById('similarityScheme');
     const lineSelect = document.getElementById('colorLineSelect');
+    var lineInput = document.getElementById('colorLineInput');
     if (settings.colorSchemeId == "similarity") {
       similarityRadio.checked = true;
       lineSelect.disabled = false;
       lineSelect.value = settings.colorReference;
+      lineInput.disabled = false;
     }
     similarityRadio.addEventListener('change', () => {
-      const lineSelect = document.getElementById('colorLineSelect');
-      lineSelect.disabled = false;
-
-      const referenceName = lineSelect.options[lineSelect.selectedIndex].value;
-      const referenceIndex = this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(germplasm => germplasm.name == referenceName)
+      var lineInput = document.getElementById('colorLineInput');
+      lineInput.disabled = false;
+      const referenceName = lineSelect.options[0].value;
+      var referenceIndex = this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
+        return germplasm.name.startsWith(referenceName);
+      });
       
       let colorScheme = new SimilarityColorScheme(this.genotypeCanvas.dataSet, referenceIndex);
       colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
@@ -94,23 +97,26 @@ export default class CanvasController {
       this.saveSetting("colorScheme", "similarity");
     });
 
-    lineSelect.addEventListener('change', (event) => {
-      const reference = event.target.options[event.target.selectedIndex].value;
-      this.genotypeCanvas.setColorComparisonLine(reference);
-      this.overviewCanvas.prerender(true);
-
-      this.saveSetting("colorReference", reference);
+    lineInput.addEventListener('input', (event) => {
+      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+        return germplasm.name.toLowerCase().startsWith(lineInput.value.toLowerCase());
+      });
+      if (reference !== undefined) {
+        this.genotypeCanvas.setColorComparisonLine(reference.name);
+        this.overviewCanvas.prerender(true);
+        this.saveSetting("colorReference", reference.name);
+      }
     });
 
     // Sort
-    const sortLineSelect = document.getElementById('sortLineSelect');
+    var sortLineInput = document.getElementById('sortLineInput');
     const sortTraitSelect = document.getElementById('sortTraitSelect');
 
     const importingOrderRadio = document.getElementById('importingOrderSort');
     if (settings.lineSortId == "importing")
       importingOrderRadio.checked = true;
     importingOrderRadio.addEventListener('change', () => {
-      sortLineSelect.disabled = true;
+      sortLineInput.disabled = true;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
       this.setLineSort(new ImportingOrderLineSort());
       this.saveSetting("sort", "importing");
@@ -120,7 +126,7 @@ export default class CanvasController {
     if (settings.lineSortId == "alphabetic")
       alphabetOrderRadio.checked = true;
     alphabetOrderRadio.addEventListener('change', () => {
-      sortLineSelect.disabled = true;
+      sortLineInput.disabled = true;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
       this.setLineSort(new AlphabeticLineSort());
       this.saveSetting("sort", "alphabetic");
@@ -129,22 +135,25 @@ export default class CanvasController {
     const similarityOrderRadio = document.getElementById('similaritySort');
     if (settings.lineSortId == "similarity") {
       similarityOrderRadio.checked = true;
-      sortLineSelect.disabled = false;
-      sortLineSelect.value = settings.sortReference;
+      sortLineInput.disabled = false;
+      sortLineInput.value = settings.sortReference;
     }
     similarityOrderRadio.addEventListener('change', () => {
-      sortLineSelect.disabled = false;
+      sortLineInput.disabled = false;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
       
-      const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
+      const referenceName = sortLineSelect.options[0].value;
       this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
       this.saveSetting("sort", "similarity");
       this.saveSetting("sortReference", referenceName);
     });
 
-    sortLineSelect.addEventListener('change', (event) => {
-      if (!sortLineSelect.disabled){
-        const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
+    sortLineInput.addEventListener('input', function (event) {
+      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+        return germplasm.name.toLowerCase().startsWith(sortLineInput.value.toLowerCase());
+      });
+      if (reference !== undefined) {
+        var referenceName = reference.name;
         this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
         this.saveSetting("sortReference", referenceName);
       }
@@ -158,7 +167,7 @@ export default class CanvasController {
         sortTraitSelect.value = settings.sortReference;
       }
       traitOrderRadio.addEventListener('change', () => {
-        sortLineSelect.disabled = true;
+        sortLineInput.disabled = true;
         sortTraitSelect.disabled = false;
         
         const traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;

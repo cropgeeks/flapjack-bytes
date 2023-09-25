@@ -5420,8 +5420,8 @@
         var nucleotideRadio = document.getElementById('nucleotideScheme');
         if (settings.colorSchemeId == "nucleotide") nucleotideRadio.checked = true;
         nucleotideRadio.addEventListener('change', function () {
-          var lineSelect = document.getElementById('colorLineSelect');
-          lineSelect.disabled = true;
+          var lineInput = document.getElementById('colorLineInput');
+          lineInput.disabled = true;
           var colorScheme = new NucleotideColorScheme(_this.genotypeCanvas.dataSet);
           colorScheme.setupColorStamps(_this.genotypeCanvas.boxSize, _this.genotypeCanvas.font, _this.genotypeCanvas.fontSize);
           _this.genotypeCanvas.setColorScheme(colorScheme);
@@ -5430,17 +5430,19 @@
         });
         var similarityRadio = document.getElementById('similarityScheme');
         var lineSelect = document.getElementById('colorLineSelect');
+        var lineInput = document.getElementById('colorLineInput');
         if (settings.colorSchemeId == "similarity") {
           similarityRadio.checked = true;
           lineSelect.disabled = false;
           lineSelect.value = settings.colorReference;
+          lineInput.disabled = false;
         }
         similarityRadio.addEventListener('change', function () {
-          var lineSelect = document.getElementById('colorLineSelect');
-          lineSelect.disabled = false;
-          var referenceName = lineSelect.options[lineSelect.selectedIndex].value;
+          var lineInput = document.getElementById('colorLineInput');
+          lineInput.disabled = false;
+          var referenceName = lineSelect.options[0].value;
           var referenceIndex = _this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
-            return germplasm.name == referenceName;
+            return germplasm.name.startsWith(referenceName);
           });
           var colorScheme = new SimilarityColorScheme(_this.genotypeCanvas.dataSet, referenceIndex);
           colorScheme.setupColorStamps(_this.genotypeCanvas.boxSize, _this.genotypeCanvas.font, _this.genotypeCanvas.fontSize);
@@ -5450,20 +5452,24 @@
           _this.saveSetting("colorReference", referenceName);
           _this.saveSetting("colorScheme", "similarity");
         });
-        lineSelect.addEventListener('change', function (event) {
-          var reference = event.target.options[event.target.selectedIndex].value;
-          _this.genotypeCanvas.setColorComparisonLine(reference);
-          _this.overviewCanvas.prerender(true);
-          _this.saveSetting("colorReference", reference);
+        lineInput.addEventListener('input', function (event) {
+          var reference = _this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+            return germplasm.name.toLowerCase().startsWith(lineInput.value.toLowerCase());
+          });
+          if (reference !== undefined) {
+            _this.genotypeCanvas.setColorComparisonLine(reference.name);
+            _this.overviewCanvas.prerender(true);
+            _this.saveSetting("colorReference", reference.name);
+          }
         });
 
         // Sort
-        var sortLineSelect = document.getElementById('sortLineSelect');
+        var sortLineInput = document.getElementById('sortLineInput');
         var sortTraitSelect = document.getElementById('sortTraitSelect');
         var importingOrderRadio = document.getElementById('importingOrderSort');
         if (settings.lineSortId == "importing") importingOrderRadio.checked = true;
         importingOrderRadio.addEventListener('change', function () {
-          sortLineSelect.disabled = true;
+          sortLineInput.disabled = true;
           if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
           _this.setLineSort(new ImportingOrderLineSort());
           _this.saveSetting("sort", "importing");
@@ -5471,7 +5477,7 @@
         var alphabetOrderRadio = document.getElementById('alphabeticSort');
         if (settings.lineSortId == "alphabetic") alphabetOrderRadio.checked = true;
         alphabetOrderRadio.addEventListener('change', function () {
-          sortLineSelect.disabled = true;
+          sortLineInput.disabled = true;
           if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
           _this.setLineSort(new AlphabeticLineSort());
           _this.saveSetting("sort", "alphabetic");
@@ -5479,20 +5485,23 @@
         var similarityOrderRadio = document.getElementById('similaritySort');
         if (settings.lineSortId == "similarity") {
           similarityOrderRadio.checked = true;
-          sortLineSelect.disabled = false;
-          sortLineSelect.value = settings.sortReference;
+          sortLineInput.disabled = false;
+          sortLineInput.value = settings.sortReference;
         }
         similarityOrderRadio.addEventListener('change', function () {
-          sortLineSelect.disabled = false;
+          sortLineInput.disabled = false;
           if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
-          var referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
+          var referenceName = sortLineSelect.options[0].value;
           _this.setLineSort(new SimilarityLineSort(referenceName, [_this.chromosomeIndex]));
           _this.saveSetting("sort", "similarity");
           _this.saveSetting("sortReference", referenceName);
         });
-        sortLineSelect.addEventListener('change', function (event) {
-          if (!sortLineSelect.disabled) {
-            var referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
+        sortLineInput.addEventListener('input', function (event) {
+          var reference = _this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+            return germplasm.name.toLowerCase().startsWith(sortLineInput.value.toLowerCase());
+          });
+          if (reference !== undefined) {
+            var referenceName = reference.name;
             _this.setLineSort(new SimilarityLineSort(referenceName, [_this.chromosomeIndex]));
             _this.saveSetting("sortReference", referenceName);
           }
@@ -5505,7 +5514,7 @@
             sortTraitSelect.value = settings.sortReference;
           }
           traitOrderRadio.addEventListener('change', function () {
-            sortLineSelect.disabled = true;
+            sortLineInput.disabled = true;
             sortTraitSelect.disabled = false;
             var traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;
             _this.setLineSort(new TraitLineSort(traitName));
@@ -7824,7 +7833,7 @@
         }
       };
     }
-    function addRadioButton(name, id, text, checked, parent, subcontrol) {
+    function addRadioButton(name, id, text, checked, parent, subcontrol, subcontrol2) {
       var formCheck = document.createElement('div');
       formCheck.classList.add('form-check');
       var radio = document.createElement('input');
@@ -7841,6 +7850,7 @@
       formCheck.appendChild(radio);
       formCheck.appendChild(radioLabel);
       if (subcontrol) formCheck.appendChild(subcontrol);
+      if (subcontrol2) formCheck.appendChild(subcontrol2);
       parent.appendChild(formCheck);
     }
     function addCSSRule(sheet, selector, rules, index) {
@@ -8052,13 +8062,19 @@
       var tab = document.createElement('div');
       tab.classList.add('bytes-tab');
       tab.style.margin = '10px';
-      var lineSelect = document.createElement('select');
+      var lineSelect = document.createElement('datalist');
       lineSelect.id = 'colorLineSelect';
-      lineSelect.disabled = true;
+      var lineInput = document.createElement('input');
+      lineInput.type = 'text';
+      lineInput.id = 'colorLineInput';
+      lineInput.placeholder = 'Select line';
+      lineInput.disabled = true;
+      lineInput.setAttribute("list", "colorLineSelect");
+      lineInput.style.width = '90px';
       var radioCol = document.createElement('div');
       radioCol.classList.add('col');
       addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, radioCol);
-      addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line (allele match)', false, radioCol, lineSelect);
+      addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line (allele match)', false, radioCol, lineSelect, lineInput);
       tab.appendChild(radioCol);
       return tab;
     }
@@ -8066,14 +8082,20 @@
       var tab = document.createElement('div');
       tab.classList.add('bytes-tab');
       tab.style.margin = '10px';
-      var lineSelect = document.createElement('select');
+      var lineSelect = document.createElement('datalist');
       lineSelect.id = 'sortLineSelect';
-      lineSelect.disabled = true;
+      var lineInput = document.createElement('input');
+      lineInput.type = 'text';
+      lineInput.id = 'sortLineInput';
+      lineInput.placeholder = 'Select line';
+      lineInput.disabled = true;
+      lineInput.setAttribute("list", "sortLineSelect");
+      lineInput.style.width = '90px';
       var radioCol = document.createElement('div');
       radioCol.classList.add('col');
       addRadioButton('selectedSort', 'importingOrderSort', 'By importing order', true, radioCol);
       addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
-      addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol, lineSelect);
+      addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol, lineSelect, lineInput);
       if (config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.replace('#', '')).files[0] !== undefined || config.phenotypeFileURL !== undefined) {
         var traitSelect = document.createElement('select');
         traitSelect.id = 'sortTraitSelect';
@@ -8491,8 +8513,8 @@
         var opt = document.createElement('option');
         opt.value = germplasm.name;
         opt.text = germplasm.name;
-        colorLineSelect.add(opt);
-        sortLineSelect.add(opt.cloneNode(true));
+        colorLineSelect.appendChild(opt);
+        sortLineSelect.appendChild(opt.cloneNode(true));
       });
     }
     function populateTraitSelect() {
