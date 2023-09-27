@@ -84,7 +84,7 @@ function germplasmSimilarityScore(dataSet, referenceIndex, comparedIndex, chromo
   if (!chromosomes || chromosomes.length == 0) return 0;
   let score = 0;
   let markerCount = 0;
-  let referenceGermplasm = dataSet.germplasmList[referenceIndex];
+  let referenceGermplasm = dataSet.germplasmListFiltered[referenceIndex];
   for (let chromosome of chromosomes){
     markerCount += referenceGermplasm.genotypeData[chromosome].length;
     for (let marker in referenceGermplasm.genotypeData[chromosome]){
