@@ -2,7 +2,7 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
   (global = global || self, global.GenotypeRenderer = factory());
-}(this, (function () { 'use strict';
+}(undefined, (function () { 'use strict';
 
   function _typeof(obj) {
     "@babel/helpers - typeof";
@@ -3287,7 +3287,7 @@
         this.lineSort = settings.lineSort;
         this.lineSort.sort(this.dataSet);
         this.colorScheme = settings.colorScheme;
-        this.colorComparisonLineIndex = this.dataSet.germplasmList.findIndex(function (germplasm) {
+        this.colorComparisonLineIndex = this.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
           return germplasm.name == settings.colorReference;
         });
         this.colorScheme.setComparisonLineIndex(this.colorComparisonLineIndex);
@@ -3313,6 +3313,7 @@
         this.drawingContext.drawImage(this.backBuffer, 0, 0);
         var xPos = this.markerIndexUnderMouse * this.boxSize - this.translatedX;
         var yPos = this.lineUnderMouse * this.boxSize - yWiggle;
+        this.markerRange(markerStart, markerEnd);
         this.renderCrosshair(markerStart, xPos, germplasmStart, yPos);
         this.highlightMarker(dataWidth, markerStart, markerEnd, xPos);
         this.highlightLineName(germplasmStart, yPos);
@@ -3326,6 +3327,15 @@
         this.drawingContext.restore();
       }
     }, {
+        key: "markerRange",
+        value: function markerRange(markerStartIndex, markerEndIndex) {
+          var markerrange = document.getElementById("markerRange");
+          var markerStart = this.dataSet.markerOn(this.selectedChromosome, markerStartIndex).marker;
+          var markerEnd = this.dataSet.markerOn(this.selectedChromosome, markerEndIndex - 1).marker;
+          var text = markerStart.position + "<br>" + markerEnd.position;
+          markerrange.innerHTML = text;
+        }
+      }, {
       key: "calcMapMarkerPos",
       value: function calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart) {
         var mapMarkerPos = (marker.position - firstMarkerPos) * mapScaleFactor;
@@ -3400,7 +3410,7 @@
           this.drawingContext.clip(region);
           this.drawingContext.fillStyle = '#F00';
           this.drawingContext.font = this.font;
-          var name = this.dataSet.germplasmList[this.lineIndexUnderMouse].name;
+          var name = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse].name;
           var y = yPos + (this.boxSize - this.fontSize / 2);
           this.drawingContext.fillText(name, 0, y);
           this.drawingContext.restore();
@@ -3421,7 +3431,7 @@
           this.drawingContext.clip(region);
           this.drawingContext.fillStyle = '#F00';
           this.drawingContext.font = this.font;
-          var germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+          var germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
           if (germplasm.phenotype !== undefined) {
             var xPos = 0;
             this.displayTraits.forEach(function (traitName, traitIndex) {
@@ -3455,7 +3465,7 @@
           this.drawingContext.clip(region);
           this.drawingContext.fillStyle = '#F00';
           this.drawingContext.font = this.font;
-          var name = this.dataSet.germplasmList[this.lineIndexUnderMouse].name;
+          var name = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse].name;
           var y = yPos + (this.boxSize - this.fontSize / 2);
           var score = this.lineSort.getScore(name);
           this.drawingContext.fillText(score.toFixed(2), this.scorePadding, y);
@@ -3500,12 +3510,16 @@
       value: function renderMouseOverText() {
         if (this.mouseOverText !== undefined) {
           this.drawingContext.save();
-          this.drawingContext.font = this.font;
-          var textWidth = this.drawingContext.measureText(this.mouseOverText).width;
-          var textHeight = this.fontSize;
-          var padding = 4;
-          var boxWidth = textWidth + 2 * padding;
-          var boxHeight = textHeight + 2 * padding;
+          // this.drawingContext.font = this.font;
+          this.drawingContext.fontSize = 20;
+
+          const textWidth = this.drawingContext.measureText(this.mouseOverText).width;
+          //const textHeight = this.fontSize;
+          const textHeight = this.drawingContext.fontSize;
+          const padding = 4;
+          const boxWidth = textWidth + 2*padding;
+          const boxHeight = textHeight - 4; // + 2*padding;
+
           var _this$mouseOverPositi = _slicedToArray(this.mouseOverPosition, 2),
             xBase = _this$mouseOverPositi[0],
             yBase = _this$mouseOverPositi[1];
@@ -3941,16 +3955,29 @@
         this.mouseOverText = undefined;
         this.mouseOverPosition = undefined;
         if (this.lineIndexUnderMouse !== undefined) {
-          /*if (this.dataSet.hasTraits() && x > 0 && x < this.traitCanvasWidth){
-            const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
-            const traitIndex = Math.floor(x / this.traitBoxWidth);
-            const trait = this.dataSet.getTrait(this.displayTraits[traitIndex]);
-            const traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
-            if (traitValue !== undefined){
-              this.mouseOverText = trait.name + " : " + traitValue.toString();
+          // Individual's name tooltip
+          if (!this.dataSet.hasTraits() && x <= this.nameCanvasWidth || this.dataSet.hasTraits() && x <= this.nameCanvasWidth + this.traitValuesCanvasWidth) {
+            var _germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
+            this.mouseOverText = _germplasm.name;
+            this.mouseOverPosition = [x, y];
+          }
+          // Genotype tooltip
+          if (!this.dataSet.hasTraits() && !this.lineSort.hasScore && x > this.nameCanvasWidth ||
+              !this.dataSet.hasTraits() && this.lineSort.hasScore && x > this.nameCanvasWidth + this.scoreCanvasWidth ||
+              this.dataSet.hasTraits() && !this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth ||
+              this.dataSet.hasTraits() && this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth) {
+            var _germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
+            var markerIndex = Math.floor((this.translatedX + mouseXPos) / this.boxSize);
+            var marker = this.dataSet.markerOn(this.selectedChromosome, markerIndex);
+            this.markerUnderMouse = marker.marker;
+            if (marker.marker !== undefined) {
+              this.mouseOverText =  "Line: ".concat(_germplasm.name)
+                                +	"; Position: ".concat(marker.marker.position)
+                                +	"; Marker: ".concat(marker.marker.name);
               this.mouseOverPosition = [x, y];
             }
-          } else */
+          }
+          // Trait tooltip
           if (this.dataSet.hasTraits() && x < this.traitValuesCanvasWidth / 1.1 /*accounting for apennded blank space*/) {
             var xPos = 0,
               traitIndex = undefined;
@@ -3963,15 +3990,17 @@
                 break;
               }
             }
-            var germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+            var germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
             var trait = this.dataSet.getTrait(this.displayTraits[traitIndex]);
             var traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
             if (traitValue !== undefined) {
               this.mouseOverText = trait.name + " : " + traitValue.toString();
               this.mouseOverPosition = [x, y];
             }
-          } else if (this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth && x < this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth) {
-            var _germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+          }
+          // Score tooltip
+          else if (this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth && x < this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth) {
+            var _germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
             var score = this.lineSort.getScore(_germplasm.name);
             this.mouseOverText = "Sort score : " + score.toString();
             this.mouseOverPosition = [x, y];
@@ -4008,7 +4037,7 @@
         var _this5 = this;
         // Find the longest germplasm name and adjust the width of the germplasm name
         // rendering area accordingly
-        var germplasm = this.dataSet.germplasmList;
+        var germplasm = this.dataSet.germplasmListFiltered;
         var longestName = Math.max.apply(Math, _toConsumableArray(germplasm.map(function (g) {
           return _this5.backContext.measureText(g.name).width;
         })));
@@ -4086,6 +4115,8 @@
         } else {
           this.translatedY = Math.min(this.translatedY * zoomFactor, this.maxDataHeight() - this.alleleCanvasHeight());
         }
+        var zoomcontroller = document.getElementById('zoom-control');
+        zoomcontroller.value = size;
         this.updateScrollBars();
         this.prerender(true);
         return this.currentPosition();
@@ -4108,7 +4139,7 @@
       key: "visibilityWindow",
       value: function visibilityWindow() {
         var markers = Math.min(this.alleleCanvasWidth() / this.boxSize, this.dataSet.markerCountOn(this.selectedChromosome));
-        var germplasms = Math.min(this.alleleCanvasHeight() / this.boxSize, this.dataSet.germplasmList.length);
+        var germplasms = Math.min(this.alleleCanvasHeight() / this.boxSize, this.dataSet.germplasmListFiltered.length);
         return {
           markers: markers,
           germplasms: germplasms
@@ -4152,7 +4183,7 @@
     }, {
       key: "setColorComparisonLine",
       value: function setColorComparisonLine(comparedName) {
-        this.colorComparisonLineIndex = this.dataSet.germplasmList.findIndex(function (germplasm) {
+        this.colorComparisonLineIndex = this.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
           return germplasm.name == comparedName;
         });
         this.colorScheme.setComparisonLineIndex(this.colorComparisonLineIndex);
@@ -4208,7 +4239,7 @@
       key: "sortLines",
       value: function sortLines() {
         // Save the color comparison line to restore it after sorting
-        var colorComparisonGermplasm = this.dataSet.germplasmList[this.colorComparisonLineIndex];
+        var colorComparisonGermplasm = this.dataSet.germplasmListFiltered[this.colorComparisonLineIndex];
         this.lineSort.sort(this.dataSet);
         if (colorComparisonGermplasm != null) this.setColorComparisonLine(colorComparisonGermplasm.name);
         this.prerender(true);
@@ -4360,7 +4391,7 @@
       value: function renderingScale(width, height) {
         return {
           markersPerPixel: this.dataSet.markerCountOn(this.selectedChromosome) / width,
-          germplasmsPerPixel: this.dataSet.germplasmList.length / height
+          germplasmsPerPixel: this.dataSet.germplasmListFiltered.length / height
         };
       }
 
@@ -4370,7 +4401,7 @@
       key: "createImage",
       value: function createImage(imageData, highlightReference) {
         var scale = this.renderingScale(imageData.width, imageData.height);
-        var germplasmsPerPixel = this.dataSet.germplasmList.length / imageData.height;
+        var germplasmsPerPixel = this.dataSet.germplasmListFiltered.length / imageData.height;
         var markersPerPixel = this.dataSet.markerCountOn(this.selectedChromosome) / imageData.width;
         for (var x = 0; x < imageData.width; x += 1) {
           for (var y = 0; y < imageData.height; y += 1) {
@@ -4415,7 +4446,7 @@
 
         // Clamp within the canvas (no position < 0 or > number of markers or germplasms)
         var cornerMarker = Math.min(Math.max(0, Math.floor(centerMarker - visibilityWindow.markers / 2)), this.dataSet.markerCountOn(this.selectedChromosome) - visibilityWindow.markers);
-        var cornerGermplasm = Math.min(Math.max(Math.floor(centerGermplasm - visibilityWindow.germplasms / 2), 0), this.dataSet.germplasmList.length - visibilityWindow.germplasms);
+        var cornerGermplasm = Math.min(Math.max(Math.floor(centerGermplasm - visibilityWindow.germplasms / 2), 0), this.dataSet.germplasmListFiltered.length - visibilityWindow.germplasms);
         this.windowRect = this.windowFromPosition(cornerMarker, cornerGermplasm, visibilityWindow);
         this.prerender(false);
         return {
@@ -4485,7 +4516,7 @@
       value: function toDataURL(type, encoderOptions) {
         var tmpCanvas = document.createElement('canvas');
         tmpCanvas.width = this.dataSet.markerCountOn(this.selectedChromosome);
-        tmpCanvas.height = this.dataSet.germplasmList.length;
+        tmpCanvas.height = this.dataSet.germplasmListFiltered.length;
         var tmpContext = tmpCanvas.getContext('2d');
         tmpContext.fillStyle = 'white';
         tmpContext.fillRect(0, 0, tmpCanvas.width, tmpCanvas.height);
@@ -4690,7 +4721,7 @@
     _createClass(AlphabeticLineSort, [{
       key: "sort",
       value: function sort(dataSet) {
-        dataSet.germplasmList.sort(function (a, b) {
+        dataSet.germplasmListFiltered.sort(function (a, b) {
           return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
         });
       }
@@ -4775,7 +4806,7 @@
     if (!chromosomes || chromosomes.length == 0) return 0;
     var score = 0;
     var markerCount = 0;
-    var referenceGermplasm = dataSet.germplasmList[referenceIndex];
+    var referenceGermplasm = dataSet.germplasmListFiltered[referenceIndex];
     var _iterator = _createForOfIteratorHelper(chromosomes),
       _step;
     try {
@@ -4813,14 +4844,14 @@
       key: "sort",
       value: function sort(dataSet) {
         var _this = this;
-        var referenceIndex = dataSet.germplasmList.findIndex(function (germplasm) {
+        var referenceIndex = dataSet.germplasmListFiltered.findIndex(function (germplasm) {
           return germplasm.name == _this.referenceName;
         });
         this.scoreMap = new Map();
-        for (var comparedIndex in dataSet.germplasmList) {
-          this.scoreMap.set(dataSet.germplasmList[comparedIndex].name, germplasmSimilarityScore(dataSet, referenceIndex, comparedIndex, this.chromosomeIndices));
+        for (var comparedIndex in dataSet.germplasmListFiltered) {
+          this.scoreMap.set(dataSet.germplasmListFiltered[comparedIndex].name, germplasmSimilarityScore(dataSet, referenceIndex, comparedIndex, this.chromosomeIndices));
         }
-        dataSet.germplasmList.sort(function (a, b) {
+        dataSet.germplasmListFiltered.sort(function (a, b) {
           return _this.scoreMap.get(b.name) - _this.scoreMap.get(a.name);
         });
       }
@@ -4851,7 +4882,7 @@
     _createClass(ImportingOrderLineSort, [{
       key: "sort",
       value: function sort(dataSet) {
-        dataSet.germplasmList.sort(function (a, b) {
+        dataSet.germplasmListFiltered.sort(function (a, b) {
           return dataSet.importingOrder.indexOf(a.name) - dataSet.importingOrder.indexOf(b.name);
         });
       }
@@ -4870,7 +4901,7 @@
       value: function sort(dataSet) {
         var self = this;
         var trait = dataSet.getTrait(self.traitName);
-        dataSet.germplasmList.sort(function (a, b) {
+        dataSet.germplasmListFiltered.sort(function (a, b) {
           return dataSet.importingOrder.indexOf(a.name) - dataSet.importingOrder.indexOf(b.name);
         }).sort(function (a, b) {
           if (a.phenotype === undefined) return 1;
@@ -5323,8 +5354,8 @@
         var nucleotideRadio = document.getElementById('nucleotideScheme');
         if (settings.colorSchemeId == "nucleotide") nucleotideRadio.checked = true;
         nucleotideRadio.addEventListener('change', function () {
-          var lineSelect = document.getElementById('colorLineSelect');
-          lineSelect.disabled = true;
+          var lineInput = document.getElementById('colorLineInput');
+          lineInput.disabled = true;
           var colorScheme = new NucleotideColorScheme(_this.genotypeCanvas.dataSet);
           colorScheme.setupColorStamps(_this.genotypeCanvas.boxSize, _this.genotypeCanvas.font, _this.genotypeCanvas.fontSize);
           _this.genotypeCanvas.setColorScheme(colorScheme);
@@ -5333,17 +5364,19 @@
         });
         var similarityRadio = document.getElementById('similarityScheme');
         var lineSelect = document.getElementById('colorLineSelect');
+        var lineInput = document.getElementById('colorLineInput');
         if (settings.colorSchemeId == "similarity") {
           similarityRadio.checked = true;
           lineSelect.disabled = false;
           lineSelect.value = settings.colorReference;
+          lineInput.disabled = false;
         }
         similarityRadio.addEventListener('change', function () {
-          var lineSelect = document.getElementById('colorLineSelect');
-          lineSelect.disabled = false;
-          var referenceName = lineSelect.options[lineSelect.selectedIndex].value;
-          var referenceIndex = _this.genotypeCanvas.dataSet.germplasmList.findIndex(function (germplasm) {
-            return germplasm.name == referenceName;
+          var lineInput = document.getElementById('colorLineInput');
+          lineInput.disabled = false;
+          var referenceName = lineSelect.options[0].value;
+          var referenceIndex = _this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
+            return germplasm.name.startsWith(referenceName);
           });
           var colorScheme = new SimilarityColorScheme(_this.genotypeCanvas.dataSet, referenceIndex);
           colorScheme.setupColorStamps(_this.genotypeCanvas.boxSize, _this.genotypeCanvas.font, _this.genotypeCanvas.fontSize);
@@ -5353,20 +5386,24 @@
           _this.saveSetting("colorReference", referenceName);
           _this.saveSetting("colorScheme", "similarity");
         });
-        lineSelect.addEventListener('change', function (event) {
-          var reference = event.target.options[event.target.selectedIndex].value;
-          _this.genotypeCanvas.setColorComparisonLine(reference);
-          _this.overviewCanvas.prerender(true);
-          _this.saveSetting("colorReference", reference);
+        lineInput.addEventListener('input', function (event) {
+          var reference = _this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+            return germplasm.name.toLowerCase().startsWith(lineInput.value.toLowerCase());
+          });
+          if (reference !== undefined) {
+            _this.genotypeCanvas.setColorComparisonLine(reference.name);
+            _this.overviewCanvas.prerender(true);
+            _this.saveSetting("colorReference", reference.name);
+          }
         });
 
         // Sort
-        var sortLineSelect = document.getElementById('sortLineSelect');
+        var sortLineInput = document.getElementById('sortLineInput');
         var sortTraitSelect = document.getElementById('sortTraitSelect');
         var importingOrderRadio = document.getElementById('importingOrderSort');
         if (settings.lineSortId == "importing") importingOrderRadio.checked = true;
         importingOrderRadio.addEventListener('change', function () {
-          sortLineSelect.disabled = true;
+          sortLineInput.disabled = true;
           if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
           _this.setLineSort(new ImportingOrderLineSort());
           _this.saveSetting("sort", "importing");
@@ -5374,7 +5411,7 @@
         var alphabetOrderRadio = document.getElementById('alphabeticSort');
         if (settings.lineSortId == "alphabetic") alphabetOrderRadio.checked = true;
         alphabetOrderRadio.addEventListener('change', function () {
-          sortLineSelect.disabled = true;
+          sortLineInput.disabled = true;
           if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
           _this.setLineSort(new AlphabeticLineSort());
           _this.saveSetting("sort", "alphabetic");
@@ -5382,20 +5419,23 @@
         var similarityOrderRadio = document.getElementById('similaritySort');
         if (settings.lineSortId == "similarity") {
           similarityOrderRadio.checked = true;
-          sortLineSelect.disabled = false;
-          sortLineSelect.value = settings.sortReference;
+          sortLineInput.disabled = false;
+          sortLineInput.value = settings.sortReference;
         }
         similarityOrderRadio.addEventListener('change', function () {
-          sortLineSelect.disabled = false;
+          sortLineInput.disabled = false;
           if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
-          var referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
+          var referenceName = sortLineSelect.options[0].value;
           _this.setLineSort(new SimilarityLineSort(referenceName, [_this.chromosomeIndex]));
           _this.saveSetting("sort", "similarity");
           _this.saveSetting("sortReference", referenceName);
         });
-        sortLineSelect.addEventListener('change', function (event) {
-          if (!sortLineSelect.disabled) {
-            var referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
+        sortLineInput.addEventListener('input', function (event) {
+          var reference = _this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+            return germplasm.name.toLowerCase().startsWith(sortLineInput.value.toLowerCase());
+          });
+          if (reference !== undefined) {
+            var referenceName = reference.name;
             _this.setLineSort(new SimilarityLineSort(referenceName, [_this.chromosomeIndex]));
             _this.saveSetting("sortReference", referenceName);
           }
@@ -5408,7 +5448,7 @@
             sortTraitSelect.value = settings.sortReference;
           }
           traitOrderRadio.addEventListener('change', function () {
-            sortLineSelect.disabled = true;
+            sortLineInput.disabled = true;
             sortTraitSelect.disabled = false;
             var traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;
             _this.setLineSort(new TraitLineSort(traitName));
@@ -5487,30 +5527,40 @@
           paletteTraitSelect.value = this.dataSet.traitNames[0];
           paletteTraitSelect.dispatchEvent(new Event('change'));
           paletteValueSelect.addEventListener('change', function (event) {
-            var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
-            var trait = _this.dataSet.getTrait(traitName);
-            var color = null;
-            if (trait.type == TraitType.Numerical) {
-              var index = paletteValueSelect.selectedIndex;
-              color = index == 0 ? trait.getMinColor() : trait.getMaxColor();
-            } else {
-              color = trait.getColor(paletteValueSelect.selectedIndex);
+            for (var i = paletteValueSelect.options.length - 1; i >= 0; i--) {
+                if (paletteValueSelect.options[i].selected)
+                {
+                  var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
+                  var trait = _this.dataSet.getTrait(traitName);
+                  var color = null;
+                  if (trait.type == TraitType.Numerical) {
+                    var index = i;
+                    color = index == 0 ? trait.getMinColor() : trait.getMaxColor();
+                  } else {
+                    color = trait.getColor(i);
+                  }
+                  paletteValueColor.value = color;
+                }
             }
-            paletteValueColor.value = color;
           });
           paletteValueSelect.dispatchEvent(new Event('change'));
           paletteValueColor.addEventListener('change', function (event) {
-            var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
-            var trait = _this.dataSet.getTrait(traitName);
-            var color = paletteValueColor.value;
-            if (trait.type == TraitType.Numerical) {
-              var index = paletteValueSelect.selectedIndex;
-              if (index == 0) trait.setMinColor(color);else trait.setMaxColor(color);
-            } else {
-              trait.setColor(paletteValueSelect.selectedIndex, color);
+            for (var i = paletteValueSelect.options.length - 1; i >= 0; i--) {
+                if (paletteValueSelect.options[i].selected)
+                {
+                    var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
+                    var trait = _this.dataSet.getTrait(traitName);
+                    var color = paletteValueColor.value;
+                    if (trait.type == TraitType.Numerical) {
+                      var index = i;
+                      if (index == 0) trait.setMinColor(color);else trait.setMaxColor(color);
+                    } else {
+                      trait.setColor(i, color);
+                    }
+                    _this.genotypeCanvas.prerender(true);
+                    _this.saveColors();
+                }
             }
-            _this.genotypeCanvas.prerender(true);
-            _this.saveColors();
           });
           paletteResetButton.addEventListener('click', function (event) {
             var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
@@ -5567,6 +5617,30 @@
         });
 
         // Other events
+        window.addEventListener("resize", function (event) {
+          var settings = document.getElementById("settings");
+          var resizehandle = document.getElementById("resizeHandle");
+          const windowHeight = window.innerHeight;
+          const windowWidth = window.innerWidth;
+          _this.genotypeCanvas.width = windowWidth;
+          _this.overviewCanvas.width = windowWidth;
+          _this.genotypeCanvas.backBuffer.width = windowWidth;
+          _this.overviewCanvas.backBuffer.width = windowWidth;
+          _this.genotypeCanvas.canvas.width = windowWidth;
+          _this.overviewCanvas.canvas.width = windowWidth;
+          _this.genotypeCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+          _this.overviewCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+          _this.genotypeCanvas.backBuffer.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+          _this.overviewCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+          _this.genotypeCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+          _this.overviewCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+          _this.genotypeCanvas.verticalScrollbar = new ScrollBar(windowWidth - 20, _this.genotypeCanvas.alleleCanvasHeight() + _this.genotypeCanvas.scrollbarHeight, _this.genotypeCanvas.scrollbarWidth, _this.genotypeCanvas.alleleCanvasHeight(), true);
+          _this.genotypeCanvas.horizontalScrollbar = new ScrollBar(_this.genotypeCanvas.alleleCanvasWidth(), _this.genotypeCanvas.canvas.height, _this.genotypeCanvas.alleleCanvasWidth(), _this.genotypeCanvas.scrollbarHeight, false);
+          _this.genotypeCanvas.prerender(true);
+          _this.overviewCanvas.prerender(true);
+        });
+        window.dispatchEvent(new Event('resize'));
+
         window.addEventListener('mouseup', function () {
           _this.draggingGenotypeCanvas = false;
           _this.draggingVerticalScrollbar = false;
@@ -5625,6 +5699,26 @@
         this.overviewCanvas.moveToPosition(0, 0, this.genotypeCanvas.visibilityWindow());
       }
     }, {
+        key: "findGermplasmWithLine",
+        value: function findGermplasmWithLine(input) {
+           return this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
+        }
+      }, {
+        key: "setFilter",
+        value: function setFilter(input) {
+          this.dataSet.germplasmListFiltered = Array.from(this.dataSet.germplasmList);
+          this.dataSet.germplasmListFiltered = this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
+          this.genotypeCanvas.updateCanvasWidths();
+          this.genotypeCanvas.prerender(true);
+        }
+      }, {
+        key: "clearFilter",
+        value: function clearFilter() {
+          this.dataSet.germplasmListFiltered = Array.from(this.dataSet.germplasmList);
+          this.genotypeCanvas.updateCanvasWidths();
+          this.genotypeCanvas.prerender(true);
+        }
+      }, {
       key: "disableCanvas",
       value: function disableCanvas() {
         this.genotypeCanvas.disable();
@@ -5763,8 +5857,8 @@
         var colorSchemeId = this.loadSetting("colorScheme");
         var colorReference = this.loadSetting("colorReference");
         var customColors = this.loadSetting("traitColors");
-        var displayTraits = this.loadSetting("displayTraits");
-        displayTraits = displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";");
+	    var displayTraits = this.loadSetting("displayTraits");
+	    displayTraits = displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";").filter(x => this.dataSet.traitNames == null || this.dataSet.traitNames.includes(x));
         var settings = {
           colorReference: colorReference,
           sortReference: sortReference,
@@ -5785,10 +5879,13 @@
             var _ref4 = _slicedToArray(_ref3, 2),
               traitValue = _ref4[0],
               traitValueColor = _ref4[1];
-            var traitValueIndex = _this3.dataSet.traits.get(traitName).values.indexOf(traitValue),
-              traitColorMap = settings.traitColors[traitName];
-            if (traitValueIndex != -1) traitColorMap[traitValueIndex] = traitValueColor;
-            delete traitColorMap[traitValue];
+              var trait = _this3.dataSet.traits.get(traitName);
+              if (trait != null) {
+	            var traitValueIndex = _this3.dataSet.traits.get(traitName).values.indexOf(traitValue),
+	              traitColorMap = settings.traitColors[traitName];
+	            if (traitValueIndex != -1) traitColorMap[traitValueIndex] = traitValueColor;
+	            delete traitColorMap[traitValue];
+	          }
           });
         });
         switch (sortId) {
@@ -5807,7 +5904,7 @@
             }
             break;
           case "similarity":
-            if (this.dataSet.germplasmList.find(function (germplasm) {
+            if (this.dataSet.germplasmListFiltered.find(function (germplasm) {
               return germplasm.name == sortReference;
             }) !== undefined) {
               settings.lineSort = new SimilarityLineSort(sortReference, [this.chromosomeIndex]);
@@ -5821,7 +5918,7 @@
             settings.colorSchemeId = "nucleotide";
             break;
           case "similarity":
-            var referenceIndex = this.dataSet.germplasmList.findIndex(function (germplasm) {
+            var referenceIndex = this.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
               return germplasm.name == colorReference;
             });
             if (referenceIndex !== undefined && referenceIndex != -1) {
@@ -7290,6 +7387,7 @@
       this.id = dataSetId;
       this.genomeMap = genomeMap;
       this.germplasmList = germplasmList;
+      this.germplasmListFiltered = Array.from(germplasmList);
       this.stateTable = stateTable;
       this.traits = traits;
 
@@ -7309,6 +7407,9 @@
         this.germplasmList.forEach(function (germplasm) {
           germplasm.phenotype = phenotypes.get(germplasm.name);
         });
+        this.germplasmListFiltered.forEach(function (germplasm) {
+          germplasm.phenotype = phenotypes.get(germplasm.name);
+        });
       } else {
         this.traitNames = undefined;
       }
@@ -7316,12 +7417,12 @@
     _createClass(DataSet, [{
       key: "germplasmFor",
       value: function germplasmFor(germplasmStart, germplasmEnd) {
-        return this.germplasmList.slice(germplasmStart, germplasmEnd);
+        return this.germplasmListFiltered.slice(germplasmStart, germplasmEnd);
       }
     }, {
       key: "genotypeFor",
       value: function genotypeFor(germplasm, chromosome, marker) {
-        return this.germplasmList[germplasm].genotypeData[chromosome][marker];
+        return this.germplasmListFiltered[germplasm].genotypeData[chromosome][marker];
       }
     }, {
       key: "markersToRender",
@@ -7361,7 +7462,7 @@
     }, {
       key: "lineCount",
       value: function lineCount() {
-        return this.germplasmList.length;
+        return this.germplasmListFiltered.length;
       }
     }, {
       key: "hasTraits",
@@ -7402,7 +7503,7 @@
     var dataSet;
     function sendEvent(eventName, domParent) {
       // TODO: Invesitgate using older event emitting code for IE support
-      var canvasHolder = document.getElementById(domParent.replace('#', ''));
+      var canvasHolder = document.getElementById("canvasholder");
 
       // Create the event.
       var event = new Event(eventName);
@@ -7415,6 +7516,65 @@
     function setChromosome(chromosomeIndex) {
       canvasController.setChromosome(chromosomeIndex);
     }
+
+    function blackCrosshairLine(index) {
+      var germplasmStart = Math.floor(genotypeCanvas.translatedY / genotypeCanvas.boxSize);
+      var yWiggle = genotypeCanvas.translatedY - germplasmStart * genotypeCanvas.boxSize;
+      var yPos =  (index - germplasmStart) * genotypeCanvas.boxSize
+      if (genotypeCanvas.translatedY === 0){
+          yPos = index * genotypeCanvas.boxSize - yWiggle
+      }
+      var yScrollMax = genotypeCanvas.maxCanvasHeight() - genotypeCanvas.alleleCanvasHeight();
+      if (genotypeCanvas.translatedY === yScrollMax) {
+         yPos =  index * genotypeCanvas.boxSize - yScrollMax < 0 ? index * genotypeCanvas.boxSize - yWiggle : index * genotypeCanvas.boxSize - yScrollMax;
+      }
+      genotypeCanvas.drawingContext.save();
+      genotypeCanvas.drawingContext.translate(genotypeCanvas.alleleCanvasXOffset, genotypeCanvas.mapCanvasHeight);
+      genotypeCanvas.drawingContext.globalAlpha = 0.4;
+      genotypeCanvas.drawingContext.fillStyle = '#000';
+
+      // Clip the canvas to prevent over-drawing of the crosshair
+      var region = new Path2D();
+      region.rect(0, 0, genotypeCanvas.alleleCanvasWidth(), genotypeCanvas.alleleCanvasHeight());
+      genotypeCanvas.drawingContext.clip(region);
+
+      genotypeCanvas.renderHorizontalCrosshairLine(yPos);
+
+      genotypeCanvas.drawingContext.translate(-genotypeCanvas.alleleCanvasXOffset, -genotypeCanvas.mapCanvasHeight);
+      genotypeCanvas.drawingContext.globalAlpha = 1;
+      genotypeCanvas.drawingContext.restore();
+    }
+
+    function dragToLine(input, i) {
+      if (input.length > 0) {
+        var germplasms = canvasController.findGermplasmWithLine(input);
+        if (germplasms.length !== 0) {
+          var index = dataSet.germplasmListFiltered.indexOf(germplasms[i % germplasms.length]);
+          var zoomValue = document.getElementById('zoom-control').value;
+          var calc = Math.floor(index - (64 / zoomValue * 10 / 2));
+          if (calc < 0) {
+              genotypeCanvas.moveToPosition(0, 0);
+          }
+          else {
+              genotypeCanvas.moveToPosition(0, calc);
+          }
+          genotypeCanvas.draggingOverviewCanvas = true;
+          blackCrosshairLine(index);
+          return true;
+        }
+        return false;
+      }
+      return true;
+    }
+
+    function setFilter(input) {
+        if (input.length > 0) {
+          canvasController.setFilter(input);
+        } else {
+          canvasController.clearFilter();
+        }
+      }
+
     function clearParent(domParent) {
       var canvasHolder = document.getElementById(domParent.replace('#', ''));
       while (canvasHolder.firstChild) {
@@ -7426,6 +7586,7 @@
       if (config.minGenotypeAutoWidth === undefined) config.minGenotypeAutoWidth = 0;
       if (config.minOverviewAutoWidth === undefined) config.minOverviewAutoWidth = 0;
       var canvasHolder = document.getElementById(config.domParent.replace('#', ''));
+      canvasHolder.id = "canvasholder";
       canvasHolder.style.fontFamily = 'system-ui';
       canvasHolder.style.fontSize = '14px';
       var computedStyles = window.getComputedStyle(canvasHolder);
@@ -7458,22 +7619,75 @@
         canvasHolder.append(progressBarBackground);
       }
       genotypeCanvas = new GenotypeCanvas(width, config.height, boxSize);
+      genotypeCanvas.canvas.id = 'genotypeCanvas';
       canvasHolder.append(genotypeCanvas.canvas);
+      var resizeHandle = document.createElement("div");
+      resizeHandle.id = "resizeHandle";
+      resizeHandle.style.width = '100%';
+      resizeHandle.style.height = '3px';
+      resizeHandle.style.backgroundColor = '#e74c3c';
+      resizeHandle.style.cursor = 'row-resize';
+      canvasHolder.append(resizeHandle);
       if (!overviewWidth) overviewWidth = width;
       if (!config.overviewHeight) config.overviewHeight = 200;
       overviewCanvas = new OverviewCanvas(overviewWidth, config.overviewHeight);
+      overviewCanvas.canvas.id = 'overviewCanvas';
       canvasHolder.append(overviewCanvas.canvas);
+      resizehandler(resizeHandle, overviewCanvas, genotypeCanvas);
       addStyleSheet();
       canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, config.saveSettings != false, config.width === null, config.overviewWidth === null, config.minGenotypeAutoWidth, config.minOverviewAutoWidth);
     }
-    function createTabToggle(name, title) {
-      var button = document.createElement('button');
-      button.classList.add('bytes-tabtoggle');
-      button.style.fontSize = '15px';
-      button.appendChild(document.createTextNode(title));
-      button.addEventListener('click', openSettingsTab(name));
-      return button;
+    function resizehandler(resizeHandle, resizableDiv1, resizableDiv2) {
+        let isResizing = false;
+        let initialY;
+        let originalHeight1;
+        let originalHeight2;
+        resizeHandle.addEventListener('mousedown', function (event) {
+            isResizing = true;
+            initialY = event.clientY;
+            originalHeight1 = resizableDiv1.canvas.clientHeight;
+            originalHeight2 = resizableDiv2.canvas.clientHeight;
+        });
+        document.addEventListener('mousemove', function(event) {
+            if (!isResizing) return;
+
+            const currentY = event.clientY;
+            const height1 = originalHeight1 - (currentY - initialY);
+            const height2 = originalHeight2 + (currentY - initialY);
+
+            // Appliquer la hauteur minimale souhaitée si nécessaire
+            const minHeight = 10;
+            if (height1 > minHeight) {
+                resizableDiv1.height = height1;
+                resizableDiv1.canvas.height = height1;
+                resizableDiv1.backBuffer.height = height1;
+            }
+            if (height2 > minHeight) {
+                resizableDiv2.height = height2;
+                resizableDiv2.canvas.height = height2;
+                resizableDiv2.backBuffer.height = height2;
+            }
+            resizableDiv2.horizontalScrollbar = new ScrollBar(resizableDiv2.alleleCanvasWidth(), height2, resizableDiv2.alleleCanvasWidth(), resizableDiv2.scrollbarHeight, false);
+            genotypeCanvas.prerender(true);
+            overviewCanvas.prerender(true);
+        });
+
+        document.addEventListener('mouseup', function() {
+            isResizing = false;
+        });
+      }
+    function createTabToggle(name, title, tab) {
+      if (tab !== undefined) {
+        var button = document.createElement('button');
+        button.classList.add('bytes-tabtoggle');
+        button.style.fontSize = '15px';
+        button.style.cursor = 'hand';
+        button.appendChild(document.createTextNode(title));
+        button.addEventListener('click', openSettingsTab(name));
+        return button;
+      }
     }
+
     function openSettingsTab(name) {
       return function (event) {
         var _iterator = _createForOfIteratorHelper(settingsTabs.keys()),
@@ -7485,7 +7699,7 @@
               _settingsTabs$get2 = _slicedToArray(_settingsTabs$get, 2),
               button = _settingsTabs$get2[0],
               tab = _settingsTabs$get2[1];
-            if (key == name) {
+            if (key == name && !button.classList.contains('bytes-tabtoggle-active')) {
               button.classList.add('bytes-tabtoggle-active');
               tab.style.display = 'block';
             } else {
@@ -7500,7 +7714,7 @@
         }
       };
     }
-    function addRadioButton(name, id, text, checked, parent, subcontrol) {
+    function addRadioButton(name, id, text, checked, parent, subcontrol, subcontrol2) {
       var formCheck = document.createElement('div');
       formCheck.classList.add('form-check');
       var radio = document.createElement('input');
@@ -7517,6 +7731,7 @@
       formCheck.appendChild(radio);
       formCheck.appendChild(radioLabel);
       if (subcontrol) formCheck.appendChild(subcontrol);
+      if (subcontrol2) formCheck.appendChild(subcontrol2);
       parent.appendChild(formCheck);
     }
     function addCSSRule(sheet, selector, rules, index) {
@@ -7551,11 +7766,11 @@
     function createSettings(config) {
       //// Settings
       var settings = document.createElement('div');
+      settings.id = 'settings';
       settings.classList.add('row');
       settings.style.marginTop = '8px';
 
       // Create the tabs
-      var controlTab = createControlTab();
       var colorTab = createColorSchemeTab();
       var sortTab = createSortTab(config);
       var exportTab = createExportTab();
@@ -7563,66 +7778,47 @@
 
       // Create the tab toggles
       var menuRow = document.createElement('div');
-      var controlButton = createTabToggle('control', 'Controls');
-      var colorButton = createTabToggle('color', 'Color schemes');
-      var sortButton = createTabToggle('sort', 'Sorting');
-      var displayButton = createTabToggle('display', 'Display');
-      var exportButton = createTabToggle('export', 'Export');
-      menuRow.appendChild(controlButton);
+      menuRow.id = 'menurow';
+      var colorButton = createTabToggle('color', 'Color schemes', colorTab);
+      var sortButton = createTabToggle('sort', 'Sorting', sortTab);
+      var displayButton = createTabToggle('display', 'Display', displayTab);
+      var exportButton = createTabToggle('export', 'Export', exportTab);
       menuRow.appendChild(colorButton);
       menuRow.appendChild(sortButton);
       if (displayTab !== undefined) menuRow.appendChild(displayButton);
       menuRow.appendChild(exportButton);
-      settingsTabs.set('control', [controlButton, controlTab]);
       settingsTabs.set('color', [colorButton, colorTab]);
       settingsTabs.set('sort', [sortButton, sortTab]);
       if (displayTab !== undefined) settingsTabs.set('display', [displayButton, displayTab]);
       settingsTabs.set('export', [exportButton, exportTab]);
       settings.appendChild(menuRow);
 
-      // Add the actual tabs
-      var tabContainer = document.createElement('div');
-      tabContainer.appendChild(controlTab);
-      tabContainer.appendChild(colorTab);
-      tabContainer.appendChild(sortTab);
-      if (displayTab !== undefined) tabContainer.appendChild(displayTab);
-      tabContainer.appendChild(exportTab);
-      tabContainer.style.minHeight = '140px'; // Can't really use getClientBoundingRect as the tabs are not displayed yet, so...
-      tabContainer.style.border = '1px solid #e0e0e0';
-      tabContainer.style.padding = '10px';
-      settings.appendChild(tabContainer);
-      controlTab.style.display = 'block';
-      return settings;
-    }
-    function createControlTab(config) {
-      // Controls
-      var tab = document.createElement('div');
-      tab.classList.add('bytes-tab');
-
       // Chromosome
       var chromosomeLabel = document.createElement('label');
       chromosomeLabel.setAttribute('for', 'chromosomeSelect');
-      chromosomeLabel.innerHTML = 'Chromosome: ';
+      chromosomeLabel.innerHTML = 'Chromosome ';
       var chromosomeSelect = document.createElement('select');
       chromosomeSelect.id = 'chromosomeSelect';
       chromosomeSelect.addEventListener('change', function (event) {
         setChromosome(event.target.selectedIndex);
       });
       var chromosomeContainer = document.createElement('div');
+      chromosomeContainer.id = "chromosomeContainer";
+      chromosomeContainer.style.marginLeft = "50px";
       chromosomeContainer.append(chromosomeLabel);
       chromosomeContainer.append(chromosomeSelect);
 
       // Zoom
       var zoomLabel = document.createElement('label');
       zoomLabel.setAttribute('for', 'zoom-control');
-      zoomLabel.innerHTML = 'Zoom:';
+      zoomLabel.innerHTML = 'Zoom';
       var range = document.createElement('input');
       range.id = 'zoom-control';
       range.setAttribute('type', 'range');
       range.min = 2;
       range.max = 64;
       range.value = boxSize;
-      range.style.width = "300px";
+      range.style.width = "280px";
       var zoomPreviewLabel = document.createElement('label');
       zoomPreviewLabel.setAttribute('for', 'zoom-preview');
       zoomPreviewLabel.innerHTML = 'Preview while dragging';
@@ -7631,6 +7827,8 @@
       zoomPreview.setAttribute('type', 'checkbox');
       zoomPreview.style.marginLeft = "20px";
       var zoomContainer = document.createElement('div');
+      zoomContainer.id = 'zoom-container';
+      zoomContainer.style.marginLeft = "50px";
       zoomContainer.append(zoomLabel);
       zoomContainer.append(range);
       zoomContainer.append(zoomPreview);
@@ -7647,34 +7845,123 @@
           zoom(range.value);
         }
       });
-      tab.appendChild(chromosomeContainer);
-      tab.appendChild(zoomContainer);
-      return tab;
+
+      // Ctrl+F
+      var findLine = document.createElement('input');
+      findLine.type = "text";
+      findLine.id = "lineInput";
+      findLine.style.width = "170px";
+      findLine.placeholder = "Search line";
+      var notFoundlabel = document.createElement('label');
+      notFoundlabel.style.display = 'none';
+      notFoundlabel.setAttribute('for', 'lineInput');
+      var findContainer = document.createElement('div');
+      findContainer.id = "findContainer";
+      findContainer.style.marginLeft = "50px";
+      findContainer.append(findLine);
+      findContainer.append(notFoundlabel);
+      var incfindline = 0;
+      findLine.addEventListener("input", function(event) {
+        notFoundlabel.style.display = 'none';
+        var found = dragToLine(findLine.value.toLowerCase(), incfindline);
+        if (found === false) {
+            notFoundlabel.style.position = 'absolute';
+            notFoundlabel.style.display = 'block';
+            notFoundlabel.style.marginLeft = '100px';
+            notFoundlabel.style.marginTop = '-19px';
+            notFoundlabel.innerHTML = ' not found';
+            notFoundlabel.style.color = 'red';
+            notFoundlabel.style.backgroundColor = '#eeeeee';
+            notFoundlabel.style.padding = '0px 3px';
+        }
+      });
+      findLine.addEventListener("keydown", function(event) {
+        // Code 13 stands for "Enter" key
+        if (event.keyCode === 13) {
+          if (findLine.value.length !== 0) {
+            incfindline = incfindline + 1;
+          }
+        }
+        else {
+          incfindline = 0
+        }
+        findLine.dispatchEvent(new Event('input'));
+      });
+        var markerrange = document.createElement("div");
+        markerrange.id = "markerRange";
+        chromosomeContainer.style.display = "inline-block";
+        chromosomeContainer.style.margin = "0 40px";
+        chromosomeContainer.style.paddingTop = "4px";
+        chromosomeContainer.style.minWidth = "285px";
+        zoomContainer.style["float"] = "right";
+        zoomContainer.style.marginLeft = "40px";
+        findContainer.style["float"] = "right";
+        findContainer.style.marginTop = "2px";
+        findContainer.style.marginLeft = "0px";
+        markerrange.style.marginTop = "-5px";
+        markerrange.style.marginLeft = "15px";
+        markerrange.style.textAlign = "right";
+        markerrange.style.display = "inline-block";
+        markerrange.style.color = "blue";
+        markerrange.style.position = "absolute";
+        markerrange.style.fontSize = "12px";
+
+        // Add the actual tabs
+        var tabContainer = document.createElement('div');
+        tabContainer.appendChild(colorTab);
+        tabContainer.appendChild(sortTab);
+        if (displayTab !== undefined) tabContainer.appendChild(displayTab);
+        tabContainer.appendChild(exportTab);
+        tabContainer.style.position = 'absolute';
+        tabContainer.style.backgroundColor = 'rgb(221,221,221)';
+        tabContainer.style.minWidth = '400px';
+        tabContainer.style.opacity = '95%';
+        settings.appendChild(tabContainer);
+        menuRow.appendChild(chromosomeContainer);
+        menuRow.appendChild(zoomContainer);
+        //menuRow.appendChild(filterContainer);
+        menuRow.appendChild(findContainer);
+        chromosomeContainer.appendChild(markerrange);
+        return settings;
     }
     function createColorSchemeTab(config) {
       var tab = document.createElement('div');
       tab.classList.add('bytes-tab');
-      var lineSelect = document.createElement('select');
+      tab.style.margin = '10px';
+      var lineSelect = document.createElement('datalist');
       lineSelect.id = 'colorLineSelect';
-      lineSelect.disabled = true;
+      var lineInput = document.createElement('input');
+      lineInput.type = 'text';
+      lineInput.id = 'colorLineInput';
+      lineInput.placeholder = 'Select line';
+      lineInput.disabled = true;
+      lineInput.setAttribute("list", "colorLineSelect");
+      lineInput.style.width = '90px';
       var radioCol = document.createElement('div');
       radioCol.classList.add('col');
       addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, radioCol);
-      addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line (allele match)', false, radioCol, lineSelect);
+      addRadioButton('selectedScheme', 'similarityScheme', 'Similarity to line (allele match)', false, radioCol, lineSelect, lineInput);
       tab.appendChild(radioCol);
       return tab;
     }
     function createSortTab(config) {
       var tab = document.createElement('div');
       tab.classList.add('bytes-tab');
-      var lineSelect = document.createElement('select');
+      tab.style.margin = '10px';
+      var lineSelect = document.createElement('datalist');
       lineSelect.id = 'sortLineSelect';
-      lineSelect.disabled = true;
+      var lineInput = document.createElement('input');
+      lineInput.type = 'text';
+      lineInput.id = 'sortLineInput';
+      lineInput.placeholder = 'Select line';
+      lineInput.disabled = true;
+      lineInput.setAttribute("list", "sortLineSelect");
+      lineInput.style.width = '90px';
       var radioCol = document.createElement('div');
       radioCol.classList.add('col');
       addRadioButton('selectedSort', 'importingOrderSort', 'By importing order', true, radioCol);
       addRadioButton('selectedSort', 'alphabeticSort', 'Alphabetically', false, radioCol);
-      addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol, lineSelect);
+      addRadioButton('selectedSort', 'similaritySort', 'By similarity to line', false, radioCol, lineSelect, lineInput);
       if (config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.replace('#', '')).files[0] !== undefined || config.phenotypeFileURL !== undefined) {
         var traitSelect = document.createElement('select');
         traitSelect.id = 'sortTraitSelect';
@@ -7687,8 +7974,10 @@
     function createExportTab(config) {
       var tab = document.createElement('div');
       tab.classList.add('bytes-tab');
+      tab.style.margin = '10px';
       var exportViewButton = document.createElement('button');
       var exportViewText = document.createTextNode('Export view');
+      exportViewButton.style.marginRight = '10px';
       exportViewButton.appendChild(exportViewText);
       exportViewButton.addEventListener('click', function (e) {
         var dataURL = genotypeCanvas.toDataURL('image/png');
@@ -7725,47 +8014,57 @@
     }
     function createDisplayTab(config) {
       if (config.phenotypeFileDom !== undefined && document.getElementById(config.phenotypeFileDom.replace('#', '')).files[0] !== undefined || config.phenotypeFileURL !== undefined) {
-        var tab = document.createElement('div');
-        tab.classList.add('bytes-tab');
-        var traitSelectContainer = document.createElement('div');
-        traitSelectContainer.style["float"] = 'left';
-        var traitSelectLegend = document.createElement('p');
-        var traitSelectLegendText = document.createTextNode('Traits to display');
-        traitSelectLegend.appendChild(traitSelectLegendText);
-        var traitSelect = document.createElement('select');
-        traitSelect.id = 'displayTraitSelect';
-        traitSelect.multiple = true;
-        traitSelect.size = 5;
-        traitSelectContainer.appendChild(traitSelectLegend);
-        traitSelectContainer.appendChild(traitSelect);
-        var paletteSelectContainer = document.createElement('div');
-        paletteSelectContainer.style["float"] = 'left';
-        paletteSelectContainer.style.marginLeft = '10px';
-        var paletteSelectLegend = document.createElement('p');
-        var paletteSelectLegendText = document.createTextNode('Trait colors');
-        paletteSelectLegend.appendChild(paletteSelectLegendText);
-        var paletteSelectTrait = document.createElement('select');
-        paletteSelectTrait.id = 'paletteTrait';
-        paletteSelectTrait.style.display = 'block';
-        var paletteSelectValue = document.createElement('select');
-        paletteSelectValue.id = 'paletteValue';
-        paletteSelectValue.style.display = 'block';
-        var paletteSelectColor = document.createElement('input');
-        paletteSelectColor.id = 'paletteColor';
-        paletteSelectColor.style.display = 'block';
-        paletteSelectColor.setAttribute('type', 'color');
-        var paletteResetButton = document.createElement('button');
-        var paletteResetLegend = document.createTextNode("Reset this trait's colors");
-        paletteResetButton.appendChild(paletteResetLegend);
-        paletteResetButton.id = 'paletteReset';
-        paletteSelectContainer.appendChild(paletteSelectLegend);
-        paletteSelectContainer.appendChild(paletteSelectTrait);
-        paletteSelectContainer.appendChild(paletteSelectValue);
-        paletteSelectContainer.appendChild(paletteSelectColor);
-        paletteSelectContainer.appendChild(paletteResetButton);
-        tab.appendChild(traitSelectContainer);
-        tab.appendChild(paletteSelectContainer);
-        return tab;
+          var tab = document.createElement('div');
+          tab.classList.add('bytes-tab');
+          tab.style.marginLeft = '10px';
+          var traitSelectContainer = document.createElement('div');
+          traitSelectContainer.style["float"] = 'left';
+          var traitSelectLegend = document.createElement('p');
+          var traitSelectLegendText = document.createTextNode('Traits to display');
+          traitSelectLegend.appendChild(traitSelectLegendText);
+          var traitSelect = document.createElement('select');
+          traitSelect.id = 'displayTraitSelect';
+          traitSelect.multiple = true;
+          traitSelect.size = 10;
+          traitSelectContainer.appendChild(traitSelectLegend);
+          traitSelectContainer.appendChild(traitSelect);
+          var paletteSelectContainer = document.createElement('div');
+          paletteSelectContainer.style["float"] = 'left';
+          paletteSelectContainer.style.marginLeft = '30px';
+          paletteSelectContainer.style.marginBottom = '10px';
+          var paletteSelectLegend = document.createElement('p');
+          var paletteSelectLegendText = document.createTextNode('Trait colors');
+          paletteSelectLegend.appendChild(paletteSelectLegendText);
+          var paletteSelectTrait = document.createElement('select');
+          paletteSelectTrait.id = 'paletteTrait';
+          paletteSelectTrait.style.display = 'block';
+          var paletteSelectValue = document.createElement('select');
+          paletteSelectValue.id = 'paletteValue';
+          paletteSelectValue.style.display = 'block';
+          paletteSelectValue.multiple = true;
+          paletteSelectValue.size = 9;
+          var paletteSelectColor = document.createElement('input');
+          paletteSelectColor.id = 'paletteColor';
+          paletteSelectColor.style.display = 'block';
+          paletteSelectColor.style.marginLeft = '20px';
+          paletteSelectColor.style.marginBottom = '10px';
+          paletteSelectColor.setAttribute('type', 'color');
+          var paletteResetButton = document.createElement('button');
+          var paletteResetLegend = document.createTextNode("Reset trait colors");
+          paletteResetButton.appendChild(paletteResetLegend);
+          paletteResetButton.id = 'paletteReset';
+          paletteResetButton.style.marginLeft = '20px';
+          var colorContainer = document.createElement('div');
+          colorContainer.style.float = 'right';
+          colorContainer.appendChild(paletteSelectColor);
+          colorContainer.appendChild(paletteResetButton);
+          paletteSelectContainer.appendChild(paletteSelectLegend);
+          paletteSelectContainer.appendChild(paletteSelectTrait);
+          paletteSelectContainer.appendChild(colorContainer);
+          paletteSelectContainer.appendChild(paletteSelectValue);
+          tab.appendChild(traitSelectContainer);
+          tab.appendChild(paletteSelectContainer);
+          return tab;
       }
     }
     function setProgressBarLabel(newLabel) {
@@ -8072,7 +8371,7 @@
     function populateLineSelect() {
       var colorLineSelect = document.getElementById('colorLineSelect');
       var sortLineSelect = document.getElementById('sortLineSelect');
-      var optList = dataSet.germplasmList.slice(); // Shallow copy
+      var optList = dataSet.germplasmListFiltered.slice(); // Shallow copy
       optList.sort(function (a, b) {
         return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
       }); // Alphabetic sort
@@ -8080,8 +8379,8 @@
         var opt = document.createElement('option');
         opt.value = germplasm.name;
         opt.text = germplasm.name;
-        colorLineSelect.add(opt);
-        sortLineSelect.add(opt.cloneNode(true));
+        colorLineSelect.appendChild(opt);
+        sortLineSelect.appendChild(opt.cloneNode(true));
       });
     }
     function populateTraitSelect() {

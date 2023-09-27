@@ -10,17 +10,17 @@ export default class SimilarityLineSort {
   }
 
   sort(dataSet){
-    const referenceIndex = dataSet.germplasmList.findIndex(germplasm => germplasm.name == this.referenceName);
+    const referenceIndex = dataSet.germplasmListFiltered.findIndex(germplasm => germplasm.name == this.referenceName);
 
     this.scoreMap = new Map();
-    for (let comparedIndex in dataSet.germplasmList){
+    for (let comparedIndex in dataSet.germplasmListFiltered){
       this.scoreMap.set(
-        dataSet.germplasmList[comparedIndex].name,
+        dataSet.germplasmListFiltered[comparedIndex].name,
         germplasmSimilarityScore(dataSet, referenceIndex, comparedIndex, this.chromosomeIndices),
       );
     }
 
-    dataSet.germplasmList.sort((a, b) => this.scoreMap.get(b.name) - this.scoreMap.get(a.name));
+    dataSet.germplasmListFiltered.sort((a, b) => this.scoreMap.get(b.name) - this.scoreMap.get(a.name));
   }
 
   getScore(germplasmName){

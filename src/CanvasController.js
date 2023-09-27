@@ -59,8 +59,8 @@ export default class CanvasController {
     if (settings.colorSchemeId == "nucleotide")
       nucleotideRadio.checked = true;
     nucleotideRadio.addEventListener('change', () => {
-      const lineSelect = document.getElementById('colorLineSelect');
-      lineSelect.disabled = true;
+      var lineInput = document.getElementById('colorLineInput');
+      lineInput.disabled = true;
 
       let colorScheme = new NucleotideColorScheme(this.genotypeCanvas.dataSet);
       colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
@@ -72,17 +72,20 @@ export default class CanvasController {
 
     const similarityRadio = document.getElementById('similarityScheme');
     const lineSelect = document.getElementById('colorLineSelect');
+    var lineInput = document.getElementById('colorLineInput');
     if (settings.colorSchemeId == "similarity") {
       similarityRadio.checked = true;
       lineSelect.disabled = false;
       lineSelect.value = settings.colorReference;
+      lineInput.disabled = false;
     }
     similarityRadio.addEventListener('change', () => {
-      const lineSelect = document.getElementById('colorLineSelect');
-      lineSelect.disabled = false;
-
-      const referenceName = lineSelect.options[lineSelect.selectedIndex].value;
-      const referenceIndex = this.genotypeCanvas.dataSet.germplasmList.findIndex(germplasm => germplasm.name == referenceName)
+      var lineInput = document.getElementById('colorLineInput');
+      lineInput.disabled = false;
+      const referenceName = lineSelect.options[0].value;
+      var referenceIndex = this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
+        return germplasm.name.startsWith(referenceName);
+      });
       
       let colorScheme = new SimilarityColorScheme(this.genotypeCanvas.dataSet, referenceIndex);
       colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
@@ -94,23 +97,26 @@ export default class CanvasController {
       this.saveSetting("colorScheme", "similarity");
     });
 
-    lineSelect.addEventListener('change', (event) => {
-      const reference = event.target.options[event.target.selectedIndex].value;
-      this.genotypeCanvas.setColorComparisonLine(reference);
-      this.overviewCanvas.prerender(true);
-
-      this.saveSetting("colorReference", reference);
+    lineInput.addEventListener('input', (event) => {
+      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+        return germplasm.name.toLowerCase().startsWith(lineInput.value.toLowerCase());
+      });
+      if (reference !== undefined) {
+        this.genotypeCanvas.setColorComparisonLine(reference.name);
+        this.overviewCanvas.prerender(true);
+        this.saveSetting("colorReference", reference.name);
+      }
     });
 
     // Sort
-    const sortLineSelect = document.getElementById('sortLineSelect');
+    var sortLineInput = document.getElementById('sortLineInput');
     const sortTraitSelect = document.getElementById('sortTraitSelect');
 
     const importingOrderRadio = document.getElementById('importingOrderSort');
     if (settings.lineSortId == "importing")
       importingOrderRadio.checked = true;
     importingOrderRadio.addEventListener('change', () => {
-      sortLineSelect.disabled = true;
+      sortLineInput.disabled = true;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
       this.setLineSort(new ImportingOrderLineSort());
       this.saveSetting("sort", "importing");
@@ -120,7 +126,7 @@ export default class CanvasController {
     if (settings.lineSortId == "alphabetic")
       alphabetOrderRadio.checked = true;
     alphabetOrderRadio.addEventListener('change', () => {
-      sortLineSelect.disabled = true;
+      sortLineInput.disabled = true;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
       this.setLineSort(new AlphabeticLineSort());
       this.saveSetting("sort", "alphabetic");
@@ -129,22 +135,25 @@ export default class CanvasController {
     const similarityOrderRadio = document.getElementById('similaritySort');
     if (settings.lineSortId == "similarity") {
       similarityOrderRadio.checked = true;
-      sortLineSelect.disabled = false;
-      sortLineSelect.value = settings.sortReference;
+      sortLineInput.disabled = false;
+      sortLineInput.value = settings.sortReference;
     }
     similarityOrderRadio.addEventListener('change', () => {
-      sortLineSelect.disabled = false;
+      sortLineInput.disabled = false;
       if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
       
-      const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
+      const referenceName = sortLineSelect.options[0].value;
       this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
       this.saveSetting("sort", "similarity");
       this.saveSetting("sortReference", referenceName);
     });
 
-    sortLineSelect.addEventListener('change', (event) => {
-      if (!sortLineSelect.disabled){
-        const referenceName = sortLineSelect.options[sortLineSelect.selectedIndex].value;
+    sortLineInput.addEventListener('input', function (event) {
+      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+        return germplasm.name.toLowerCase().startsWith(sortLineInput.value.toLowerCase());
+      });
+      if (reference !== undefined) {
+        var referenceName = reference.name;
         this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
         this.saveSetting("sortReference", referenceName);
       }
@@ -158,7 +167,7 @@ export default class CanvasController {
         sortTraitSelect.value = settings.sortReference;
       }
       traitOrderRadio.addEventListener('change', () => {
-        sortLineSelect.disabled = true;
+        sortLineInput.disabled = true;
         sortTraitSelect.disabled = false;
         
         const traitName = sortTraitSelect.options[sortTraitSelect.selectedIndex].value;
@@ -225,35 +234,42 @@ export default class CanvasController {
       paletteTraitSelect.value = this.dataSet.traitNames[0];
       paletteTraitSelect.dispatchEvent(new Event('change'));
 
-      paletteValueSelect.addEventListener('change', event => {
-        const traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
-        const trait = this.dataSet.getTrait(traitName);
-        let color = null;
-        if (trait.type == TraitType.Numerical){
-          const index = paletteValueSelect.selectedIndex;
-          color = (index == 0 ? trait.getMinColor() : trait.getMaxColor());
-        } else {
-          color = trait.getColor(paletteValueSelect.selectedIndex);
+      paletteValueSelect.addEventListener('change', function (event) {
+        for (var i = paletteValueSelect.options.length - 1; i >= 0; i--) {
+            if (paletteValueSelect.options[i].selected)
+            {
+              var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
+              var trait = _this.dataSet.getTrait(traitName);
+              var color = null;
+              if (trait.type == TraitType.Numerical) {
+                var index = i;
+                color = index == 0 ? trait.getMinColor() : trait.getMaxColor();
+              } else {
+                color = trait.getColor(i);
+              }
+              paletteValueColor.value = color;
+            }
         }
-        paletteValueColor.value = color;
       });
       paletteValueSelect.dispatchEvent(new Event('change'));
 
-      paletteValueColor.addEventListener('change', event => {
-        const traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
-        const trait = this.dataSet.getTrait(traitName);
-        const color = paletteValueColor.value;
-        if (trait.type == TraitType.Numerical){
-          const index = paletteValueSelect.selectedIndex;
-          if (index == 0)
-            trait.setMinColor(color);
-          else
-            trait.setMaxColor(color);
-        } else {
-          trait.setColor(paletteValueSelect.selectedIndex, color);
+      paletteValueColor.addEventListener('change', function (event) {
+        for (var i = paletteValueSelect.options.length - 1; i >= 0; i--) {
+            if (paletteValueSelect.options[i].selected)
+            {
+                var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
+                var trait = _this.dataSet.getTrait(traitName);
+                var color = paletteValueColor.value;
+                if (trait.type == TraitType.Numerical) {
+                  var index = i;
+                  if (index == 0) trait.setMinColor(color);else trait.setMaxColor(color);
+                } else {
+                  trait.setColor(i, color);
+                }
+                _this.genotypeCanvas.prerender(true);
+                _this.saveColors();
+            }
         }
-        this.genotypeCanvas.prerender(true);
-        this.saveColors();
       });
 
       paletteResetButton.addEventListener('click', event => {
@@ -311,6 +327,52 @@ export default class CanvasController {
     });
 
     // Other events
+    /*window.addEventListener("resize", function (event) {
+      var canvasholder = document.getElementById("canvasholder");
+      var settings = document.getElementById("settings");
+      var resizehandle = document.getElementById("resizeHandle");
+      var range = document.getElementById("zoom-control");
+      var findLine = document.getElementById("lineInput");
+      var chromosomeSelect = document.getElementById("chromosomeSelect");
+      var chromosomeContainer = document.getElementById("chromosomeContainer");
+      var zoomContainer = document.getElementById("zoom-container");
+      var findContainer = document.getElementById("findContainer");
+      const windowHeight = window.innerHeight;
+      const ratioh = windowHeight / 980;
+      const windowWidth = window.innerWidth;
+      const ratiow = windowWidth / 1920;
+
+      canvasholder.style.fontSize = (14 * ratioh) + "px";
+      canvasholder.style.width = '100%';
+      settings.style.width = '100%';
+      resizehandle.style.width = '100%';
+      _this.genotypeCanvas.canvas.style.width = '100%';
+      _this.overviewCanvas.canvas.style.width = '100%';
+      canvasholder.style.height = windowHeight + "px";
+      settings.style.height = '5%';
+      resizehandle.style.height = '3px';
+      _this.genotypeCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+      _this.overviewCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+      _this.genotypeCanvas.backBuffer.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+      _this.overviewCanvas.backBuffer.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+      _this.genotypeCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+      _this.overviewCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+      range.style.width = (300 * ratiow) + "px";
+      range.style.height = (20 * ratioh) + "%";
+      findLine.style.width = (59 * ratiow) + "%";
+      findLine.style.height = (40 * ratioh) + "%";
+      findLine.style.fontSize =  (findLine.style.height - 4) + "px";
+      chromosomeSelect.style.height = (19 * ratioh) + "px";
+      chromosomeSelect.style.width = (126 * ratiow) + "px";
+      chromosomeSelect.style.fontSize = (13 * ratioh) + "px";
+      findContainer.style.marginLeft = (50 * ratiow) + "px";
+      zoomContainer.style.marginLeft = (50 * ratiow) + "px";
+      chromosomeContainer.style.marginLeft = (50 * ratiow) + "px";
+      _this.genotypeCanvas.prerender(true);
+      _this.overviewCanvas.prerender(true);
+    });
+    window.dispatchEvent(new Event('resize'));*/
+
     window.addEventListener('mouseup', () => {
       this.draggingGenotypeCanvas = false;
       this.draggingVerticalScrollbar = false;
@@ -366,6 +428,23 @@ export default class CanvasController {
     this.genotypeCanvas.setChromosome(chromosomeIndex);
     this.overviewCanvas.setChromosome(chromosomeIndex);
     this.overviewCanvas.moveToPosition(0, 0, this.genotypeCanvas.visibilityWindow());
+  }
+
+  findGermplasmWithLine(input) {
+     return this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
+  }
+
+  setFilter(input) {
+    this.dataSet.germplasmListFiltered = Array.from(this.dataSet.germplasmList);
+    this.dataSet.germplasmListFiltered = this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
+    this.genotypeCanvas.updateCanvasWidths();
+    this.genotypeCanvas.prerender(true);
+  }
+
+  clearFilter() {
+    this.dataSet.germplasmListFiltered = Array.from(this.dataSet.germplasmList);
+    this.genotypeCanvas.updateCanvasWidths();
+    this.genotypeCanvas.prerender(true);
   }
 
   disableCanvas() {
@@ -483,7 +562,7 @@ export default class CanvasController {
     const colorReference = this.loadSetting("colorReference");
     const customColors = this.loadSetting("traitColors");
     var displayTraits = this.loadSetting("displayTraits");
-    displayTraits = displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";")
+    displayTraits = displayTraits == null ? this.dataSet.traitNames : displayTraits.split(";").filter(x => this.dataSet.traitNames == null || this.dataSet.traitNames.includes(x));
 
     let settings = {
       colorReference, sortReference,
@@ -521,7 +600,7 @@ export default class CanvasController {
         }
         break;
       case "similarity":
-        if (this.dataSet.germplasmList.find(germplasm => germplasm.name == sortReference) !== undefined) {
+        if (this.dataSet.germplasmListFiltered.find(germplasm => germplasm.name == sortReference) !== undefined) {
           settings.lineSort = new SimilarityLineSort(sortReference, [this.chromosomeIndex]);
           settings.lineSortId = "similarity";
         }
@@ -535,7 +614,7 @@ export default class CanvasController {
         settings.colorSchemeId = "nucleotide";
         break;
       case "similarity":
-        const referenceIndex = this.dataSet.germplasmList.findIndex(germplasm => germplasm.name == colorReference)
+        const referenceIndex = this.dataSet.germplasmListFiltered.findIndex(germplasm => germplasm.name == colorReference)
         if (referenceIndex !== undefined && referenceIndex != -1) {
           settings.colorScheme = new SimilarityColorScheme(this.dataSet, referenceIndex);
           settings.colorSchemeId = "similarity";

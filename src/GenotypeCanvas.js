@@ -96,7 +96,7 @@ export default class GenotypeCanvas {
     this.lineSort = settings.lineSort;
     this.lineSort.sort(this.dataSet);
     this.colorScheme = settings.colorScheme;
-    this.colorComparisonLineIndex = this.dataSet.germplasmList.findIndex(function (germplasm) {
+    this.colorComparisonLineIndex = this.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
       return germplasm.name == settings.colorReference;
     });
     this.colorScheme.setComparisonLineIndex(this.colorComparisonLineIndex);
@@ -129,6 +129,7 @@ export default class GenotypeCanvas {
     const xPos = (this.markerIndexUnderMouse * this.boxSize) - this.translatedX;
     const yPos = (this.lineUnderMouse * this.boxSize) - yWiggle;
 
+    this.markerRange(markerStart, markerEnd);
     this.renderCrosshair(markerStart, xPos, germplasmStart, yPos);
     this.highlightMarker(dataWidth, markerStart, markerEnd, xPos);
     this.highlightLineName(germplasmStart, yPos);
@@ -141,6 +142,14 @@ export default class GenotypeCanvas {
       this.drawingContext.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
     this.drawingContext.restore();
+  }
+
+  markerRange(markerStartIndex, markerEndIndex) {
+    var markerrange = document.getElementById("markerRange");
+    var markerStart = this.dataSet.markerOn(this.selectedChromosome, markerStartIndex).marker;
+    var markerEnd = this.dataSet.markerOn(this.selectedChromosome, markerEndIndex - 1).marker;
+    var text =  `Current range:<br> ${markerStart.name} (${markerStart.position})  to  ${markerEnd.name} (${markerEnd.position})`;
+    markerrange.innerHTML = text;
   }
 
   calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart) {
@@ -227,7 +236,7 @@ export default class GenotypeCanvas {
       this.drawingContext.fillStyle = '#F00';
       this.drawingContext.font = this.font;
 
-      const { name } = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+      const { name } = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
 
       const y = yPos + (this.boxSize - (this.fontSize / 2));
       this.drawingContext.fillText(name, 0, y);
@@ -249,7 +258,7 @@ export default class GenotypeCanvas {
       this.drawingContext.fillStyle = '#F00';
       this.drawingContext.font = this.font;
 
-      const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+      const germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
 
       if (germplasm.phenotype !== undefined){
         let xPos = 0;
@@ -289,7 +298,7 @@ export default class GenotypeCanvas {
       this.drawingContext.fillStyle = '#F00';
       this.drawingContext.font = this.font;
 
-      const { name } = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+      const { name } = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
 
       const y = yPos + (this.boxSize - (this.fontSize / 2));
       const score = this.lineSort.getScore(name);
@@ -332,13 +341,15 @@ export default class GenotypeCanvas {
   renderMouseOverText() {
     if (this.mouseOverText !== undefined){
       this.drawingContext.save();
-      this.drawingContext.font = this.font;
+      // this.drawingContext.font = this.font;
+      this.drawingContext.fontSize = 20;
 
       const textWidth = this.drawingContext.measureText(this.mouseOverText).width;
-      const textHeight = this.fontSize;
+      //const textHeight = this.fontSize;
+      const textHeight = this.drawingContext.fontSize;
       const padding = 4;
       const boxWidth = textWidth + 2*padding;
-      const boxHeight = textHeight + 2*padding;
+      const boxHeight = textHeight - 4; // + 2*padding;
 
       const [xBase, yBase] = this.mouseOverPosition;
       let drawDirection = [0, -1];
@@ -819,6 +830,84 @@ export default class GenotypeCanvas {
           this.mouseOverPosition = [x, y];
         }
       } else */
+      // Individual's name tooltip
+      if (!this.dataSet.hasTraits() && x <= this.nameCanvasWidth || this.dataSet.hasTraits() && x <= this.nameCanvasWidth + this.traitValuesCanvasWidth) {
+        var _germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
+        this.mouseOverText = _germplasm.name;
+        this.mouseOverPosition = [x, y];
+      }
+      // Genotype tooltip
+      if (!this.dataSet.hasTraits() && !this.lineSort.hasScore && x > this.nameCanvasWidth ||
+          !this.dataSet.hasTraits() && this.lineSort.hasScore && x > this.nameCanvasWidth + this.scoreCanvasWidth ||
+          this.dataSet.hasTraits() && !this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth ||
+          this.dataSet.hasTraits() && this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth) {
+        var _germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
+        var markerIndex = Math.floor((this.translatedX + mouseXPos) / this.boxSize);
+        var marker = this.dataSet.markerOn(this.selectedChromosome, markerIndex);
+        this.markerUnderMouse = marker.marker;
+        if (marker.marker !== undefined) {
+          this.mouseOverText = `Line : ${_germplasm.name}`;
+          this.mouseOverText += `\nMarker : ${marker.marker.name} (${marker.marker.position})`;
+          /*//TODO : do this switch in a new function
+          var geno = 'A';
+          switch (this.dataSet.genotypeFor(this.lineIndexUnderMouse, this.selectedChromosome, markerIndex)) {
+            case 0:
+              geno = 'N/A';
+              break;
+            case 1:
+              geno = 'A/T';
+              break;
+            case 2:
+              geno = 'A';
+              break;
+            case 3:
+              geno = 'T';
+              break;
+            case 4:
+              geno = 'C/T';
+              break;
+            case 5:
+              geno = 'C';
+              break;
+            case 6:
+              geno = 'C/G';
+              break;
+            case 7:
+              geno = 'T/A';
+              break;
+            case 8:
+              geno = 'T/C';
+              break;
+            case 9:
+              geno = 'G/T';
+              break;
+            case 10:
+              geno = 'G';
+              break;
+            case 11:
+              geno = 'A/G';
+              break;
+            case 12:
+              geno = 'C/A';
+              break;
+            case 13:
+              geno = 'T/G';
+              break;
+            case 14:
+              geno = 'A/C';
+              break;
+            case 15:
+              geno = 'G/A';
+              break;
+            case 16:
+              geno = 'G/C';
+              break;
+          }
+          this.mouseOverText += `\r\nGenotype : ${geno}`;*/
+          this.mouseOverPosition = [x, y];
+        }
+      }
+      // Trait tooltip
       if (this.dataSet.hasTraits() && x < this.traitValuesCanvasWidth / 1.1 /*accounting for apennded blank space*/) {
         let xPos = 0, columnIndex = 0, traitIndex = undefined;
 
@@ -831,15 +920,17 @@ export default class GenotypeCanvas {
           }
         }
 
-        const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+        const germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
         const trait = this.dataSet.getTrait(this.displayTraits[traitIndex]);
         const traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
         if (traitValue !== undefined){
           this.mouseOverText = trait.name + " : " + traitValue.toString();
           this.mouseOverPosition = [x, y];
         }
-      } else if (this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth && x < this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth){
-        const germplasm = this.dataSet.germplasmList[this.lineIndexUnderMouse];
+      }
+      // Score tooltip
+      else if (this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth && x < this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth){
+        const germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
         const score = this.lineSort.getScore(germplasm.name);
         this.mouseOverText = "Sort score : " + score.toString();
         this.mouseOverPosition = [x, y];
@@ -876,7 +967,7 @@ export default class GenotypeCanvas {
   updateCanvasWidths() {
     // Find the longest germplasm name and adjust the width of the germplasm name
     // rendering area accordingly
-    const germplasm = this.dataSet.germplasmList;
+    const germplasm = this.dataSet.germplasmListFiltered;
     const longestName = Math.max(...germplasm.map(g => this.backContext.measureText(g.name).width));
     this.nameCanvasWidth = longestName;
 
@@ -956,7 +1047,8 @@ export default class GenotypeCanvas {
     } else {
       this.translatedY = Math.min(this.translatedY * zoomFactor, this.maxDataHeight() - this.alleleCanvasHeight());
     }
-
+    var zoomcontroller = document.getElementById('zoom-control');
+    zoomcontroller.value = size;
     this.updateScrollBars();
 
     this.prerender(true);
@@ -973,7 +1065,7 @@ export default class GenotypeCanvas {
   // Get the size of the visible data in the canvas (in markers and germplasms)
   visibilityWindow() {
     const markers = Math.min(this.alleleCanvasWidth() / this.boxSize, this.dataSet.markerCountOn(this.selectedChromosome));
-    const germplasms = Math.min(this.alleleCanvasHeight() / this.boxSize, this.dataSet.germplasmList.length);
+    const germplasms = Math.min(this.alleleCanvasHeight() / this.boxSize, this.dataSet.germplasmListFiltered.length);
     return {markers, germplasms};
   }
 
@@ -1014,7 +1106,7 @@ export default class GenotypeCanvas {
   }
 
   setColorComparisonLine(comparedName) {
-    this.colorComparisonLineIndex = this.dataSet.germplasmList.findIndex(germplasm => germplasm.name == comparedName);
+    this.colorComparisonLineIndex = this.dataSet.germplasmListFiltered.findIndex(germplasm => germplasm.name == comparedName);
     this.colorScheme.setComparisonLineIndex(this.colorComparisonLineIndex);
     this.prerender(true);
   }
@@ -1063,7 +1155,7 @@ export default class GenotypeCanvas {
 
   sortLines(){
     // Save the color comparison line to restore it after sorting
-    var colorComparisonGermplasm = this.dataSet.germplasmList[this.colorComparisonLineIndex];
+    var colorComparisonGermplasm = this.dataSet.germplasmListFiltered[this.colorComparisonLineIndex];
     this.lineSort.sort(this.dataSet);
     if (colorComparisonGermplasm != null)
       this.setColorComparisonLine(colorComparisonGermplasm.name);
