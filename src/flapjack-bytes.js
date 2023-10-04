@@ -5437,20 +5437,8 @@
           lineSelect.value = settings.colorReference;
           lineInput.disabled = false;
         }
-        similarityRadio.addEventListener('change', function () {
-          var lineInput = document.getElementById('colorLineInput');
-          lineInput.disabled = false;
-          var referenceName = lineSelect.options[0].value;
-          var referenceIndex = _this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
-            return germplasm.name.startsWith(referenceName);
-          });
-          var colorScheme = new SimilarityColorScheme(_this.genotypeCanvas.dataSet, referenceIndex);
-          colorScheme.setupColorStamps(_this.genotypeCanvas.boxSize, _this.genotypeCanvas.font, _this.genotypeCanvas.fontSize);
-          _this.genotypeCanvas.setColorScheme(colorScheme);
-          _this.genotypeCanvas.setColorComparisonLine(referenceName);
-          _this.overviewCanvas.setColorScheme(colorScheme);
-          _this.saveSetting("colorReference", referenceName);
-          _this.saveSetting("colorScheme", "similarity");
+        similarityRadio.addEventListener('change', function() {
+          _this.similaritySchemeChange(lineSelect, 0, true)
         });
         lineInput.addEventListener('input', function (event) {
           var reference = _this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
@@ -5465,6 +5453,7 @@
 
         // Sort
         var sortLineInput = document.getElementById('sortLineInput');
+        var sortLineSelect = document.getElementById('sortLineSelect');
         var sortTraitSelect = document.getElementById('sortTraitSelect');
         var importingOrderRadio = document.getElementById('importingOrderSort');
         if (settings.lineSortId == "importing") importingOrderRadio.checked = true;
@@ -5488,13 +5477,8 @@
           sortLineInput.disabled = false;
           sortLineInput.value = settings.sortReference;
         }
-        similarityOrderRadio.addEventListener('change', function () {
-          sortLineInput.disabled = false;
-          if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
-          var referenceName = sortLineSelect.options[0].value;
-          _this.setLineSort(new SimilarityLineSort(referenceName, [_this.chromosomeIndex]));
-          _this.saveSetting("sort", "similarity");
-          _this.saveSetting("sortReference", referenceName);
+        similarityOrderRadio.addEventListener('change', function(){
+          _this.similaritySortChange(sortLineInput, sortTraitSelect, sortLineSelect, 0, true)
         });
         sortLineInput.addEventListener('input', function (event) {
           var reference = _this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
@@ -5502,6 +5486,12 @@
           });
           if (reference !== undefined) {
             var referenceName = reference.name;
+            const remainingValue = referenceName.slice(sortLineInput.value.length);
+
+            // Afficher le texte en gris à la suite du texte de l'input
+            sortLineInput.value = referenceName;
+            sortLineInput.setSelectionRange(sortLineInput.value.length, referenceName.length);
+            sortLineInput.style.color = "gray";
             _this.setLineSort(new SimilarityLineSort(referenceName, [_this.chromosomeIndex]));
             _this.saveSetting("sortReference", referenceName);
           }
@@ -5676,6 +5666,14 @@
         this.genotypeCanvas.canvas.addEventListener('mouseleave', function () {
           _this.genotypeCanvas.mouseOver(undefined, undefined);
         });
+        this.genotypeCanvas.canvas.addEventListener('contextmenu', function (event) {
+          event.preventDefault();
+          var customContextMenu = document.getElementById("customContextMenu");
+          customContextMenu.style.left = event.clientX + "px";
+          customContextMenu.style.top = event.clientY + "px";
+
+          customContextMenu.style.display = "block";
+        });
 
         // Overview canvas control
         this.overviewCanvas.canvas.addEventListener('mousedown', function (event) {
@@ -5755,6 +5753,39 @@
         });
       }
     }, {
+        key: "similaritySchemeChange",
+        value: function similaritySchemeChange(lineSelect, index, reset) {
+          var lineInput = document.getElementById('colorLineInput');
+          lineInput.disabled = false;
+          var referenceName = this.genotypeCanvas.dataSet.germplasmListFiltered[index].name;
+          var referenceIndex = this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
+            return germplasm.name.startsWith(referenceName);
+          });
+          var colorScheme = new SimilarityColorScheme(this.genotypeCanvas.dataSet, referenceIndex);
+          colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
+          this.genotypeCanvas.setColorScheme(colorScheme);
+          this.genotypeCanvas.setColorComparisonLine(referenceName);
+          this.overviewCanvas.setColorScheme(colorScheme);
+          this.saveSetting("colorReference", referenceName);
+          this.saveSetting("colorScheme", "similarity");
+          if (reset){
+            lineInput.value = this.genotypeCanvas.dataSet.germplasmListFiltered[0].name;
+          }
+        }
+      }, {
+        key: "similaritySortChange",
+        value: function similaritySortChange(sortLineInput, sortTraitSelect, sortLineSelect, index, reset) {
+            sortLineInput.disabled = false;
+          if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
+          var referenceName = this.genotypeCanvas.dataSet.germplasmListFiltered[index].name;
+          this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
+          this.saveSetting("sort", "similarity");
+          this.saveSetting("sortReference", referenceName);
+          if (reset){
+            sortLineInput.value = this.genotypeCanvas.dataSet.germplasmListFiltered[0].name;
+          }
+        }
+      }, {
       key: "setLineSort",
       value: function setLineSort(lineSort) {
         var _this2 = this;
@@ -7676,6 +7707,93 @@
         canvasHolder.removeChild(canvasHolder.firstChild);
       }
     }
+    function hideContextMenu() {
+      var customContextMenu = document.getElementById("customContextMenu");
+      customContextMenu.style.display = "none";
+    }
+    function createContextMenu(genotypeCanvas, canvasController) {
+      const customContextMenu = document.createElement("div");
+      customContextMenu.id = "customContextMenu";
+      customContextMenu.style.display = "none";
+      customContextMenu.style.position = "absolute";
+      customContextMenu.style.backgroundColor = "#000";
+      customContextMenu.style.color = "#fff";
+      customContextMenu.style.border = "1px solid #ccc";
+      customContextMenu.style.padding = "5px";
+      customContextMenu.style.zIndex = "1000";
+
+      // Ajoutez des options au menu contextuel personnalisé
+      const option1 = document.createElement("div");
+      option1.textContent = "Color by similarity to this line";
+      option1.style.cursor = "pointer";
+      option1.addEventListener("click", function (event) {
+        var colorLineInput = document.getElementById("colorLineInput");
+        var colorLineSelect = document.getElementById("colorLineSelect");
+        var germplasmStart = Math.floor(genotypeCanvas.translatedY / genotypeCanvas.boxSize);
+        const rect = genotypeCanvas.canvas.getBoundingClientRect();
+        const y = customContextMenu.offsetTop - rect.top;
+        var index = Math.round(y / genotypeCanvas.boxSize + germplasmStart) - 4; // 4 stands for height above the first line of the canvas
+        var reference = genotypeCanvas.dataSet.germplasmListFiltered[index];
+        if (reference !== undefined) {
+          genotypeCanvas.setColorComparisonLine(reference.name);
+          canvasController.overviewCanvas.prerender(true);
+          canvasController.saveSetting("colorReference", reference.name);
+          var nucleotideScheme = document.getElementById(("nucleotideScheme"));
+          var similarityScheme = document.getElementById(("similarityScheme"));
+          nucleotideScheme.checked = false;
+          similarityScheme.checked = true;
+          colorLineInput.value = reference.name;
+          canvasController.similaritySchemeChange(colorLineSelect, index, false);
+        }
+        hideContextMenu();
+      });
+      option1.addEventListener("mouseover", function (){
+        option1.style.backgroundColor = "grey";
+      });
+      option1.addEventListener("mouseout", function (){
+        option1.style.backgroundColor = "";
+      });
+
+      const option2 = document.createElement("div");
+      option2.textContent = "Sort by similarity to this line";
+      option2.style.cursor = "pointer";
+      option2.addEventListener("click", function (event) {
+        var sortLineInput = document.getElementById("sortLineInput");
+        var sortLineSelect = document.getElementById("sortLineSelect");
+        var sortTraitSelect = document.getElementById('sortTraitSelect');
+        var germplasmStart = Math.floor(genotypeCanvas.translatedY / genotypeCanvas.boxSize);
+        const rect = genotypeCanvas.canvas.getBoundingClientRect();
+        const y = customContextMenu.offsetTop - rect.top;
+        var index = Math.round(y / genotypeCanvas.boxSize + germplasmStart) - 4;
+        var reference = genotypeCanvas.dataSet.germplasmListFiltered[index];
+        if (reference !== undefined) {
+          var referenceName = reference.name;
+          canvasController.setLineSort(new SimilarityLineSort(referenceName, [canvasController.chromosomeIndex]));
+          canvasController.saveSetting("sortReference", referenceName);
+          var importingOrderSort = document.getElementById(("importingOrderSort"));
+          var alphabeticSort = document.getElementById(("alphabeticSort"));
+          var similaritySort = document.getElementById(("similaritySort"));
+          importingOrderSort.checked = false;
+          alphabeticSort.checked = false;
+          similaritySort.checked = true;
+          sortLineInput.value = referenceName;
+          canvasController.similaritySortChange(sortLineInput, sortTraitSelect, sortLineSelect, index, false);
+        }
+        hideContextMenu();
+      });
+      option2.addEventListener("mouseover", function (){
+        option2.style.backgroundColor = "grey";
+      });
+      option2.addEventListener("mouseout", function (){
+        option2.style.backgroundColor = "";
+      });
+      customContextMenu.addEventListener("mouseleave", function (){
+        customContextMenu.style.display = "none";
+      });
+      customContextMenu.appendChild(option1);
+      customContextMenu.appendChild(option2);
+      document.body.appendChild(customContextMenu);
+    }
     function createRendererComponents(config, showProgress) {
       // Canvas
       if (config.minGenotypeAutoWidth === undefined) config.minGenotypeAutoWidth = 0;
@@ -7731,6 +7849,7 @@
       resizehandler(resizeHandle, overviewCanvas, genotypeCanvas);
       addStyleSheet();
       canvasController = new CanvasController(canvasHolder, genotypeCanvas, overviewCanvas, config.saveSettings != false, config.width === null, config.overviewWidth === null, config.minGenotypeAutoWidth, config.minOverviewAutoWidth);
+      createContextMenu(genotypeCanvas, canvasController);
     }
     function resizehandler(resizeHandle, resizableDiv1, resizableDiv2) {
         let isResizing = false;
@@ -8070,7 +8189,7 @@
       lineInput.placeholder = 'Select line';
       lineInput.disabled = true;
       lineInput.setAttribute("list", "colorLineSelect");
-      lineInput.style.width = '90px';
+      lineInput.style.width = '150px';
       var radioCol = document.createElement('div');
       radioCol.classList.add('col');
       addRadioButton('selectedScheme', 'nucleotideScheme', 'Nucleotide', true, radioCol);
@@ -8090,7 +8209,7 @@
       lineInput.placeholder = 'Select line';
       lineInput.disabled = true;
       lineInput.setAttribute("list", "sortLineSelect");
-      lineInput.style.width = '90px';
+      lineInput.style.width = '150px';
       var radioCol = document.createElement('div');
       radioCol.classList.add('col');
       addRadioButton('selectedSort', 'importingOrderSort', 'By importing order', true, radioCol);
@@ -8190,14 +8309,19 @@
           paletteResetButton.style.marginLeft = '20px';
           var colorContainer = document.createElement('div');
           colorContainer.style.float = 'right';
-          colorContainer.appendChild(paletteSelectColor);
-          colorContainer.appendChild(paletteResetButton);
           paletteSelectContainer.appendChild(paletteSelectLegend);
           paletteSelectContainer.appendChild(paletteSelectTrait);
           paletteSelectContainer.appendChild(colorContainer);
           paletteSelectContainer.appendChild(paletteSelectValue);
+          var buttonContainer = document.createElement("div");
+          buttonContainer.style["float"] = 'left';
+          buttonContainer.style.marginBottom = '10px';
+          buttonContainer.style.paddingTop = '65px';
+          buttonContainer.appendChild(paletteSelectColor);
+          buttonContainer.appendChild(paletteResetButton);
           tab.appendChild(traitSelectContainer);
           tab.appendChild(paletteSelectContainer);
+          tab.appendChild(buttonContainer);
           return tab;
       }
     }

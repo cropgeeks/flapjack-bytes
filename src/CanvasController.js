@@ -79,22 +79,8 @@ export default class CanvasController {
       lineSelect.value = settings.colorReference;
       lineInput.disabled = false;
     }
-    similarityRadio.addEventListener('change', () => {
-      var lineInput = document.getElementById('colorLineInput');
-      lineInput.disabled = false;
-      const referenceName = lineSelect.options[0].value;
-      var referenceIndex = this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
-        return germplasm.name.startsWith(referenceName);
-      });
-      
-      let colorScheme = new SimilarityColorScheme(this.genotypeCanvas.dataSet, referenceIndex);
-      colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
-      this.genotypeCanvas.setColorScheme(colorScheme);
-      this.genotypeCanvas.setColorComparisonLine(referenceName);
-      this.overviewCanvas.setColorScheme(colorScheme);
-      this.saveSetting("colorReference", referenceName);
-
-      this.saveSetting("colorScheme", "similarity");
+    similarityRadio.addEventListener('change', function() {
+      this.similaritySchemeChange(lineSelect, 0, true)
     });
 
     lineInput.addEventListener('input', (event) => {
@@ -110,6 +96,7 @@ export default class CanvasController {
 
     // Sort
     var sortLineInput = document.getElementById('sortLineInput');
+    var sortLineSelect = document.getElementById('sortLineSelect');
     const sortTraitSelect = document.getElementById('sortTraitSelect');
 
     const importingOrderRadio = document.getElementById('importingOrderSort');
@@ -138,14 +125,8 @@ export default class CanvasController {
       sortLineInput.disabled = false;
       sortLineInput.value = settings.sortReference;
     }
-    similarityOrderRadio.addEventListener('change', () => {
-      sortLineInput.disabled = false;
-      if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
-      
-      const referenceName = sortLineSelect.options[0].value;
-      this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
-      this.saveSetting("sort", "similarity");
-      this.saveSetting("sortReference", referenceName);
+    similarityOrderRadio.addEventListener('change', function(){
+      this.similaritySortChange(sortLineInput, sortTraitSelect, sortLineSelect, 0, true)
     });
 
     sortLineInput.addEventListener('input', function (event) {
@@ -321,6 +302,15 @@ export default class CanvasController {
       this.genotypeCanvas.mouseOver(undefined, undefined);
     });
 
+    this.genotypeCanvas.canvas.addEventListener('contextmenu', function (event) {
+      event.preventDefault();
+      var customContextMenu = document.getElementById("customContextMenu");
+      customContextMenu.style.left = event.clientX + "px";
+      customContextMenu.style.top = event.clientY + "px";
+
+      customContextMenu.style.display = "block";
+    });
+
     // Overview canvas control
     this.overviewCanvas.canvas.addEventListener('mousedown', (event) => {
       this.setOverviewPosition(event.clientX, event.clientY);
@@ -391,6 +381,37 @@ export default class CanvasController {
         this.setOverviewPosition(e.clientX, e.clientY);
       }
     });
+  }
+
+  similaritySchemeChange(lineSelect, index, reset) {
+    var lineInput = document.getElementById('colorLineInput');
+    lineInput.disabled = false;
+    var referenceName = this.genotypeCanvas.dataSet.germplasmListFiltered[index].name;
+    var referenceIndex = this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
+      return germplasm.name.startsWith(referenceName);
+    });
+    var colorScheme = new SimilarityColorScheme(this.genotypeCanvas.dataSet, referenceIndex);
+    colorScheme.setupColorStamps(this.genotypeCanvas.boxSize, this.genotypeCanvas.font, this.genotypeCanvas.fontSize);
+    this.genotypeCanvas.setColorScheme(colorScheme);
+    this.genotypeCanvas.setColorComparisonLine(referenceName);
+    this.overviewCanvas.setColorScheme(colorScheme);
+    this.saveSetting("colorReference", referenceName);
+    this.saveSetting("colorScheme", "similarity");
+    if (reset){
+      lineInput.value = this.genotypeCanvas.dataSet.germplasmListFiltered[0].name;
+    }
+  }
+
+  similaritySortChange(sortLineInput, sortTraitSelect, sortLineSelect, index, reset) {
+    sortLineInput.disabled = false;
+    if (sortTraitSelect !== null) sortTraitSelect.disabled = true;
+    var referenceName = this.genotypeCanvas.dataSet.germplasmListFiltered[index].name;
+    this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
+    this.saveSetting("sort", "similarity");
+    this.saveSetting("sortReference", referenceName);
+    if (reset){
+      sortLineInput.value = this.genotypeCanvas.dataSet.germplasmListFiltered[0].name;
+    }
   }
 
   setLineSort(lineSort){
