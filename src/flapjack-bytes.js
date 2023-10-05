@@ -5824,21 +5824,6 @@
            return this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
         }
       }, {
-        key: "setFilter",
-        value: function setFilter(input) {
-          this.dataSet.germplasmListFiltered = Array.from(this.dataSet.germplasmList);
-          this.dataSet.germplasmListFiltered = this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
-          this.genotypeCanvas.updateCanvasWidths();
-          this.genotypeCanvas.prerender(true);
-        }
-      }, {
-        key: "clearFilter",
-        value: function clearFilter() {
-          this.dataSet.germplasmListFiltered = Array.from(this.dataSet.germplasmList);
-          this.genotypeCanvas.updateCanvasWidths();
-          this.genotypeCanvas.prerender(true);
-        }
-      }, {
       key: "disableCanvas",
       value: function disableCanvas() {
         this.genotypeCanvas.disable();
@@ -7687,13 +7672,6 @@
       return true;
     }
 
-    function setFilter(input) {
-        if (input.length > 0) {
-          canvasController.setFilter(input);
-        } else {
-          canvasController.clearFilter();
-        }
-      }
 
     function clearParent(domParent) {
       var canvasHolder = document.getElementById(domParent.replace('#', ''));
@@ -8079,21 +8057,6 @@
           zoom(range.value);
         }
       });
-
-      /*// Namefilter
-      var filterLabel = document.createElement('label');
-      filterLabel.innerHTML = 'Line\'s Filter: ';
-      filterLabel.setAttribute('for', 'filterInput');
-      var nameFilter = document.createElement('input');
-      nameFilter.type = "text";
-      nameFilter.id = "filterInput";
-      nameFilter.placeholder = "Enter a name";
-      var filterContainer = document.createElement('div');
-      filterContainer.append(filterLabel);
-      filterContainer.append(nameFilter);
-      nameFilter.addEventListener('input', function (event) {
-        setFilter(nameFilter.value.toLowerCase());
-      });*/
 
       // Ctrl+F
       var findLine = document.createElement('input');

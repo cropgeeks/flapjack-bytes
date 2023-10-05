@@ -455,18 +455,6 @@ export default class CanvasController {
      return this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
   }
 
-  setFilter(input) {
-    this.dataSet.germplasmListFiltered = Array.from(this.dataSet.germplasmList);
-    this.dataSet.germplasmListFiltered = this.dataSet.germplasmListFiltered.filter((item) => item.name.toLowerCase().startsWith(input));
-    this.genotypeCanvas.updateCanvasWidths();
-    this.genotypeCanvas.prerender(true);
-  }
-
-  clearFilter() {
-    this.dataSet.germplasmListFiltered = Array.from(this.dataSet.germplasmList);
-    this.genotypeCanvas.updateCanvasWidths();
-    this.genotypeCanvas.prerender(true);
-  }
 
   disableCanvas() {
     this.genotypeCanvas.disable();
