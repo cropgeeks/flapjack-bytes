@@ -5434,7 +5434,7 @@
         if (settings.colorSchemeId == "similarity") {
           similarityRadio.checked = true;
           lineSelect.disabled = false;
-          lineSelect.value = settings.colorReference;
+          lineInput.value = settings.colorReference;
           lineInput.disabled = false;
         }
         similarityRadio.addEventListener('change', function() {
@@ -5486,12 +5486,6 @@
           });
           if (reference !== undefined) {
             var referenceName = reference.name;
-            const remainingValue = referenceName.slice(sortLineInput.value.length);
-
-            // Afficher le texte en gris à la suite du texte de l'input
-            sortLineInput.value = referenceName;
-            sortLineInput.setSelectionRange(sortLineInput.value.length, referenceName.length);
-            sortLineInput.style.color = "gray";
             _this.setLineSort(new SimilarityLineSort(referenceName, [_this.chromosomeIndex]));
             _this.saveSetting("sortReference", referenceName);
           }
