@@ -7719,10 +7719,12 @@
       customContextMenu.style.backgroundColor = "#000";
       customContextMenu.style.color = "#fff";
       customContextMenu.style.border = "1px solid #ccc";
-      customContextMenu.style.padding = "5px";
+      customContextMenu.style.padding = "5px 15px";
       customContextMenu.style.zIndex = "1000";
+      customContextMenu.style.margin = "-3px";
+      customContextMenu.style.fontFamily = 'system-ui';
+      customContextMenu.style.fontSize = '14px';
 
-      // Ajoutez des options au menu contextuel personnalisé
       const option1 = document.createElement("div");
       option1.textContent = "Color by similarity to this line";
       option1.style.cursor = "pointer";
@@ -7995,8 +7997,8 @@
       //addCSSRule(sheet, '.bytes-fieldset > legend', 'border-style: none; border-width: 0; font-size: 14px; line-height: 20px; margin-bottom: 0; width: auto; padding: 0 10px; border: 1px solid #e0e0e0;');
       //addCSSRule(sheet, '.bytes-fieldset', 'border: 1px solid #e0e0e0; padding: 10px;');
       addCSSRule(sheet, '.bytes-tabtoggle', "display: inline-block; border: none; outline: none; padding: 8px;");
-      addCSSRule(sheet, '.bytes-tabtoggle:hover', 'background-color: #DDDDDD');
-      addCSSRule(sheet, '.bytes-tabtoggle.bytes-tabtoggle-active', 'background-color: #CCCCCC');
+      addCSSRule(sheet, '.bytes-tabtoggle:hover', 'background-color: #CCCCCC');
+      addCSSRule(sheet, '.bytes-tabtoggle.bytes-tabtoggle-active', 'background-color: #DDDDDD');
       addCSSRule(sheet, '.bytes-tab', 'display: none;');
       // addCSSRule(sheet, 'input', 'margin: .4rem;');
     }
