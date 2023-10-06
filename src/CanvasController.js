@@ -575,7 +575,7 @@ export default class CanvasController {
 
     let settings = {
       colorReference, sortReference,
-      displayTraits: displayTraits.length > 10 ? [] : displayTraits,
+      displayTraits: displayTraits != null && displayTraits.length > 10 ? [] : displayTraits,
       lineSort: new ImportingOrderLineSort(),
       lineSortId: "importing",
       colorScheme: new NucleotideColorScheme(this.dataSet),
