@@ -305,8 +305,8 @@ export default class CanvasController {
     this.genotypeCanvas.canvas.addEventListener('contextmenu', function (event) {
       event.preventDefault();
       var customContextMenu = document.getElementById("customContextMenu");
-      customContextMenu.style.left = event.clientX + "px";
-      customContextMenu.style.top = event.clientY + "px";
+      customContextMenu.style.left = event.pageX + "px";
+      customContextMenu.style.top = event.pageY + "px";
 
       customContextMenu.style.display = "block";
     });

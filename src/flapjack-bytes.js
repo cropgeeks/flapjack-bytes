@@ -5663,8 +5663,8 @@
         this.genotypeCanvas.canvas.addEventListener('contextmenu', function (event) {
           event.preventDefault();
           var customContextMenu = document.getElementById("customContextMenu");
-          customContextMenu.style.left = event.clientX + "px";
-          customContextMenu.style.top = event.clientY + "px";
+          customContextMenu.style.left = event.pageX + "px";
+          customContextMenu.style.top = event.pageY + "px";
 
           customContextMenu.style.display = "block";
         });
@@ -7705,8 +7705,8 @@
         var colorLineSelect = document.getElementById("colorLineSelect");
         var germplasmStart = Math.floor(genotypeCanvas.translatedY / genotypeCanvas.boxSize);
         const rect = genotypeCanvas.canvas.getBoundingClientRect();
-        const y = customContextMenu.offsetTop - rect.top;
-        var index = Math.round(y / genotypeCanvas.boxSize + germplasmStart) - 4; // 4 stands for height above the first line of the canvas
+        var y = customContextMenu.offsetTop - rect.top - 56; // 56 stands for height above the first line of the canvas
+        var index = Math.floor(y / genotypeCanvas.boxSize + germplasmStart);
         var reference = genotypeCanvas.dataSet.germplasmListFiltered[index];
         if (reference !== undefined) {
           genotypeCanvas.setColorComparisonLine(reference.name);
@@ -7737,8 +7737,8 @@
         var sortTraitSelect = document.getElementById('sortTraitSelect');
         var germplasmStart = Math.floor(genotypeCanvas.translatedY / genotypeCanvas.boxSize);
         const rect = genotypeCanvas.canvas.getBoundingClientRect();
-        const y = customContextMenu.offsetTop - rect.top;
-        var index = Math.round(y / genotypeCanvas.boxSize + germplasmStart) - 4;
+        var y = customContextMenu.offsetTop - rect.top - 56; // 56 stands for height above the first line of the canvas
+        var index = Math.floor(y / genotypeCanvas.boxSize + germplasmStart);
         var reference = genotypeCanvas.dataSet.germplasmListFiltered[index];
         if (reference !== undefined) {
           var referenceName = reference.name;
