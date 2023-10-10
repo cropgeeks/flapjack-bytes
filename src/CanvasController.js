@@ -97,7 +97,7 @@ export default class CanvasController {
     if (settings.colorSchemeId == "similarity") {
       similarityRadio.checked = true;
       lineSelect.disabled = false;
-      lineSelect.value = settings.colorReference;
+      lineInput.value = settings.colorReference;
       lineInput.disabled = false;
     }
     similarityRadio.addEventListener('change', event => {
@@ -112,6 +112,17 @@ export default class CanvasController {
         this.genotypeCanvas.setColorComparisonLine(reference.name);
         this.overviewCanvas.prerender(true);
         this.saveSetting("colorReference", reference.name);
+      }
+    });
+    lineInput.addEventListener('blur', (event) => {
+      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+        return germplasm.name.toLowerCase().startsWith(lineInput.value.toLowerCase());
+      });
+      if (reference !== undefined) {
+        this.genotypeCanvas.setColorComparisonLine(reference.name);
+        this.overviewCanvas.prerender(true);
+        this.saveSetting("colorReference", reference.name);
+        lineInput.value = reference.name;
       }
     });
 
@@ -158,6 +169,17 @@ export default class CanvasController {
         var referenceName = reference.name;
         this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
         this.saveSetting("sortReference", referenceName);
+      }
+    });
+    sortLineInput.addEventListener('blur', event => {
+      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+        return germplasm.name.toLowerCase().startsWith(sortLineInput.value.toLowerCase());
+      });
+      if (reference !== undefined) {
+        var referenceName = reference.name;
+        this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
+        this.saveSetting("sortReference", referenceName);
+        sortLineInput.value = referenceName;
       }
     });
 
