@@ -5,7 +5,7 @@ import ImportingOrderLineSort from './sort/ImportingOrderLineSort'
 import TraitLineSort from './sort/TraitLineSort'
 import NucleotideColorScheme from './color/NucleotideColorScheme'
 import SimilarityColorScheme from './color/SimilarityColorScheme'
-
+import ScrollBar from './ScrollBar';
 
 export default class CanvasController {
   constructor(container, genotypeCanvas, overviewCanvas, saveSettings, genotypeAutoWidth, overviewAutoWidth, minGenotypeAutoWidth, minOverviewAutoWidth) {
@@ -52,6 +52,27 @@ export default class CanvasController {
 
     window.addEventListener("resize", event => {
       this.updateAutoWidth();
+      
+      var settings = document.getElementById("settings");
+      var resizehandle = document.getElementById("resizeHandle");
+      const windowHeight = window.innerHeight;
+      const windowWidth = window.innerWidth;
+      this.genotypeCanvas.width = windowWidth;
+      this.overviewCanvas.width = windowWidth;
+      this.genotypeCanvas.backBuffer.width = windowWidth;
+      this.overviewCanvas.backBuffer.width = windowWidth;
+      this.genotypeCanvas.canvas.width = windowWidth;
+      this.overviewCanvas.canvas.width = windowWidth;
+      this.genotypeCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+      this.overviewCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+      this.genotypeCanvas.backBuffer.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+      this.overviewCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+      this.genotypeCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
+      this.overviewCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
+      this.genotypeCanvas.verticalScrollbar = new ScrollBar(windowWidth - 20, this.genotypeCanvas.alleleCanvasHeight() + this.genotypeCanvas.scrollbarHeight, this.genotypeCanvas.scrollbarWidth, this.genotypeCanvas.alleleCanvasHeight(), true);
+      this.genotypeCanvas.horizontalScrollbar = new ScrollBar(this.genotypeCanvas.alleleCanvasWidth(), this.genotypeCanvas.canvas.height, this.genotypeCanvas.alleleCanvasWidth(), this.genotypeCanvas.scrollbarHeight, false);
+      this.genotypeCanvas.prerender(true);
+      this.overviewCanvas.prerender(true);
     });
 
     // Color schemes
@@ -59,7 +80,7 @@ export default class CanvasController {
     if (settings.colorSchemeId == "nucleotide")
       nucleotideRadio.checked = true;
     nucleotideRadio.addEventListener('change', () => {
-      var lineInput = document.getElementById('colorLineInput');
+      const lineInput = document.getElementById('colorLineInput');
       lineInput.disabled = true;
 
       let colorScheme = new NucleotideColorScheme(this.genotypeCanvas.dataSet);
@@ -72,14 +93,14 @@ export default class CanvasController {
 
     const similarityRadio = document.getElementById('similarityScheme');
     const lineSelect = document.getElementById('colorLineSelect');
-    var lineInput = document.getElementById('colorLineInput');
+    const lineInput = document.getElementById('colorLineInput');
     if (settings.colorSchemeId == "similarity") {
       similarityRadio.checked = true;
       lineSelect.disabled = false;
       lineSelect.value = settings.colorReference;
       lineInput.disabled = false;
     }
-    similarityRadio.addEventListener('change', function() {
+    similarityRadio.addEventListener('change', event => {
       this.similaritySchemeChange(lineSelect, 0, true)
     });
 
@@ -95,8 +116,8 @@ export default class CanvasController {
     });
 
     // Sort
-    var sortLineInput = document.getElementById('sortLineInput');
-    var sortLineSelect = document.getElementById('sortLineSelect');
+    const sortLineInput = document.getElementById('sortLineInput');
+    const sortLineSelect = document.getElementById('sortLineSelect');
     const sortTraitSelect = document.getElementById('sortTraitSelect');
 
     const importingOrderRadio = document.getElementById('importingOrderSort');
@@ -125,11 +146,11 @@ export default class CanvasController {
       sortLineInput.disabled = false;
       sortLineInput.value = settings.sortReference;
     }
-    similarityOrderRadio.addEventListener('change', function(){
+    similarityOrderRadio.addEventListener('change', event => {
       this.similaritySortChange(sortLineInput, sortTraitSelect, sortLineSelect, 0, true)
     });
 
-    sortLineInput.addEventListener('input', function (event) {
+    sortLineInput.addEventListener('input', event => {
       var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
         return germplasm.name.toLowerCase().startsWith(sortLineInput.value.toLowerCase());
       });
@@ -214,13 +235,13 @@ export default class CanvasController {
       });
       paletteTraitSelect.value = this.dataSet.traitNames[0];
       paletteTraitSelect.dispatchEvent(new Event('change'));
-
-      paletteValueSelect.addEventListener('change', function (event) {
+      
+      paletteValueSelect.addEventListener('change', event => {
         for (var i = paletteValueSelect.options.length - 1; i >= 0; i--) {
             if (paletteValueSelect.options[i].selected)
             {
               var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
-              var trait = _this.dataSet.getTrait(traitName);
+              var trait = this.dataSet.getTrait(traitName);
               var color = null;
               if (trait.type == TraitType.Numerical) {
                 var index = i;
@@ -234,12 +255,12 @@ export default class CanvasController {
       });
       paletteValueSelect.dispatchEvent(new Event('change'));
 
-      paletteValueColor.addEventListener('change', function (event) {
+      paletteValueColor.addEventListener('change', event => {
         for (var i = paletteValueSelect.options.length - 1; i >= 0; i--) {
             if (paletteValueSelect.options[i].selected)
             {
                 var traitName = paletteTraitSelect.options[paletteTraitSelect.selectedIndex].value;
-                var trait = _this.dataSet.getTrait(traitName);
+                var trait = this.dataSet.getTrait(traitName);
                 var color = paletteValueColor.value;
                 if (trait.type == TraitType.Numerical) {
                   var index = i;
@@ -247,8 +268,8 @@ export default class CanvasController {
                 } else {
                   trait.setColor(i, color);
                 }
-                _this.genotypeCanvas.prerender(true);
-                _this.saveColors();
+                this.genotypeCanvas.prerender(true);
+                this.saveColors();
             }
         }
       });
@@ -316,53 +337,6 @@ export default class CanvasController {
       this.setOverviewPosition(event.clientX, event.clientY);
     });
 
-    // Other events
-    /*window.addEventListener("resize", function (event) {
-      var canvasholder = document.getElementById("canvasholder");
-      var settings = document.getElementById("settings");
-      var resizehandle = document.getElementById("resizeHandle");
-      var range = document.getElementById("zoom-control");
-      var findLine = document.getElementById("lineInput");
-      var chromosomeSelect = document.getElementById("chromosomeSelect");
-      var chromosomeContainer = document.getElementById("chromosomeContainer");
-      var zoomContainer = document.getElementById("zoom-container");
-      var findContainer = document.getElementById("findContainer");
-      const windowHeight = window.innerHeight;
-      const ratioh = windowHeight / 980;
-      const windowWidth = window.innerWidth;
-      const ratiow = windowWidth / 1920;
-
-      canvasholder.style.fontSize = (14 * ratioh) + "px";
-      canvasholder.style.width = '100%';
-      settings.style.width = '100%';
-      resizehandle.style.width = '100%';
-      _this.genotypeCanvas.canvas.style.width = '100%';
-      _this.overviewCanvas.canvas.style.width = '100%';
-      canvasholder.style.height = windowHeight + "px";
-      settings.style.height = '5%';
-      resizehandle.style.height = '3px';
-      _this.genotypeCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
-      _this.overviewCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
-      _this.genotypeCanvas.backBuffer.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
-      _this.overviewCanvas.backBuffer.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
-      _this.genotypeCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
-      _this.overviewCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
-      range.style.width = (300 * ratiow) + "px";
-      range.style.height = (20 * ratioh) + "%";
-      findLine.style.width = (59 * ratiow) + "%";
-      findLine.style.height = (40 * ratioh) + "%";
-      findLine.style.fontSize =  (findLine.style.height - 4) + "px";
-      chromosomeSelect.style.height = (19 * ratioh) + "px";
-      chromosomeSelect.style.width = (126 * ratiow) + "px";
-      chromosomeSelect.style.fontSize = (13 * ratioh) + "px";
-      findContainer.style.marginLeft = (50 * ratiow) + "px";
-      zoomContainer.style.marginLeft = (50 * ratiow) + "px";
-      chromosomeContainer.style.marginLeft = (50 * ratiow) + "px";
-      _this.genotypeCanvas.prerender(true);
-      _this.overviewCanvas.prerender(true);
-    });
-    window.dispatchEvent(new Event('resize'));*/
-
     window.addEventListener('mouseup', () => {
       this.draggingGenotypeCanvas = false;
       this.draggingVerticalScrollbar = false;
@@ -384,7 +358,7 @@ export default class CanvasController {
   }
 
   similaritySchemeChange(lineSelect, index, reset) {
-    var lineInput = document.getElementById('colorLineInput');
+    const lineInput = document.getElementById('colorLineInput');
     lineInput.disabled = false;
     var referenceName = this.genotypeCanvas.dataSet.germplasmListFiltered[index].name;
     var referenceIndex = this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
@@ -586,11 +560,11 @@ export default class CanvasController {
     // We use trait values as keys in inner arrays for persisting to Local-storage, so we need to convert those back to list indexes on reload
 	Object.entries(settings.traitColors).forEach(([traitName, colorByValue]) => Object.entries(colorByValue)
 		.forEach(([traitValue, traitValueColor]) => {
-										var traitValueIndex = this.dataSet.traits.get(traitName).values.indexOf(traitValue), traitColorMap = settings.traitColors[traitName];
-										if (traitValueIndex != -1)
-											traitColorMap[traitValueIndex] = traitValueColor;
-										delete traitColorMap[traitValue];
-									}
+			var traitValueIndex = this.dataSet.traits.get(traitName).values.indexOf(traitValue), traitColorMap = settings.traitColors[traitName];
+			if (traitValueIndex != -1)
+				traitColorMap[traitValueIndex] = traitValueColor;
+			delete traitColorMap[traitValue];
+		}
 	));
 
     switch (sortId) {
