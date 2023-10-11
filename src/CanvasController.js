@@ -114,16 +114,18 @@ export default class CanvasController {
         this.saveSetting("colorReference", reference.name);
       }
     });
-    lineInput.addEventListener('blur', (event) => {
+    lineInput.addEventListener('blur', function (event) {
       var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
         return germplasm.name.toLowerCase().startsWith(lineInput.value.toLowerCase());
       });
+      var referenceName = this.genotypeCanvas.dataSet.germplasmListFiltered[0].name;
       if (reference !== undefined) {
-        this.genotypeCanvas.setColorComparisonLine(reference.name);
-        this.overviewCanvas.prerender(true);
-        this.saveSetting("colorReference", reference.name);
-        lineInput.value = reference.name;
+        referenceName = reference.name;
       }
+      this.genotypeCanvas.setColorComparisonLine(referenceName);
+      this.overviewCanvas.prerender(true);
+      this.saveSetting("colorReference", referenceName);
+      lineInput.value = referenceName;
     });
 
     // Sort
@@ -171,16 +173,17 @@ export default class CanvasController {
         this.saveSetting("sortReference", referenceName);
       }
     });
-    sortLineInput.addEventListener('blur', event => {
+    sortLineInput.addEventListener('blur', function (event) {
       var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
         return germplasm.name.toLowerCase().startsWith(sortLineInput.value.toLowerCase());
       });
+      var referenceName = this.genotypeCanvas.dataSet.germplasmListFiltered[0].name;
       if (reference !== undefined) {
-        var referenceName = reference.name;
-        this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
-        this.saveSetting("sortReference", referenceName);
-        sortLineInput.value = referenceName;
+        referenceName = reference.name;
       }
+      this.setLineSort(new SimilarityLineSort(referenceName, [this.chromosomeIndex]));
+      this.saveSetting("sortReference", referenceName);
+      sortLineInput.value = referenceName;
     });
 
     if (dataSet.hasTraits()) {
