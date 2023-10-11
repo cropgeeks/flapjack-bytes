@@ -105,7 +105,7 @@ export default class CanvasController {
     });
 
     lineInput.addEventListener('input', (event) => {
-      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(germplasm => {
         return germplasm.name.toLowerCase().startsWith(lineInput.value.toLowerCase());
       });
       if (reference !== undefined) {
@@ -114,8 +114,8 @@ export default class CanvasController {
         this.saveSetting("colorReference", reference.name);
       }
     });
-    lineInput.addEventListener('blur', function (event) {
-      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+    lineInput.addEventListener('blur', event => {
+      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(germplasm => {
         return germplasm.name.toLowerCase().startsWith(lineInput.value.toLowerCase());
       });
       var referenceName = this.genotypeCanvas.dataSet.germplasmListFiltered[0].name;
@@ -164,7 +164,7 @@ export default class CanvasController {
     });
 
     sortLineInput.addEventListener('input', event => {
-      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(germplasm => {
         return germplasm.name.toLowerCase().startsWith(sortLineInput.value.toLowerCase());
       });
       if (reference !== undefined) {
@@ -173,8 +173,8 @@ export default class CanvasController {
         this.saveSetting("sortReference", referenceName);
       }
     });
-    sortLineInput.addEventListener('blur', function (event) {
-      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(function (germplasm) {
+    sortLineInput.addEventListener('blur', event => {
+      var reference = this.genotypeCanvas.dataSet.germplasmListFiltered.find(germplasm => {
         return germplasm.name.toLowerCase().startsWith(sortLineInput.value.toLowerCase());
       });
       var referenceName = this.genotypeCanvas.dataSet.germplasmListFiltered[0].name;
@@ -348,7 +348,7 @@ export default class CanvasController {
       this.genotypeCanvas.mouseOver(undefined, undefined);
     });
 
-    this.genotypeCanvas.canvas.addEventListener('contextmenu', function (event) {
+    this.genotypeCanvas.canvas.addEventListener('contextmenu', event => {
       event.preventDefault();
       var customContextMenu = document.getElementById("customContextMenu");
       customContextMenu.style.left = event.pageX + "px";
@@ -386,7 +386,7 @@ export default class CanvasController {
     const lineInput = document.getElementById('colorLineInput');
     lineInput.disabled = false;
     var referenceName = this.genotypeCanvas.dataSet.germplasmListFiltered[index].name;
-    var referenceIndex = this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(function (germplasm) {
+    var referenceIndex = this.genotypeCanvas.dataSet.germplasmListFiltered.findIndex(germplasm => {
       return germplasm.name.startsWith(referenceName);
     });
     var colorScheme = new SimilarityColorScheme(this.genotypeCanvas.dataSet, referenceIndex);
