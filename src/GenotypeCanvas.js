@@ -145,11 +145,11 @@ export default class GenotypeCanvas {
   }
 
   markerRange(markerStartIndex, markerEndIndex) {
-    var markerrange = document.getElementById("markerRange");
-    var markerStart = this.dataSet.markerOn(this.selectedChromosome, markerStartIndex).marker;
-    var markerEnd = this.dataSet.markerOn(this.selectedChromosome, markerEndIndex - 1).marker;
-    var text =  `Current range:<br> ${markerStart.name} (${markerStart.position})  to  ${markerEnd.name} (${markerEnd.position})`;
-    markerrange.innerHTML = text;
+	  var markerrange = document.getElementById("markerRange");
+	  var markerStart = this.dataSet.markerOn(this.selectedChromosome, markerStartIndex).marker;
+	  var markerEnd = this.dataSet.markerOn(this.selectedChromosome, markerEndIndex - 1).marker;
+	  var text = markerStart.position + "<br>" + markerEnd.position;
+	  markerrange.innerHTML = text;
   }
 
   calcMapMarkerPos(marker, firstMarkerPos, mapScaleFactor, drawStart) {
