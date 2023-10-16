@@ -713,7 +713,7 @@ export default function GenotypeRenderer() {
       const paletteResetLegend = document.createTextNode("Reset trait colors");
       paletteResetButton.appendChild(paletteResetLegend);
       paletteResetButton.id = 'paletteReset';
-      paletteResetButton.style.marginLeft = '20px';
+      paletteResetButton.style.margin = '20px';
       
       const colorContainer = document.createElement('div');
       colorContainer.style["float"] = 'right';
