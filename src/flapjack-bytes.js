@@ -378,7 +378,7 @@ export default function GenotypeRenderer() {
 
     //addCSSRule(sheet, '.bytes-fieldset > legend', 'border-style: none; border-width: 0; font-size: 14px; line-height: 20px; margin-bottom: 0; width: auto; padding: 0 10px; border: 1px solid #e0e0e0;');
     //addCSSRule(sheet, '.bytes-fieldset', 'border: 1px solid #e0e0e0; padding: 10px;');
-    addCSSRule(sheet, '.bytes-tabtoggle', "display: inline-block; border: none; outline: none; padding: 8px;");
+    addCSSRule(sheet, '.bytes-tabtoggle', "display: inline-block; border: none; outline: none; padding: 6px;");
     addCSSRule(sheet, '.bytes-tabtoggle:hover', 'background-color: #CCCCCC');
     addCSSRule(sheet, '.bytes-tabtoggle.bytes-tabtoggle-active', 'background-color: #DDDDDD');
     addCSSRule(sheet, '.bytes-tab', 'display: none;');
@@ -446,7 +446,7 @@ export default function GenotypeRenderer() {
     range.min = 2;
     range.max = 64;
     range.value = boxSize;
-	range.style.width = "300px";
+	range.style.width = "250px";
 	
 	const zoomPreviewLabel = document.createElement('label');
 	zoomPreviewLabel.setAttribute('for', 'zoom-preview');
@@ -454,7 +454,7 @@ export default function GenotypeRenderer() {
 	const zoomPreview = document.createElement('input');
 	zoomPreview.id = 'zoom-preview';
 	zoomPreview.setAttribute('type', 'checkbox');
-	zoomPreview.style.marginLeft = "20px";
+	zoomPreview.style.marginLeft = "10px";
 
     const zoomContainer = document.createElement('div');
     zoomContainer.append(zoomLabel);
@@ -481,14 +481,15 @@ export default function GenotypeRenderer() {
     var findLine = document.createElement('input');
     findLine.type = "text";
     findLine.id = "lineInput";
-    findLine.style.width = "170px";
+    findLine.style.width = "150px";
     findLine.placeholder = "Search line";
     var notFoundlabel = document.createElement('label');
     notFoundlabel.style.display = 'none';
     notFoundlabel.setAttribute('for', 'lineInput');
     var findContainer = document.createElement('div');
     findContainer.id = "findContainer";
-    findContainer.style.marginLeft = "50px";
+    findContainer.style["float"] = "right";
+    findContainer.style.marginTop = "2px";
     findContainer.append(findLine);
     findContainer.append(notFoundlabel);
     var incfindline = 0;
@@ -520,14 +521,11 @@ export default function GenotypeRenderer() {
     var markerrange = document.createElement("div");
     markerrange.id = "markerRange";
     chromosomeContainer.style.display = "inline-block";
-    chromosomeContainer.style.margin = "0 40px";
+    chromosomeContainer.style.margin = "0 30px";
     chromosomeContainer.style.paddingTop = "4px";
     chromosomeContainer.style.minWidth = "285px";
     zoomContainer.style["float"] = "right";
-    zoomContainer.style.marginLeft = "40px";
-    findContainer.style["float"] = "right";
-    findContainer.style.marginTop = "2px";
-    findContainer.style.marginLeft = "0px";
+    zoomContainer.style.marginLeft = "30px";
     markerrange.style.marginTop = "-5px";
     markerrange.style.marginLeft = "15px";
     markerrange.style.textAlign = "right";
