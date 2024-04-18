@@ -119,7 +119,7 @@ export default function GenotypeRenderer() {
     customContextMenu.style.fontFamily = 'system-ui';
     customContextMenu.style.fontSize = '14px';
     var option1 = document.createElement("div");
-    option1.textContent = "Color by similarity to this line";
+    option1.textContent = "Color by similarity to this line (allele match)";
     option1.style.cursor = "pointer";
     option1.addEventListener("click", function (event) {
       var colorLineInput = document.getElementById("colorLineInput");
