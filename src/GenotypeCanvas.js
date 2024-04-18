@@ -287,6 +287,11 @@ export default class GenotypeCanvas {
 
   highlightLineScore(germplasmStart, yPos) {
     if (this.lineSort.hasScore && this.lineUnderMouse !== undefined) {
+      const { name } = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
+      const score = this.lineSort.getScore(name);
+      if (score < 0)
+        return;	// negative scores are for lines with only missing data (shall appear at the end of the matrix)
+
       this.drawingContext.save();
       this.drawingContext.translate(this.traitValuesCanvasWidth + this.nameCanvasWidth, this.mapCanvasHeight);
       // Prevent line name under scrollbar being highlighted
@@ -298,12 +303,7 @@ export default class GenotypeCanvas {
       this.drawingContext.fillStyle = '#F00';
       this.drawingContext.font = this.font;
 
-      const { name } = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
-
-      const y = yPos + (this.boxSize - (this.fontSize / 2));
-      const score = this.lineSort.getScore(name);
-      this.drawingContext.fillText(score.toFixed(2), this.scorePadding, y);
-
+      this.drawingContext.fillText(score.toFixed(2), this.scorePadding, yPos + (this.boxSize - (this.fontSize / 2)));
       this.drawingContext.restore();
     }
   }
@@ -607,9 +607,9 @@ export default class GenotypeCanvas {
     this.backContext.fillStyle = '#333';
     this.backContext.font = this.font;
     lineNames.forEach((name, idx) => {
-      const y = (idx * this.boxSize) - yWiggle + (this.boxSize - (this.fontSize / 2));
       const score = this.lineSort.getScore(name);
-      this.backContext.fillText(score.toFixed(2), this.scorePadding, y);
+      if (score >= 0)	// negative scores are for lines with only missing data (shall appear at the end of the matrix)
+      	this.backContext.fillText(score.toFixed(2), this.scorePadding, (idx * this.boxSize) - yWiggle + (this.boxSize - (this.fontSize / 2)));
     });
     this.backContext.restore();
   }
@@ -826,7 +826,7 @@ export default class GenotypeCanvas {
         const trait = this.dataSet.getTrait(this.displayTraits[traitIndex]);
         const traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
         if (traitValue !== undefined){
-          this.mouseOverText = trait.name + " : " + traitValue.toString();
+          this.mouseOverText = trait.name + ": " + traitValue.toString();
           this.mouseOverPosition = [x, y];
         }
       } else */
@@ -924,7 +924,7 @@ export default class GenotypeCanvas {
         const trait = this.dataSet.getTrait(this.displayTraits[traitIndex]);
         const traitValue = trait.getValue(germplasm.getPhenotype(trait.name));
         if (traitValue !== undefined){
-          this.mouseOverText = trait.name + " : " + traitValue.toString();
+          this.mouseOverText = trait.name + ": " + traitValue.toString();
           this.mouseOverPosition = [x, y];
         }
       }
@@ -932,8 +932,10 @@ export default class GenotypeCanvas {
       else if (this.lineSort.hasScore && x > this.nameCanvasWidth + this.traitValuesCanvasWidth && x < this.nameCanvasWidth + this.traitValuesCanvasWidth + this.scoreCanvasWidth){
         const germplasm = this.dataSet.germplasmListFiltered[this.lineIndexUnderMouse];
         const score = this.lineSort.getScore(germplasm.name);
-        this.mouseOverText = "Sort score : " + score.toString();
-        this.mouseOverPosition = [x, y];
+        if (score >= 0) {
+	        this.mouseOverText = "Sort score: " + score.toString();
+	        this.mouseOverPosition = [x, y];
+        }
       }
     }
 

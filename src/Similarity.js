@@ -99,7 +99,7 @@ function germplasmSimilarityScore(dataSet, referenceIndex, comparedIndex, chromo
       score += similarityScores.get(similarityCase);
     }
   }
-  return score / markerCount;
+  return markerCount != 0 ? score / markerCount : -1;	// negative scores are for lines with only missing data (shall appear at the end of the matrix)
 }
 
 export {similarityCases, buildSimilarityLookupTable, germplasmSimilarityScore};
