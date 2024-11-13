@@ -108,7 +108,7 @@ export default class GenotypeImporter {
 
     // Process lines in batches
     async function processBatch(startIndex) {
-        console.log("Processing batch with startIndex:", startIndex);  // Log startIndex once per batch
+//        console.log("Processing batch with startIndex:", startIndex);  // Log startIndex once per batch
 
         const endIndex = Math.min(startIndex + batchSize, lines.length);
 
