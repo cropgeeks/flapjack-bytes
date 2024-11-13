@@ -110,12 +110,10 @@ export default class OverviewCanvas {
   // Get the visibility window pixel coordinates from its data coordinates
   windowFromPosition (marker, germplasm, visibilityWindow){
     const scale = this.renderingScale(this.width, this.height);
-
     const cornerX = marker / scale.markersPerPixel;
     const cornerY = germplasm / scale.germplasmsPerPixel;
     const windowWidth = visibilityWindow.markers / scale.markersPerPixel;
     const windowHeight = visibilityWindow.germplasms / scale.germplasmsPerPixel;
-
     return {x: cornerX, y: cornerY, width: windowWidth, height: windowHeight};
   }
 

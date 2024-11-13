@@ -19,8 +19,8 @@ export default class GenotypeCanvas {
     this.nameCanvasWidth = 100;
     //this.traitBoxWidth = 8;
 
-    this.scrollbarWidth = 10;
-    this.scrollbarHeight = 10;
+    this.scrollbarWidth = 12;
+    this.scrollbarHeight = 12;
 
     this.backContext.lineWidth = 1;
 
@@ -722,26 +722,19 @@ export default class GenotypeCanvas {
     return this.currentPosition();
   }
 
-  dragVerticalScrollbar(y) {
-    if (!this.enabled) return;
+  dragVerticalScrollbar(scrollPosition) {
+    // Ensure the scroll position is within bounds
+    this.translatedY = Math.max(0, Math.min(scrollPosition, this.maxCanvasHeight() - this.alleleCanvasHeight()));
 
-    const yScrollMax = this.maxCanvasHeight() - this.alleleCanvasHeight();
-    if (yScrollMax > 0) {
-      this.translatedY = (y / this.verticalScrollbar.height) * yScrollMax;
+    // Update the scrollbar widget position
+    const scrollHeight = this.alleleCanvasHeight() - this.verticalScrollbar.widget.height;
+    const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, this.maxCanvasHeight() - this.alleleCanvasHeight(), 0, scrollHeight));
+    this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
 
-      // Prevent scrolling beyond start or end of data
-      if (this.translatedY < 0) {
-        this.translatedY = 0;
-      } else if (this.translatedY >= yScrollMax) {
-        this.translatedY = yScrollMax;
-      }
-
-      const scrollHeight = this.alleleCanvasHeight() - this.verticalScrollbar.widget.height;
-      const scrollY = Math.floor(this.mapToRange(this.translatedY, 0, yScrollMax, 0, scrollHeight));
-      this.verticalScrollbar.move(this.verticalScrollbar.x, scrollY);
-    }
-
+    // Redraw the canvas
     this.prerender(true);
+
+    // Return the new position for other components to use
     return this.currentPosition();
   }
 
@@ -1140,6 +1133,7 @@ export default class GenotypeCanvas {
 	}
     this.displayTraits = displayTraits;
     this.updateCanvasWidths();
+    this.updateScrollBars();
     this.prerender(true);
   }
 

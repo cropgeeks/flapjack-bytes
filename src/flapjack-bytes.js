@@ -202,25 +202,19 @@ export default function GenotypeRenderer() {
     });
     document.addEventListener('mousemove', function (event) {
       if (!isResizing) return;
-      var currentY = event.clientY;
+
+	  var currentY = event.clientY;
       var height1 = originalHeight1 - (currentY - initialY);
       var height2 = originalHeight2 + (currentY - initialY);
-
-      // Appliquer la hauteur minimale souhaitée si nécessaire
+	
       var minHeight = 10;
-      if (height1 > minHeight) {
-        resizableDiv1.height = height1;
-        resizableDiv1.canvas.height = height1;
-        resizableDiv1.backBuffer.height = height1;
-      }
-      if (height2 > minHeight) {
-        resizableDiv2.height = height2;
-        resizableDiv2.canvas.height = height2;
-        resizableDiv2.backBuffer.height = height2;
-      }
-      resizableDiv2.horizontalScrollbar = new ScrollBar(resizableDiv2.alleleCanvasWidth(), height2, resizableDiv2.alleleCanvasWidth(), resizableDiv2.scrollbarHeight, false);
-      genotypeCanvas.prerender(true);
-      overviewCanvas.prerender(true);
+	  if (height1 > minHeight)
+	    resizableDiv1.height = height1;
+      if (height2 > minHeight)
+	  	resizableDiv2.height = height2;
+	
+	  canvasController.displayRatio = resizableDiv2.height / (resizableDiv2.height + resizableDiv1.height);
+	  canvasController.updateCanvases();
     });
     document.addEventListener('mouseup', function () {
       isResizing = false;

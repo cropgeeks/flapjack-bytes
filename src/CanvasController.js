@@ -1,4 +1,4 @@
-import {TraitType} from './Trait.js'
+ import {TraitType} from './Trait.js'
 import AlphabeticLineSort from './sort/AlphabeticLineSort'
 import SimilarityLineSort from './sort/SimilarityLineSort'
 import ImportingOrderLineSort from './sort/ImportingOrderLineSort'
@@ -17,6 +17,7 @@ export default class CanvasController {
     this.minGenotypeAutoWidth = minGenotypeAutoWidth === undefined ? 0 : minGenotypeAutoWidth;
     this.minOverviewAutoWidth = minOverviewAutoWidth === undefined ? 0 : minOverviewAutoWidth;
     this.saveSettings = saveSettings;
+    this.displayRatio = 2/3;
 
     this.chromosomeIndex = 0;
     this.dragStartX = null;
@@ -26,6 +27,37 @@ export default class CanvasController {
     this.draggingHorizontalScrollbar = false;
     this.draggingOverviewCanvas = false;
     this.contextMenuY = null;
+  }
+
+  updateCanvases() {
+  	  // Get the total available height (sum of both canvas heights)
+	  const totalHeight = this.overviewCanvas.canvas.clientHeight + this.genotypeCanvas.canvas.clientHeight;
+	  
+	  // Calculate new heights based on the current displayRatio
+	  let newHeight2 = Math.round(totalHeight * this.displayRatio);
+	  let newHeight1 = totalHeight - newHeight2;
+	
+	  // Update heights for this.overviewCanvas.canvas
+	  this.overviewCanvas.height = newHeight1;
+	  this.overviewCanvas.canvas.height = newHeight1;
+	  this.overviewCanvas.backBuffer.height = newHeight1;
+	
+	  // Update heights for genotypeCanvas
+	  this.genotypeCanvas.height = newHeight2;
+	  this.genotypeCanvas.canvas.height = newHeight2;
+	  this.genotypeCanvas.backBuffer.height = newHeight2;
+	
+	  // Update scrollbar for genotypeCanvas
+	  this.genotypeCanvas.horizontalScrollbar = new ScrollBar(this.genotypeCanvas.alleleCanvasWidth(), this.genotypeCanvas.canvas.height, this.genotypeCanvas.alleleCanvasWidth(), this.genotypeCanvas.scrollbarHeight, false);
+	  this.genotypeCanvas.verticalScrollbar = new ScrollBar(this.genotypeCanvas.width, this.genotypeCanvas.alleleCanvasHeight() + this.genotypeCanvas.scrollbarHeight, this.genotypeCanvas.scrollbarWidth, this.genotypeCanvas.alleleCanvasHeight(), true);
+
+      var position = this.genotypeCanvas.currentPosition();
+      this.overviewCanvas.moveToPosition(position.marker, position.germplasm, this.genotypeCanvas.visibilityWindow());
+      
+	  // Trigger rerender
+	  this.overviewCanvas.prerender(true);
+	  this.genotypeCanvas.prerender(true);
+	  this.genotypeCanvas.zoom(this.genotypeCanvas.boxSize);	// resizes scrollbar thumbs properly, fixes potential canvas out-of-bounds issues...
   }
 
   init(dataSet) {
@@ -52,27 +84,26 @@ export default class CanvasController {
 
     window.addEventListener("resize", event => {
       this.updateAutoWidth();
-      
-      var settings = document.getElementById("settings");
+
+      var genotypeCanvasYpos = document.getElementById("genotypeCanvas").getBoundingClientRect().y;
       var resizehandle = document.getElementById("resizeHandle");
+          
       const windowHeight = window.innerHeight;
-      const windowWidth = window.innerWidth;
-      this.genotypeCanvas.width = windowWidth;
-      this.overviewCanvas.width = windowWidth;
-      this.genotypeCanvas.backBuffer.width = windowWidth;
-      this.overviewCanvas.backBuffer.width = windowWidth;
-      this.genotypeCanvas.canvas.width = windowWidth;
-      this.overviewCanvas.canvas.width = windowWidth;
-      this.genotypeCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
-      this.overviewCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
-      this.genotypeCanvas.backBuffer.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
-      this.overviewCanvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
-      this.genotypeCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) * 2 / 3);
-      this.overviewCanvas.canvas.height = ((windowHeight - settings.clientHeight - resizehandle.clientHeight) / 3);
-      this.genotypeCanvas.verticalScrollbar = new ScrollBar(windowWidth - 20, this.genotypeCanvas.alleleCanvasHeight() + this.genotypeCanvas.scrollbarHeight, this.genotypeCanvas.scrollbarWidth, this.genotypeCanvas.alleleCanvasHeight(), true);
-      this.genotypeCanvas.horizontalScrollbar = new ScrollBar(this.genotypeCanvas.alleleCanvasWidth(), this.genotypeCanvas.canvas.height, this.genotypeCanvas.alleleCanvasWidth(), this.genotypeCanvas.scrollbarHeight, false);
-      this.genotypeCanvas.prerender(true);
-      this.overviewCanvas.prerender(true);
+      const windowWidth = document.body.clientWidth;
+      this.genotypeCanvas.width = windowWidth - 15;
+      this.overviewCanvas.width = windowWidth - 15;
+      this.genotypeCanvas.backBuffer.width = this.genotypeCanvas.width;
+      this.overviewCanvas.backBuffer.width = this.overviewCanvas.width;
+      this.genotypeCanvas.canvas.width = this.genotypeCanvas.width;
+      this.overviewCanvas.canvas.width = this.overviewCanvas.width;
+      this.genotypeCanvas.height = Math.floor((windowHeight - genotypeCanvasYpos - resizehandle.clientHeight - 5) * this.displayRatio);
+      this.overviewCanvas.height = Math.floor((windowHeight - genotypeCanvasYpos - resizehandle.clientHeight - 5) * (1 - this.displayRatio));
+      this.genotypeCanvas.backBuffer.height = this.genotypeCanvas.height;
+      this.overviewCanvas.height = this.overviewCanvas.height;
+      this.genotypeCanvas.canvas.height = this.genotypeCanvas.height;
+      this.overviewCanvas.canvas.height = this.overviewCanvas.height;
+      this.genotypeCanvas.verticalScrollbar = new ScrollBar(this.genotypeCanvas.width, this.genotypeCanvas.alleleCanvasHeight() + this.genotypeCanvas.scrollbarHeight, this.genotypeCanvas.scrollbarWidth, this.genotypeCanvas.alleleCanvasHeight(), true);
+	  this.updateCanvases();
     });
 
     // Color schemes
@@ -326,12 +357,14 @@ export default class CanvasController {
         // which prevents mouse drift prematurely stopping scrolling from happening
         this.draggingVerticalScrollbar = true;
         this.dragVerticalScrollbar(e.clientY);
-      } else if (this.isOverHorizontalScrollbar(y, horizontalScrollbar)) {
+        //this.draggingGenotypeCanvas = false;
+      } else if (this.isOverHorizontalScrollbar(x, y, horizontalScrollbar)) {
         // Flag to remember that the scrollbar widget was initially clicked on
         // which prevents mouse drift prematurely stopping scrolling from happening
         this.draggingHorizontalScrollbar = true;
         this.dragHorizontalScrollbar(e.clientX);
-      } else {
+        //this.draggingGenotypeCanvas = false;
+      } else if (x >= this.genotypeCanvas.alleleCanvasXOffset) {
         // We are scrolling by grabbing the canvas directly
         this.dragStartX = e.pageX;
         this.dragStartY = e.pageY;
@@ -380,6 +413,8 @@ export default class CanvasController {
         this.setOverviewPosition(e.clientX, e.clientY);
       }
     });
+    
+    window.dispatchEvent(new Event('resize'));	// simulate resize to be sure all components fit well into the page
   }
 
   similaritySchemeChange(lineSelect, index, reset) {
@@ -485,23 +520,35 @@ export default class CanvasController {
     return x >= verticalScrollbar.x && x <= verticalScrollbar.x + verticalScrollbar.widget.width;
   }
 
-  isOverHorizontalScrollbar(y, horizontalScrollbar) {
-    return y >= horizontalScrollbar.y && y <= horizontalScrollbar.y + horizontalScrollbar.widget.height;
+  isOverHorizontalScrollbar(x, y, horizontalScrollbar) {
+    return y >= horizontalScrollbar.y && y <= horizontalScrollbar.y + horizontalScrollbar.widget.height && x >= this.genotypeCanvas.alleleCanvasXOffset;
   }
 
   dragVerticalScrollbar(clientY) {
-    // Grab various variables which allow us to calculate the y coordinate
-    // relative to the allele canvas
-    const rect = this.genotypeCanvas.canvas.getBoundingClientRect();
-    const alleleCanvasHeight = this.genotypeCanvas.alleleCanvasHeight();
-    const { mapCanvasHeight } = this.genotypeCanvas;
-    const rectTop = (rect.top + mapCanvasHeight);
-    // Calculate the y coordinate of the mouse on the allele canvas
-    const y = (clientY - rectTop) / (rect.bottom - rectTop) * alleleCanvasHeight;
-    // Move the vertical scrollbar to coordinate y
-    const newPosition = this.genotypeCanvas.dragVerticalScrollbar(y);
-
-    this.overviewCanvas.moveToPosition(newPosition.marker, newPosition.germplasm, this.genotypeCanvas.visibilityWindow());
+	  // Get the bounding rectangle of the entire canvas
+	  const rect = this.genotypeCanvas.canvas.getBoundingClientRect();
+	
+	  // Calculate the top of the allele rendering area
+	  const alleleTop = rect.top + this.genotypeCanvas.mapCanvasHeight;
+	
+	  // Calculate the height of the allele rendering area
+	  const alleleHeight = this.genotypeCanvas.alleleCanvasHeight();
+	
+	  // Calculate the y coordinate of the mouse relative to the allele rendering area
+	  const relativeY = clientY - alleleTop;
+	
+	  // Convert the relative y coordinate to a value between 0 and 1
+	  const normalizedY = Math.max(0, Math.min(relativeY / alleleHeight, 1));
+	
+	  // Calculate the maximum scroll position
+	  const maxScroll = this.genotypeCanvas.maxCanvasHeight() - alleleHeight;
+	
+	  // Calculate the new scroll position
+	  const newScrollPosition = normalizedY * maxScroll;
+	
+	  // Move the vertical scrollbar and update the canvas
+	  const newPosition = this.genotypeCanvas.dragVerticalScrollbar(newScrollPosition);
+	  this.overviewCanvas.moveToPosition(newPosition.marker, newPosition.germplasm, this.genotypeCanvas.visibilityWindow());
   }
 
   dragHorizontalScrollbar(clientX) {
@@ -509,10 +556,9 @@ export default class CanvasController {
     // relative to the allele canvas
     const rect = this.genotypeCanvas.canvas.getBoundingClientRect();
     const alleleCanvasWidth = this.genotypeCanvas.alleleCanvasWidth();
-    const { nameCanvasWidth } = this.genotypeCanvas;
-    const rectLeft = (rect.left + nameCanvasWidth);
+    const rectLeft = (rect.left + this.genotypeCanvas.alleleCanvasXOffset);
     // Calculate the x coordinate of the mouse on the allele canvas
-    const x = (clientX - rectLeft) / (rect.right - rectLeft) * alleleCanvasWidth;
+    const x = (clientX - rectLeft) / (rect.right - this.genotypeCanvas.verticalScrollbar.width - rectLeft) * alleleCanvasWidth;
     // Move the vertical scrollbar to coorodinate x
     const newPosition = this.genotypeCanvas.dragHorizontalScrollbar(x);
 
@@ -585,7 +631,7 @@ export default class CanvasController {
     // We use trait values as keys in inner arrays for persisting to Local-storage, so we need to convert those back to list indexes on reload
 	Object.entries(settings.traitColors).forEach(([traitName, colorByValue]) => Object.entries(colorByValue)
 		.forEach(([traitValue, traitValueColor]) => {
-			var traitValueIndex = this.dataSet.traits.get(traitName).values.indexOf(traitValue), traitColorMap = settings.traitColors[traitName];
+			var trait = this.dataSet.traits.get(traitName), traitValueIndex = trait == null ? -1 : trait.values.indexOf(traitValue), traitColorMap = settings.traitColors[traitName];
 			if (traitValueIndex != -1)
 				traitColorMap[traitValueIndex] = traitValueColor;
 			delete traitColorMap[traitValue];
