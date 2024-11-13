@@ -198,7 +198,7 @@ export default class GenotypeCanvas {
   highlightMarkerName(firstMarkerPos, scaleFactor, drawStart) {
     if (this.markerUnderMouse) {
       this.drawingContext.save();
-      this.drawingContext.translate(this.alleleCanvasXOffset, 10);
+      this.drawingContext.translate(this.alleleCanvasXOffset, 8);
 
       this.drawingContext.fillStyle = '#F00';
       this.drawingContext.font = this.markerNameFont;
@@ -839,8 +839,8 @@ export default class GenotypeCanvas {
         var marker = this.dataSet.markerOn(this.selectedChromosome, markerIndex);
         this.markerUnderMouse = marker.marker;
         if (marker.marker !== undefined) {
-          this.mouseOverText = `Line : ${_germplasm.name}`;
-          this.mouseOverText += `\nMarker : ${marker.marker.name} (${marker.marker.position})`;
+          this.mouseOverText = `Line: ${_germplasm.name}`;
+          this.mouseOverText += `\nMarker: ${marker.marker.name} (${marker.marker.position})`;
           /*//TODO : do this switch in a new function
           var geno = 'A';
           switch (this.dataSet.genotypeFor(this.lineIndexUnderMouse, this.selectedChromosome, markerIndex)) {
