@@ -938,16 +938,19 @@ export default function GenotypeRenderer() {
 
     if (config.mapFileURL){
       let mapPromise = axios.get(config.mapFileURL, {
-        headers: { 'Content-Type': 'text/plain' },
+		responseType: 'blob',	// working around Firefox error message
+        headers: { 'Content-Type': 'text/plain' }/*,
         onDownloadProgress: function (progressEvent){
           if (progressEvent.lengthComputable){
             mapLoaded = progressEvent.loaded;
             mapSize = progressEvent.total;
             setAdvancement((mapLoaded + genotypeLoaded + phenotypeLoaded) / (mapSize + genotypeSize + phenotypeSize));
           }
-        }
-      }).then((response) => {
-        mapFile = response.data;
+        }*/
+	  }).then(response => {
+	    return response.data.text(); // Convert the Blob to text
+      }).then(function (data) {
+        mapFile = data;
       }).catch((error) => {
         console.error(error);
       });
@@ -957,16 +960,19 @@ export default function GenotypeRenderer() {
 
     if (config.phenotypeFileURL){
       let phenotypePromise = axios.get(config.phenotypeFileURL, {
-        headers: { 'Content-Type': 'text/plain' },
+		responseType: 'blob',	// working around Firefox error message
+        headers: { 'Content-Type': 'text/plain' }/*,
         onDownloadProgress: function (progressEvent){
           if (progressEvent.lengthComputable){
             phenotypeLoaded = progressEvent.loaded;
             phenotypeSize = progressEvent.total;
             setAdvancement((mapLoaded + genotypeLoaded + phenotypeLoaded) / (mapSize + genotypeSize + phenotypeSize));
           }
-        }
-      }).then((response) => {
-        phenotypeFile = response.data;
+        }*/
+	  }).then(response => {
+	    return response.data.text(); // Convert the Blob to text
+      }).then(function (data) {
+        phenotypeFile = data;
       }).catch((error) => {
         console.error(error);
       });
@@ -975,6 +981,7 @@ export default function GenotypeRenderer() {
     }
 
     let genotypePromise = axios.get(config.genotypeFileURL, {
+	  responseType: 'blob',		// working around Firefox error message
       headers: { 'Content-Type': 'text/plain' },
       onDownloadProgress: function (progressEvent){
         if (progressEvent.lengthComputable){
@@ -985,8 +992,10 @@ export default function GenotypeRenderer() {
         else
         	setProgressBarLabel("Downloading genotype file... " + formatFileSize(progressEvent.loaded));
       }
-    }).then((response) => {
-      genotypeFile = response.data;
+	}).then(response => {
+	  return response.data.text(); // Convert the Blob to text
+    }).then(function (data) {
+      genotypeFile = data;
     }).catch((error) => {
       console.error(error);
     });

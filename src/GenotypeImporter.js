@@ -76,52 +76,66 @@ export default class GenotypeImporter {
     }
   }
 
-  parseFile(fileContents, advancementCallback, completionCallback) {
-    var b4 = Date.now();
+  async parseFile(fileContents, advancementCallback, completionCallback) {
+    const startTime = performance.now();
 
-    // Pre-mapping the marker names to their position for faster loading
-    let markerNameMap = new Map();
+    // Pre-map marker names to their positions for faster access
+    const markerNameMap = new Map();
     this.genomeMap.chromosomes.forEach((chromosome, chromosomeIndex) => {
-      chromosome.markers.forEach((marker, markerIndex) => {
-        markerNameMap.set(marker.name, {chromosome: chromosomeIndex, markerIndex});
-      });
+        chromosome.markers.forEach((marker, markerIndex) => {
+            markerNameMap.set(marker.name, { chromosome: chromosomeIndex, markerIndex });
+        });
     });
 
     this.processedLines = 0;
     const lines = fileContents.split(/\r?\n/);
     this.totalLineCount = lines.length;
-    let currentLine = 0;
-    let self = this;
 
-    // Give the browser some time to keep the page alive between the parsing of each line
-    // Avoid a complete freeze during a large file load
-    // This yields control between the parsing of each line for the browser to refresh itself
-    // This calls recursively and asynchronously the parsing of the following line
-    // In order to get a single promise that returns only once all the lines have been parsed
-    function doLine(line) {
-      return new Promise(function (resolve, reject){
-        self.processFileLine(lines[line], markerNameMap);
-        self.processedLines += 1;
-        if (advancementCallback)
-          advancementCallback(self.processedLines / self.totalLineCount);
-        
-        if (line + 1 < self.totalLineCount){
-          // Yield to the browser to let it do its things, run the next lines (recursively),
-          // and return once they are done
-          setTimeout(function (){
-            doLine(line + 1).then(resolve);
-          }, 0);
-        } else {  // Finish
-          resolve();
+    const batchSize = Math.floor(this.totalLineCount / 10);
+    const self = this;
+
+    // Throttle the advancementCallback to reduce frequent UI updates
+    const throttledCallback = (() => {
+        let lastCallTime = 0;
+        return (progress) => {
+            const now = Date.now();
+            if (now - lastCallTime > 100) {  // 100ms throttle interval
+                advancementCallback(progress);
+                lastCallTime = now;
+            }
+        };
+    })();
+
+    // Process lines in batches
+    async function processBatch(startIndex) {
+        console.log("Processing batch with startIndex:", startIndex);  // Log startIndex once per batch
+
+        const endIndex = Math.min(startIndex + batchSize, lines.length);
+
+        // Process each line within this batch
+        for (let i = startIndex; i < endIndex; i++) {
+            self.processFileLine(lines[i], markerNameMap);
+            self.processedLines += 1;
         }
-      });
+
+        // Call the throttled advancementCallback for this batch
+        if (advancementCallback) throttledCallback(self.processedLines / self.totalLineCount);
+
+        // Schedule the next batch, if there are more lines to process
+        if (endIndex < lines.length) {
+            await new Promise(resolve => setTimeout(resolve, 0));  // Yield control to the browser
+            await processBatch(endIndex);  // Process the next batch after yielding
+        }
     }
 
-    return doLine(0).then(function (results){
-      if (completionCallback) completionCallback();
-      console.log("parseFile took " + (Date.now() - b4) + "ms");
-      return self.germplasmList;
-    })
+    // Start processing with the first batch
+    await processBatch(0);
+
+    // Parsing complete, invoke completionCallback if provided
+    if (completionCallback) completionCallback();
+    console.log("parseFile took " + (performance.now() - startTime) + "ms");
+
+    return this.germplasmList;  // Return the parsed list
   }
 
   // In situations where a map hasn't been provided, we want to create a fake or
