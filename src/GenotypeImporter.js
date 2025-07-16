@@ -91,7 +91,7 @@ export default class GenotypeImporter {
     const lines = fileContents.split(/\r?\n/);
     this.totalLineCount = lines.length;
 
-    const batchSize = Math.floor(this.totalLineCount / 10);
+    const batchSize = Math.max(1, Math.floor((this.totalLineCount - 2) / 10));
     const self = this;
 
     // Throttle the advancementCallback to reduce frequent UI updates
