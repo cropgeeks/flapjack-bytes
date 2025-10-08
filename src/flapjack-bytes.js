@@ -617,7 +617,6 @@ export default function GenotypeRenderer() {
     const exportViewText = document.createTextNode('Export view');
 	exportViewButton.style.marginRight = '10px';
     exportViewButton.appendChild(exportViewText);
-
     exportViewButton.addEventListener('click', function(e) {
       const dataURL = genotypeCanvas.toDataURL('image/png');
       if (dataURL){  // Export succeeded
@@ -633,8 +632,8 @@ export default function GenotypeRenderer() {
 
     const exportOverviewButton = document.createElement('button');
     const exportOverviewText = document.createTextNode('Export overview');
+	exportOverviewButton.style.marginRight = '10px';
     exportOverviewButton.appendChild(exportOverviewText);
-
     exportOverviewButton.addEventListener('click', function(e) {
       const dataURL = overviewCanvas.toDataURL('image/png');
       if (dataURL){  // Export succeeded
@@ -647,9 +646,26 @@ export default function GenotypeRenderer() {
         document.body.removeChild(element);
       }
     });
+    
+    const exportSampleButton = document.createElement('button');
+    const exportSampleText = document.createTextNode('Export sample list');
+    exportSampleButton.appendChild(exportSampleText);
+    exportSampleButton.addEventListener('click', function(e) {
+	    const names = genotypeCanvas.dataSet?.germplasmListFiltered?.map(g => g.name);
+	    if (!names || !names.length)
+	        return;
+	
+	    navigator.clipboard.writeText(names.join('\n')).then(() => {
+			alert(names.length + ' sample names copied to clipboard!');
+	    }).catch(err => {
+	        console.error('Clipboard error:', err);
+	        alert('Clipboard write failed');
+	    });
+    });
 
     tab.appendChild(exportViewButton);
     tab.appendChild(exportOverviewButton);
+    tab.appendChild(exportSampleButton);
     
     return tab;
   }
